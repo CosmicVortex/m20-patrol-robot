@@ -1,0 +1,14 @@
+robot:
+  host: "REPLACE_WITH_SITE_VALUE"
+  udp_port: 30000
+  tcp_port: 30001
+  control_enabled: false
+
+camera:
+  host: "REPLACE_WITH_SITE_VALUE"
+  username_env: "CAMERA_USERNAME"
+  password_env: "CAMERA_PASSWORD"
+
+web:
+  bind_host: "127.0.0.1"
+  port: 8080

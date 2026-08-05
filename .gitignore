@@ -1,0 +1,39 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+secrets/
+config/local/
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+
+# Customer/site data
+maps/
+recordings/
+snapshots/
+logs/
+customer-data/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node/frontend
+node_modules/
+dist/
+build/
+
+# Editors/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
