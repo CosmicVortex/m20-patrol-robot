@@ -2,9 +2,15 @@
 
 核对日期：2026-08-05
 
+## 使用手册文件记录
+
+| 文件名称 | 文件版本 | 文件日期 | 使用方式 | 原文存放 |
+|---|---:|---|---|---|
+| 山猫 M20 Pro 软件使用手册 | V0.0.1 | 2025-07-31 | 用于核对主机职责、SSH/VNC、建图、地图包和 RViz 定位步骤 | 用户已明确授权上传至本项目私有仓库 |
+
 > 本文件只保存摘要、链接和项目判断，不复制厂商原始文档。
 
-## 1. 本阶段直接相关链接
+## 本阶段相关官方页面
 
 - [软件系统架构说明](https://alidocs.dingtalk.com/i/p/OlnXRl7ed542DGLp/docs/AR4GpnMqJzM30KZ3UklzoGBLVKe0xjE3)
 - [计算平台与资源分配](https://alidocs.dingtalk.com/i/p/OlnXRl7ed542DGLp/docs/Gl6Pm2Db8D30AMZ0Se3l4Re6JxLq0Ee4)
@@ -12,112 +18,71 @@
 - [系统时间与时间同步](https://alidocs.dingtalk.com/i/p/OlnXRl7ed542DGLp/docs/P7QG4Yx2Jp7mXxnmiQa3A1DDV9dEq3XD)
 - [网络配置](https://alidocs.dingtalk.com/i/p/OlnXRl7ed542DGLp/docs/93NwLYZXWyg6Rxw6tNR75MABJkyEqBQm)
 - [对外通信方式](https://alidocs.dingtalk.com/i/p/OlnXRl7ed542DGLp/docs/gvNG4YZ7JnemNxlmiNv35roGV2LD0oRE)
-- [basic_server通信协议](https://alidocs.dingtalk.com/i/p/OlnXRl7ed542DGLp/docs/gwva2dxOW4Kb6v3btk13Eplv8bkz3BRL)
+- [basic_server 通信协议](https://alidocs.dingtalk.com/i/p/OlnXRl7ed542DGLp/docs/gwva2dxOW4Kb6v3btk13Eplv8bkz3BRL)
 - [相机与视频流](https://alidocs.dingtalk.com/i/p/OlnXRl7ed542DGLp/docs/2Amq4vjg89gGAj5Gtmg0OlzjV3kdP0wQ)
 - [建图与地图管理](https://alidocs.dingtalk.com/i/p/OlnXRl7ed542DGLp/docs/ZgpG2NdyVXrbZRzbCPKNgMK18MwvDqPk)
 - [定位模块](https://alidocs.dingtalk.com/i/p/OlnXRl7ed542DGLp/docs/Qnp9zOoBVBZwADmwhPMDzZPlV1DK0g6l)
 - [导航任务下发](https://alidocs.dingtalk.com/i/p/OlnXRl7ed542DGLp/docs/KGZLxjv9VG3OAkQOS6ALOK6PV6EDybno)
-- [Python二次开发教程](https://alidocs.dingtalk.com/i/p/OlnXRl7ed542DGLp/docs/dpYLaezmVNLdDRkdFgp471d68rMqPxX6)
+- [Python 二次开发教程](https://alidocs.dingtalk.com/i/p/OlnXRl7ed542DGLp/docs/dpYLaezmVNLdDRkdFgp471d68rMqPxX6)
 - [软件更新说明](https://alidocs.dingtalk.com/i/p/OlnXRl7ed542DGLp/docs/6LeBq413JAz3A9Y3CZL1A6O98DOnGvpb)
 
-## 2. 摘要
+## 文档摘要
 
 ### 软件系统架构说明
 
-```text
-文档名称：软件系统架构说明
-版本：在线页未显示独立版本
-更新时间：在线页未显示
-适用型号：M20系列；三主机内容以M20 Pro为例
-核心功能：AOS/NOS/GOS职责与DrDDS/ROS2 Foxy架构
-可直接使用的接口：本页以架构为主
-仅适用于特定型号的接口：GOS为M20 Pro二开主机
-与本项目相关的内容：业务部署在GOS，避免占用AOS/NOS
-安全风险：AOS承担运动控制，不应部署Web或转码业务
-版本兼容风险：系统版本需现场确认
-需要现场验证的内容：三主机地址、服务和资源
-```
+- **适用范围：** M20 系列；三主机内容以 M20 Pro 为例。
+- **结论：** AOS 负责运动控制，NOS 负责建图、定位和导航，GOS 是用户二次开发的部署位置。
+- **项目处理：** Web、视频和 AI 业务不部署到 AOS/NOS；现场地址、服务和资源仍需核验。
 
 ### 计算平台与资源分配
 
-```text
-文档名称：计算平台与资源分配
-版本/更新时间：在线页未显示
-适用型号：M20系列，GOS仅M20 Pro
-核心功能：RK3588、16GB、128GB eMMC；CPU大小核说明
-可直接使用：GOS作为二开部署目标
-条件支持：taskset绑定4-7大核
-与项目相关：双路视频转码资源评估
-安全风险：不能挤占AOS/NOS实时任务
-需要现场验证：真实CPU/内存/磁盘、硬编解码插件、温升
-```
+- **适用范围：** M20 系列；GOS 仅 M20 Pro 提供。
+- **文档摘要：** GOS 为 RK3588、16 GB 内存、128 GB eMMC。
+- **项目处理：** 双路视频转码前先核验真实 CPU、内存、磁盘、硬件编解码插件和温升。
 
-### basic_server通信协议
+### basic_server 通信协议
 
-```text
-文档名称：basic_server通信协议总览
-版本/更新时间：在线页未显示
-适用型号：M20系列；具体功能按型号
-核心功能：16字节APDU头+JSON/XML ASDU
-地址端口：10.21.31.103:30000 UDP；10.21.31.103:30001 TCP
-数据类型：长度/消息ID为小端；JSON格式位0x01
-心跳：至少1Hz；服务端2秒无请求停止主动上报；客户端3秒无响应判定断线
-状态：1002/3、4、5、6
-安全风险：同一协议包含运动与导航控制，必须权限隔离
-版本风险：接口字典与具体导航页存在命令组织差异，应以具体功能页和现场版本为准
-```
+- **适用范围：** M20 系列；具体能力受型号限制。
+- **接口：** UDP `10.21.31.103:30000`，TCP `10.21.31.103:30001`。
+- **结构：** 16 字节 APDU + JSON/XML ASDU；长度和报文 ID 为小端，JSON 格式位为 `0x01`。
+- **连接要求：** 文档建议至少 1 Hz 心跳；服务端 2 秒无请求停止主动上报，客户端 3 秒无响应判定断线。
+- **项目处理：** 当前实现只做离线编解码，不建立连接或发送心跳。真实接入前确认权限、固件和样本。
 
 ### 相机与视频流
 
-```text
-文档名称：相机与视频流
-版本/更新时间：在线页未显示
-适用型号：M20系列本体前后广角相机
-核心功能：前后USB相机，H.265 RTSP
-地址：video1/video2，AOS 8554
-ROS2：不发布DDS数据
-默认：1280x720、30fps、约1.8Mbps，RK3588 MPP H.265编码
-安全风险：修改AOS推流脚本会影响手柄APP，本阶段不修改
-需验证：实际RTSP、连续稳定性、GOS转码能力、浏览器端延迟
-```
+- **来源：** 前后本体相机通过 AOS 的 RTSP 提供视频；资料记录 `video1`、`video2`，端口 `8554`。
+- **默认资料：** H.265、1280×720、30 fps、约 1.8 Mbps/路。
+- **项目处理：** 浏览器端需要 GOS 转换为 WebRTC/H.264 或 HLS/H.264。实际 RTSP、GOS 转码能力和延迟尚未验证。
+- **限制：** 不修改 AOS 原厂推流脚本。
 
 ### 建图、定位与导航
 
-```text
-适用型号：相关导航和地图功能明确仅M20 Pro支持
-地图：NOS /var/opt/robot/data/maps/active
-定位：localization融合LiDAR+IMU；1007/2返回地图位姿；2002/1返回状态
-导航：1003/1下发，1004/1取消，1007/1查询
-依赖：planner/localization/passable_area/global_planner等
-安全前置：定位正常、无现有任务、版本和地图一致
-风险：自主导航会自动切换导航模式并起立；控制响应不能在未隔离场地测试
-```
+- **适用范围：** 导航相关能力仅 M20 Pro 支持。
+- **地图：** NOS 原生维护 `/var/opt/robot/data/maps/active`。
+- **定位：** `localization` 使用 LiDAR 与 IMU；地图坐标和感知状态接口需按现场版本确认。
+- **导航接口：** 单点下发 `1003/1`，取消 `1004/1`，查询 `1007/1`。
+- **项目处理：** 先由官方 APP/遥控器完成单点基线验证。自研程序和 Web 当前不开放导航。
 
 ### 软件更新说明
 
-```text
-文档名称：软件更新说明
-适用型号：M20和M20 Pro分别列出
-已见版本：V1.1.2、V1.1.4、V1.1.6、V1.1.7、V1.1.8
-关键事实：V1.1.7增加控制保护；V1.1.8增加全局规划、网络自恢复并修复多项导航/定位/相机问题
-版本风险：V1.1.6修改步态接口值；旧PDF与在线文档不可混用
-需验证：演示机当前版本及厂商推荐升级路径
-```
+- **已见版本：** V1.1.2、V1.1.4、V1.1.6、V1.1.7、V1.1.8。
+- **风险：** V1.1.6 修改步态等接口；V1.1.7/V1.1.8 包含控制保护、网络、导航、定位、相机和 APP 标点相关变化。
+- **项目处理：** 不混用旧 PDF 与在线接口值；以当前《软件开发指南》文件版本和现场固件确认结果为准。
 
-## 3. 已发现的版本差异
+## 已知差异
 
-| 项目 | 旧PDF V0.1.0 | 在线开发页 | 处理策略 |
-|---|---|---|---|
-| 平地敏捷步态 | 12 | `0x3002` | 现场版本绑定，不硬编码通用值 |
-| 楼梯敏捷步态 | 13 | `0x3003` | 第一阶段不开放楼梯 |
-| Sleep | bool | V1.1.7改为int | 解析兼容，控制仍按版本门控 |
-| GOS点云/IMU | 旧文档称受限 | V1.1.7新增 | 仅在确认版本后使用 |
-| ROS2跨版本 | 文档警告兼容性 | V1.1.8修复跨版本监听崩溃 | 业务首选basic_server |
+| 项目 | 旧 PDF V0.1.0 | 在线开发资料 | 项目处理 |
+|---|---:|---:|---|
+| 平地敏捷步态 | `12` | `0x3002` | 绑定现场版本，不硬编码通用值 |
+| 楼梯敏捷步态 | `13` | `0x3003` | 第一阶段不开放楼梯 |
+| Sleep | bool | V1.1.7 改为 int | 解析按版本处理，控制保持门控 |
+| GOS 点云/IMU | 旧文档受限 | V1.1.7 新增 | 确认版本后再使用 |
+| ROS2 跨版本 | 有兼容风险 | V1.1.8 修复相关问题 | 业务首选 basic_server |
 
-## 4. 未说明或需要厂商确认
+## 仍需厂商或现场确认的事项
 
-- basic_server在线“接口字典”的导航Command映射与具体导航页面不完全一致；项目使用具体导航页定义，但实机前需确认。
-- TCP导航任务响应是否始终等任务结束才返回，以及同连接上主动状态帧与响应帧的交织方式。
-- GOS浏览器视频转码的官方推荐实现与硬件插件。
-- 当前固件是否允许第三方程序长期保持basic_server TCP订阅。
-- Web控制功能的官方安全建议、并发客户端策略和权限边界。
+1. basic_server 导航命令字典与具体导航页面的差异；
+2. TCP 上导航响应与主动状态帧的交织方式；
+3. GOS 的官方视频转码方案和硬件插件；
+4. 当前固件对第三方 basic_server 长连接的许可；
+5. Web 控制的权限、并发和审计要求。
