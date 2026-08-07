@@ -1,0 +1,22 @@
+[Unit]
+Description=M20 Patrol Robot read-only dashboard
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/m20-patrol-robot
+Environment=PYTHONPATH=%h/m20-patrol-robot
+# Bind to big cores (4-7) per V1.0.0 compute platform documentation
+ExecStartPre=/usr/bin/taskset -c 4-7 /bin/true
+ExecStart=%h/m20-patrol-robot/.venv/bin/python -c 'from backend.app.dashboard import serve_dashboard; serve_dashboard(host="127.0.0.1", port=8080)'
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/m20-patrol-robot
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=default.target

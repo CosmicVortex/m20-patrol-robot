@@ -1,0 +1,71 @@
+from datetime import UTC, datetime
+
+import pytest
+
+from backend.app.protocol.messages import PatrolMessage
+from backend.app.robot.basic_client import BasicServerClient, BasicServerConfig, ClientStateError, DeploymentEvidence
+
+
+def test_config_rejects_unapproved_target_and_control_by_default():
+    with pytest.raises(ValueError, match="host"):
+        BasicServerConfig(host="127.0.0.1")
+
+    config = BasicServerConfig(host="10.21.31.103")
+
+    assert config.control_enabled is False
+    assert config.tcp_port == 30001
+
+
+def test_read_only_queries_use_documented_v010_commands_without_control_permission():
+    client = BasicServerClient(BasicServerConfig(host="10.21.31.103"))
+
+    assert client.build_heartbeat().message_type == 100
+    assert client.build_heartbeat().command == 100
+    assert client.build_location_query().command == 2
+    assert client.build_navigation_perception_query().message_type == 2002
+    assert client.build_navigation_perception_query().command == 1
+
+
+def test_real_connect_requires_protocol_and_permission_evidence():
+    client = BasicServerClient(BasicServerConfig(host="10.21.31.103"))
+
+    # First blocked by control_enabled gate (default is False)
+    with pytest.raises(ClientStateError, match="control is disabled"):
+        client.connect()
+
+    # Now with control enabled but missing evidence
+    client2 = BasicServerClient(BasicServerConfig(host="10.21.31.103", control_enabled=True))
+    with pytest.raises(ClientStateError, match="evidence"):
+        client2.connect()
+
+
+def test_real_connect_rejects_evidence_for_another_host():
+    evidence = DeploymentEvidence("evidence-1", "10.21.31.104", True)
+    client = BasicServerClient(
+        BasicServerConfig(
+            host="10.21.31.103",
+            control_enabled=True,
+            protocol_evidence=evidence,
+            firmware_evidence=evidence,
+            permission_evidence=evidence,
+        )
+    )
+
+    with pytest.raises(ClientStateError, match="configured host"):
+        client.connect()
+
+
+def test_navigation_message_is_refused_when_control_is_disabled():
+    client = BasicServerClient(BasicServerConfig(host="10.21.31.103"))
+    message = PatrolMessage(1003, 1, "2026-08-06 14:00:00", {})
+
+    with pytest.raises(ClientStateError, match="control"):
+        client.require_control_permission(message)
+
+
+def test_client_marks_server_stale_after_documented_three_second_silence():
+    client = BasicServerClient(BasicServerConfig(host="10.21.31.103", stale_after_seconds=3.0))
+    client.record_received_at(datetime(2026, 8, 6, 14, 0, 0, tzinfo=UTC))
+
+    assert client.is_stale(datetime(2026, 8, 6, 14, 0, 2, 999999, tzinfo=UTC)) is False
+    assert client.is_stale(datetime(2026, 8, 6, 14, 0, 3, tzinfo=UTC)) is True

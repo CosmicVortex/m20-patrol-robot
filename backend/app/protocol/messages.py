@@ -29,6 +29,8 @@ class PatrolMessage:
     command: int
     sent_at: str
     items: dict[str, Any]
+    # V1.2.1: message_id for request/response correlation (set by transport layer)
+    message_id: int = 0
 
 
 def encode_patrol_message(message: PatrolMessage, asdu_format: ASDUFormat) -> bytes:

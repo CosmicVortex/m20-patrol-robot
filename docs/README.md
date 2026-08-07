@@ -1,26 +1,40 @@
-# M20 Pro 巡逻项目文档
+# 项目文档
 
-本目录仅保留当前有效版本。历史草稿、重复教程和 TXT 文件不纳入仓库。
+本目录保留当前有效文档；历史计划和审查模板放在 `docs/archive/`，不作为当前实施依据。
 
-## 文档清单
+## 当前文档
 
 | 文件 | 用途 | 状态 |
 |---|---|---|
-| `m20-pro-mapping-navigation-test.md` | M20 Pro 建图、定位、APP 单点导航测试 | 现场受控操作说明 |
-| `m20-pro-deployment-readiness.md` | GOS 部署、状态与视频接入前置核验 | 开发与部署说明 |
-| `architecture.md` | 第一阶段架构和数据边界 | 设计基线 |
-| `official-docs-review.md` | 官方资料版本、接口摘要和差异记录 | 参考记录 |
-| `official/lynx-m20-pro-software-user-manual-v0.0.1.pdf` | 用户明确授权上传的 M20 Pro 软件使用手册 | 官方参考资料 |
+| `00-index.md` | 文档导航入口 | 当前基线 |
+| `01-overview.md` | 项目概览：目标、范围、当前阶段 | 当前基线 |
+| `02-architecture.md` | 系统架构：当前实现、目标边界、数据边界 | 当前基线 |
+| `03-modules.md` | 模块说明：每个代码模块的职责与接口 | 当前基线 |
+| `04-requirements.md` | 需求清单：编号、状态、验收证据、放行条件 | 当前基线 |
+| `05-testing.md` | 测试流程：本地验证、部署验证、实机验收 | 当前基线 |
+| `06-deployment.md` | 部署流程：GOS安装、验证、回滚 | 当前基线 |
+| `07-changes.md` | 变更记录：重大修改历史 | 当前基线 |
+| `official-docs-review.md` | 官方资料台账与差异记录 | 当前基线 |
+| `procedures/mapping-test.md` | 建图与定位测试操作手册 | 现场操作说明 |
+| `procedures/office-acceptance.md` | 办公室阶段验收测试 | 现场操作说明 |
+| `reviews/v121-alignment.md` | V1.2.1代码对齐审查 | 审查记录 |
+| `reviews/blockers-fixed.md` | 阻塞项修复报告 | 审查记录 |
 
-## 官方手册引用
+## 官方资料库
 
-用户已明确确认《山猫 M20 Pro 软件使用手册》可上传到本项目私有 GitHub 仓库。该文件仅用于项目开发、现场部署和文档核对，不得移作其他用途。
+共 **19份**（3 PDF + 16 Markdown），详细索引见 [official-docs-review.md](./official-docs-review.md)。
 
-已上传文件：`official/lynx-m20-pro-software-user-manual-v0.0.1.pdf`。文件版本 V0.0.1，日期 2025-07-31，SHA-256：`375065605f1d534db014c3fd0248fe9cc8a52c323cb7cfa981ec85996c3e881e`。
+## 归档文档
 
-## 文档规则
+| 文件 | 说明 |
+|---|---|
+| `archive/plans/phase1-navigation-web.md` | 第一阶段实施计划（历史） |
+| `archive/review/project-multidimensional-review-prompt.md` | 多维度审查提示词（历史） |
 
-- 协议和接口实现以最新的《软件开发指南》文件版本为准；机器人软件/固件版本必须以现场输出确认。
-- 官方示例地址和目录仅在手册明确时引用；现场连接前仍须核对目标主机与账号。
-- AOS、NOS 的原厂服务、路由和地图原始文件不由本项目修改。
-- 建图和首条路线测试由 NOS 与官方 APP/遥控器完成；当前自研 Web 仅提供模拟只读页面，不具备控制权限。
+## 编写规则
+
+- 文件版本和机器人软件/固件版本分开记录；
+- 地址、端口、目录和命令标为文档事实或现场事实；
+- 现场操作必须有前置条件、通过标准、停止条件和结果栏；
+- 同类教程只保留一份当前版本；
+- 不在仓库保存密码、Token、地图、视频和未脱敏日志。

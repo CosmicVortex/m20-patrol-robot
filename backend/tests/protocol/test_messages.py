@@ -31,14 +31,14 @@ def test_encodes_documented_json_heartbeat_with_utf8_byte_length():
 
 
 def test_decodes_documented_json_asdu_into_typed_message():
-    payload = b'{"PatrolDevice":{"Type":1002,"Command":6,"Time":"2026-08-05 12:00:00","Items":{"BasicStatus":{"Version":"PRO"}}}}'
+    payload = b'{"PatrolDevice":{"Type":1002,"Command":6,"Time":"2026-08-05 12:00:00","Items":{"BasicStatus":{"Version":"fixture"}}}}'
 
     decoded = decode_patrol_message(payload, ASDUFormat.JSON)
 
     assert decoded.message_type == 1002
     assert decoded.command == 6
     assert decoded.sent_at == "2026-08-05 12:00:00"
-    assert decoded.items["BasicStatus"]["Version"] == "PRO"
+    assert decoded.items["BasicStatus"]["Version"] == "fixture"
 
 
 @pytest.mark.parametrize(
