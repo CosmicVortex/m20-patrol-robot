@@ -411,7 +411,98 @@ docs/archive/deployments/YYYY-MM-DD-<site>-<commit>.md
 
 ---
 
-## 十、安全提醒
+## 五、WiFi 网络访问说明
+
+### 5.1 Web 服务绑定地址
+
+**默认配置：** `127.0.0.1:8080`（仅本机访问）
+
+```python
+# backend/app/dashboard_realtime.py:22
+host: str = "127.0.0.1"
+```
+
+**安全原因：**
+- 防止局域网内其他设备访问
+- 避免未授权控制
+- 符合最小权限原则
+
+### 5.2 从笔记本电脑访问
+
+**方案一：修改绑定地址（推荐）**
+
+在 GOS 上修改 systemd 服务配置：
+
+```bash
+# 编辑服务文件
+nano ~/.config/systemd/user/m20-patrol-realtime.service
+```
+
+将 `host="127.0.0.1"` 改为 `host="0.0.0.0"`：
+
+```ini
+ExecStart=%h/m20-patrol-robot/.venv/bin/python -c 'from backend.app.dashboard_realtime import serve_dashboard; serve_dashboard(host="0.0.0.0", port=8080, aos_host="10.21.31.103")'
+```
+
+重载并重启：
+
+```bash
+systemctl --user daemon-reload
+systemctl --user restart m20-patrol-realtime.service
+```
+
+然后从笔记本访问：
+```
+http://10.21.31.104:8080/
+```
+
+**方案二：端口转发（更安全）**
+
+在笔记本上执行：
+```bash
+ssh -L 8080:127.0.0.1:8080 user@10.21.31.104
+```
+
+然后访问：
+```
+http://localhost:8080/
+```
+
+### 5.3 访问验证
+
+在笔记本浏览器打开：
+```
+http://10.21.31.104:8080/
+```
+
+或
+```
+http://10.21.31.104:8080/api/v1/status/latest
+```
+
+**预期响应（未建图前）：**
+```json
+{
+  "source": "REAL",
+  "connected": true,
+  "control_enabled": false,
+  "received_at": "2026-08-07 09:30:00",
+  "age_ms": 120,
+  "data": {
+    "basic": {"MotionState": 17, "Gait": 12290, "Charge": 0},
+    "motion": {"Roll": 0.1, "Pitch": -0.05, "Yaw": 45.2},
+    "errors": []
+  }
+}
+```
+
+**如果显示 SIMULATED：**
+- TCP 未连接（检查 AOS 地址和端口）
+- 服务配置未生效（检查 systemctl 日志）
+
+---
+
+## 六、未建图阶段的预期行为
 
 - 导航控制启用前必须获得书面放行
 - 操作员必须经过培训
