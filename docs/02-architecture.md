@@ -3,7 +3,10 @@
 ## 当前可交付架构
 
 ```
-开发机 / GOS (10.21.31.104，候选值)
+浏览器
+   │ 仅连接 GOS
+   ▼
+GOS (10.21.31.104)
   │
   ├─ backend.app.protocol       APDU/ASDU 离线编解码
   │     ├── frame.py             16字节帧编解码、拆包/粘包
@@ -11,29 +14,51 @@
   │
   ├─ backend.app.robot          机器人交互层
   │     ├── basic_client.py      TCP客户端、门禁、message_id关联
-  │     └── status.py            状态消息解析
+  │     ├── status.py            状态消息解析（1002/3,4,5,6; 1007/1,2,3; 2002/1）
+  │     └── telemetry.py         真实状态订阅（TCP → AOS basic_server）
   │
   ├─ backend.app.navigation     导航业务层
-  │     └── v010.py              导航报文构造、安全门控
+  │     ├── v010.py              导航报文构造、安全门控
+  │     ├── service.py           导航控制服务（Web授权）
+  │     └── ws_handler.py        导航WebSocket处理器
   │
   ├─ backend.app.video          视频流管理
   │     ├── video_manager.py     RTSP地址管理、状态追踪
+  │     ├── stream_manager.py    RTSP流管理（ffprobe探测、FFmpeg拉流）
   │     └── ws_handler.py        WebSocket视频流处理
   │
-  ├─ backend.app.dashboard      Web仪表盘（模拟只读，绑定127.0.0.1）
-  │
-  └─ deploy/
-        ├── scripts/install-gos.sh    GOS安装脚本
-        ├── scripts/rollback-gos.sh   回滚脚本
-        └── systemd/m20-patrol-readonly.service  systemd服务
+  ├─ backend.app.dashboard      模拟仪表盘（绑定127.0.0.1）
+  └─ backend.app.dashboard_realtime  实时仪表盘（连接真实AOS）
+       │
+       ├─ TCP 30001 → AOS basic_server（状态订阅）
+       ├─ RTSP 8554 → 本体前后相机（待实测）
+       └─ Web 8080 → 浏览器（状态、控制）
 
-现场机器人网络（当前不连接）
+现场机器人网络
   ├─ AOS (10.21.31.103)          basic_server、运动控制
   │     UDP 30000 / TCP 30001
   └─ NOS (10.21.31.106)          建图、定位、导航
 ```
 
-当前代码包含仅用于离线验证的 TCP 传输原语和导航报文构造器，但没有真实状态聚合、视频转码器、巡逻状态机或实机发送放行。GOS 部署服务仍只显示模拟状态。
+### 已实现功能
+
+| 功能 | 状态 | 说明 |
+|---|---|---|
+| APDU/ASDU 编解码 | ✅ 已实现 | 16字节帧头，JSON/XML 信封 |
+| 状态消息解析 | ✅ 已实现 | 1002/3,4,5,6 + 1007/1,2,3 + 2002/1 |
+| TCP 客户端 + 门禁 | ✅ 已实现 | control_enabled 默认 False |
+| **真实状态订阅** | ✅ **已实现** | TelemetryAdapter 连接 AOS TCP 30001 |
+| **实时仪表盘** | ✅ **已实现** | 显示 REAL/SIMULATED 状态 |
+| 导航报文构造 | ✅ 已实现 | Gait=0x3002，安全门控 |
+| **导航控制服务** | ✅ **已实现** | Web 授权，审计日志 |
+| 视频管理器 | 🟡 基础框架 | RTSP 地址已配置，拉流待实测 |
+| 多点巡逻状态机 | 🔴 未实现 | 需单点控制验收后 |
+
+### 未实现功能
+
+- 多点巡逻状态机（R-09）
+- 云台适配（R-10）
+- 视频转码代理（需 GOS FFmpeg 实测）
 
 ## 目标架构
 
@@ -42,14 +67,14 @@
    │ 仅连接 GOS
    ▼
 GOS
-  ├─ 只读状态服务（TCP → AOS basic_server）
-  ├─ 视频网关（RTSP → HLS/WebRTC → 浏览器）
-  ├─ 地图副本服务（NOS → GOS）
-  └─ 经放行的导航服务
+  ├─ 只读状态服务（TCP → AOS basic_server）✅ 已实现
+  ├─ 视频网关（RTSP → HLS/WebRTC → 浏览器）🟡 基础框架
+  ├─ 地图副本服务（NOS → GOS）🔴 未实现
+  └─ 经放行的导航服务 ✅ 已实现（Web授权）
        │
        ├─ AOS basic_server：状态订阅 + 任务下发
        └─ NOS：地图、定位、规划
-
+```
 控制边界：
   ├─ 控制能力独立于只读服务，默认关闭
   ├─ 导航发送需书面放行
@@ -60,7 +85,7 @@ GOS
 
 ## 主机角色
 
-| 主机 | IP（候选） | 职责 | SSH/VNC |
+| 主机 | IP | 职责 | SSH/VNC |
 |---|---|---|---|
 | AOS | 10.21.31.103 | 运动控制、basic_server、rl_deploy | ❌ 不可访问 |
 | NOS | 10.21.31.106 | 建图、定位、导航、planner | ✅ 可访问 |
