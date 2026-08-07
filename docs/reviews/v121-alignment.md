@@ -89,7 +89,7 @@ NavStatus + LocationStatus 双结构解析 ✅（≥V1.1.8）
 ## 测试结果
 
 ```
-89 passed in 2.30s
+93 passed in 2.27s
 python3 -m compileall -q backend 通过
 git diff --check 通过
 ```

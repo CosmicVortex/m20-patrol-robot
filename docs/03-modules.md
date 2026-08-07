@@ -58,9 +58,10 @@ PatrolMessage(
 **职责：** 与 AOS basic_server 建立 TCP 连接，发送/接收消息，提供安全门禁。
 
 **核心方法：**
-- `connect()` — 建立真实连接（受 control_enabled 门禁约束）
+- `connect(*, read_only=False)` — 建立真实连接；`read_only=True` 允许只读连接（状态订阅）
 - `connect_for_test()` — 测试用回环连接
-- `send_read_only()` — 发送只读查询消息（按 message_id 匹配响应）
+- `send_read_only(message)` — 发送只读查询消息（按 message_id 匹配响应）
+- `send_control(message)` — 发送控制命令（需 control_enabled 门禁）
 - `receive_messages()` — 接收主动上报消息
 - `close()` — 断开连接
 

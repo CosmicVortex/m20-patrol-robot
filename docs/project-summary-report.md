@@ -3,7 +3,7 @@
 **报告日期：** 2026-08-07
 **代码版本：** a550839
 **手册依据：** V1.2.1 (2026-05-18)
-**测试状态：** 89 passed
+**测试状态：** 93 passed
 
 ---
 
@@ -72,10 +72,11 @@
 | WebSocket 处理器 | `video/ws_handler.py` | 🟡 基础框架 | — |
 | 模拟仪表盘 | `dashboard.py` | ✅ 已实现 | 2 tests |
 | **实时仪表盘** | `dashboard_realtime.py` | ✅ 已实现 | — |
+| **简化版仪表盘** | `dashboard_simple.py` | ✅ 已实现 | Python 3.8 兼容 |
 | 安装脚本 | `deploy/scripts/install-gos.sh` | ✅ 已实现 | — |
 | 回滚脚本 | `deploy/scripts/rollback-gos.sh` | ✅ 已实现 | — |
 
-**总计：** 18 个应用代码文件，11 个测试文件，89 个测试用例全部通过。
+**总计：** 18 个应用代码文件，11 个测试文件，93 个测试用例全部通过。
 
 ### 2.2 官方资料库
 
@@ -347,7 +348,7 @@ systemctl --user restart m20-patrol-realtime.service
 ### 7.1 测试统计
 
 ```
-89 passed in 1.24s
+93 passed in 2.27s
 compileall 通过
 git diff --check 通过
 ```
@@ -430,7 +431,7 @@ docs/
 
 - ✅ 协议编解码、状态解析、导航报文构造全部离线验证通过
 - ✅ 19 份官方文档已入库
-- ✅ 89 个测试用例全部通过
+|- ✅ 93 个测试用例全部通过
 - ✅ 三个代码阻塞项已全部修复
 - ✅ AOS 地址已确认（10.21.31.103）
 - ✅ 固件版本要求已确认（V1.1.8）

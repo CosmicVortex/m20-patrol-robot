@@ -51,7 +51,7 @@
 
 ### 离线验收（当前可执行）
 
-- `PYTHONPATH=. uv run --with pytest pytest -q` 全部通过（89 tests）
+- `PYTHONPATH=. uv run --with pytest pytest -q` 全部通过（93 tests）
 - APDU/ASDU 测试不建立网络连接，不发送机器人报文
 - 模拟页面返回 `source=SIMULATED`、`connected=false`、`control_enabled=false`
 - 部署脚本默认不启用机器人控制，服务只绑定回环地址
