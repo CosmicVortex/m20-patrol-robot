@@ -89,7 +89,7 @@ class RealTimeDashboard:
         rows = []
         rows.append(self._row("数据源", payload.get("source", "SIMULATED")))
         rows.append(self._row("连接状态", "已连接" if is_connected else "未连接", is_connected))
-        rows.append(self._row("最后更新", payload.get("received_at", "—")))
+        rows.append(self._row("最后更新", str(payload.get("received_at", "—")) if payload.get("received_at") else "—"))
         if payload.get("age_ms") is not None:
             rows.append(self._row("数据延迟", f"{payload['age_ms']}ms"))
 
@@ -442,10 +442,11 @@ function htmlEscape(s) {{ return String(s).replace(/&/g,'&amp;').replace(/</g,'&
 </script>
 </body></html>"""
 
-    def _row(self, label: str, value: str, ok: bool = False) -> str:
+    def _row(self, label: str, value: str | None, ok: bool = False) -> str:
         cls = " ok" if ok else ""
         cls = " err" if value == "未连接" else cls
-        return f'<div class="row"><span class="label">{html.escape(label)}</span><span class="value{cls}">{html.escape(value)}</span></div>'
+        safe_value = str(value) if value is not None else "—"
+        return f'<div class="row"><span class="label">{html.escape(label)}</span><span class="value{cls}">{html.escape(safe_value)}</span></div>'
 
     def _motion_label(self, state: int) -> str:
         m = {0: "静止", 1: "站立", 2: "行走", 3: "慢跑", 4: "上下楼", 5: "摔倒"}
