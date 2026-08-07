@@ -114,7 +114,7 @@ class NavigationService:
             
             # Send message (this will connect to AOS)
             try:
-                response = self._client.send_read_only(msg)
+                response = self._client.send_control(msg)
                 self._log("send", f"Task {task_id}: navigate to ({pos_x}, {pos_y})", True)
                 logger.info(f"Navigation task {task_id} sent")
                 return {
@@ -145,7 +145,7 @@ class NavigationService:
             from backend.app.navigation.v010 import build_cancel_navigation_message
             msg = build_cancel_navigation_message(self._safety, datetime.now(UTC).isoformat())
             
-            self._client.send_read_only(msg)
+            self._client.send_control(msg)
             self._log("cancel", "Navigation cancelled", True)
             logger.info("Navigation cancelled")
             return {"status": "cancelled"}

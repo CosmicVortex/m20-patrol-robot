@@ -161,7 +161,7 @@ class TestNavigationService:
         # Authorize
         service.authorize("operator1")
         # Try to send (will fail because client is mock)
-        with patch.object(client, 'send_read_only', side_effect=Exception("test")):
+        with patch.object(client, 'send_control', side_effect=Exception("test")):
             service.send_navigation(1.0, 2.0)
         
         assert len(service.audit_log) >= 2

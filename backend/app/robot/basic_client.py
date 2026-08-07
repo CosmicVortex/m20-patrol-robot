@@ -190,6 +190,23 @@ class BasicServerClient:
                 return response
         raise ClientStateError(f"no response for message_id={frame_id}")
 
+    def send_control(self, message: PatrolMessage) -> PatrolMessage:
+        """Send control command. Requires control_enabled and authorization."""
+        self.require_control_permission(message)
+        frame_id = self._send(message)
+        deadline = datetime.now(UTC).timestamp() + 5
+        while datetime.now(UTC).timestamp() < deadline:
+            response: PatrolMessage | None = None
+            remaining = max(0.05, deadline - datetime.now(UTC).timestamp())
+            for received in self._receive_from_socket(timeout_seconds=remaining):
+                if response is None and received.message_id == frame_id:
+                    response = received
+                else:
+                    self._inbox.append(received)
+            if response is not None:
+                return response
+        raise ClientStateError(f"no response for message_id={frame_id}")
+
     def receive_messages(self, *, timeout_seconds: float) -> list[PatrolMessage]:
         if self._inbox:
             messages = list(self._inbox)
