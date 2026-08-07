@@ -10,7 +10,12 @@ from __future__ import annotations
 import html
 import json
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
+# Python 3.8 compatibility: UTC was added in Python 3.11
+try:
+    from datetime import UTC
+except ImportError:
+    UTC = timezone.utc
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 

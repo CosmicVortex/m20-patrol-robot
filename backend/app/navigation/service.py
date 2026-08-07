@@ -7,7 +7,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, UTC
+from datetime import datetime, timezone
+# Python 3.8 compatibility: UTC was added in Python 3.11
+try:
+    from datetime import UTC
+except ImportError:
+    UTC = timezone.utc
 from typing import Any
 
 from backend.app.navigation.v010 import (

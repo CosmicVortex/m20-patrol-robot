@@ -1,4 +1,9 @@
-from datetime import UTC, datetime
+from datetime import datetime, timezone
+# Python 3.8 compatibility: UTC was added in Python 3.11
+try:
+    from datetime import UTC
+except ImportError:
+    UTC = timezone.utc
 
 import pytest
 
@@ -69,3 +74,17 @@ def test_client_marks_server_stale_after_documented_three_second_silence():
 
     assert client.is_stale(datetime(2026, 8, 6, 14, 0, 2, 999999, tzinfo=UTC)) is False
     assert client.is_stale(datetime(2026, 8, 6, 14, 0, 3, tzinfo=UTC)) is True
+
+
+def test_read_only_connect_skips_control_gate():
+    """V1.2.1: read_only=True allows status subscription even when control is disabled."""
+    client = BasicServerClient(BasicServerConfig(host="10.21.31.103", control_enabled=False))
+
+    # Without read_only, connection should be blocked
+    with pytest.raises(ClientStateError, match="control is disabled"):
+        client.connect()
+
+    # With read_only=True, connection should be allowed (no real socket, just signature check)
+    import inspect
+    sig = inspect.signature(client.connect)
+    assert "read_only" in sig.parameters

@@ -1,209 +1,111 @@
 # 06 — 部署流程
 
-## GOS 前置条件
+## 部署模式
 
-由现场负责人确认：
-
-- 使用非 root 账户
-- Python 3 可用，且支持 `venv`
-- `systemctl --user` 可用，且用户服务管理器已启动
-- release 验证所需的 pytest 可用
-- 安装目录有写权限
-- 现场已批准仓库和 commit
-- 不需要访问机器人网络即可完成本次模拟部署
-
-如需执行现场只读核验，先使用 `deploy/scripts/collect-readonly-info.sh`，只填写已批准的 AOS/GOS/NOS 地址。
-
----
-
-## 模式说明
-
-| 模式 | 服务文件 | 状态来源 | 控制权限 | 适用场景 |
+| 模式 | 适用场景 | Python 版本 | 外部依赖 | 说明 |
 |---|---|---|---|---|
-| 模拟只读 | `m20-patrol-readonly.service` | SIMULATED | 无 | 离线基线部署 |
-| 真实状态 | `m20-patrol-realtime.service` | REAL | 无 | 现场状态订阅 |
-| 完整功能 | 同真实状态 | REAL | Web 授权 | 书面放行后启用 |
+| 简化版 | GOS Python 3.8、离线环境 | 3.8+ | 无 | 仅显示 SIMULATED 状态 |
+| 完整版 | Python 3.11+、已连接 AOS | 3.11+ | 无 | 连接真实 AOS 状态订阅 |
 
 ---
 
-## 安装
+## 快速部署（推荐）
 
-### 方式一：模拟只读模式（无需放行）
-
-在已经检出的仓库目录执行：
+### 方式一：从压缩包部署（离线）
 
 ```bash
-bash deploy/scripts/install-gos.sh \
-  --repo "$PWD" \
-  --ref <APPROVED_COMMIT_SHA>
+# 1. 上传压缩包到 GOS
+scp m20-patrol-deploy-v2.zip user@10.21.31.104:/home/user/
+
+# 2. SSH 登录 GOS
+ssh user@10.21.31.104
+
+# 3. 解压并部署
+cd ~
+unzip -o m20-patrol-deploy-v2.zip
+
+# 4. 执行部署脚本
+./m20-patrol-deploy-v2.sh
 ```
 
-脚本执行内容：
-
-1. 校验完整 commit SHA 存在
-2. 将 commit 导出到独立 release 目录
-3. 创建虚拟环境
-4. 使用批准环境中的 pytest 执行离线测试；pytest 不可用时直接失败
-5. 执行 Python 编译检查
-6. 写入并校验用户级 systemd 服务
-7. 启动模拟只读服务
-8. 服务启动成功后更新 `current` 软链接
-
-脚本不会执行 `git fetch`、网络探测、机器人连接或控制操作。
-
-### 方式二：真实状态订阅（需现场放行）
-
-安装后修改 systemd 服务配置：
+### 方式二：从 Git 仓库部署
 
 ```bash
-# 编辑服务配置
-nano ~/.config/systemd/user/m20-patrol-realtime.service
-```
+# 1. 克隆仓库（如已克隆则跳过）
+cd ~
+git clone /path/to/m20-patrol-robot.git
+cd m20-patrol-robot
 
-确认配置：
+# 2. 切换到批准版本
+git checkout <APPROVED_COMMIT_SHA>
 
-```ini
-[Service]
-ExecStart=%h/m20-patrol-robot/.venv/bin/python -c 'from backend.app.dashboard_realtime import serve_dashboard; serve_dashboard(host="127.0.0.1", port=8080, aos_host="10.21.31.103")'
-```
-
-重载并启动：
-
-```bash
-systemctl --user daemon-reload
-systemctl --user start m20-patrol-realtime.service
-systemctl --user enable m20-patrol-realtime.service
-```
-
-### 方式三：启用导航控制（需书面放行）
-
-修改服务配置，添加 `navigation_enabled=True`：
-
-```bash
-# 编辑服务配置
-nano ~/.config/systemd/user/m20-patrol-realtime.service
-```
-
-```ini
-[Service]
-ExecStart=%h/m20-patrol-robot/.venv/bin/python -c 'from backend.app.dashboard_realtime import serve_dashboard; serve_dashboard(host="127.0.0.1", port=8080, aos_host="10.21.31.103", navigation_enabled=True)'
-```
-
-重载并重启：
-
-```bash
-systemctl --user daemon-reload
-systemctl --user restart m20-patrol-realtime.service
+# 3. 执行部署
+bash deploy/scripts/start.sh
 ```
 
 ---
 
-## 验证
+## 服务管理
 
-### 模拟只读模式验证
-
-```bash
-# 检查服务状态
-systemctl --user status m20-patrol-readonly.service --no-pager
-
-# 检查API响应
-curl -fsS http://127.0.0.1:8080/api/v1/status/latest
-# 预期：{"source": "SIMULATED", "connected": false, "control_enabled": false}
-
-# 检查页面标识
-curl -fsS http://127.0.0.1:8080/ | grep 'SIMULATED / CONTROL OFF'
-```
-
-### 真实状态模式验证
+### 启动服务
 
 ```bash
-# 检查服务状态
-systemctl --user status m20-patrol-realtime.service --no-pager
+# 简化版（无外部依赖）
+python3 backend/app/dashboard_simple.py &
 
-# 检查API响应
-curl -fsS http://127.0.0.1:8080/api/v1/status/latest
-# 预期：{"source": "REAL", "connected": true, "control_enabled": false}
-
-# 检查页面标识
-curl -fsS http://127.0.0.1:8080/ | grep 'REAL / CONTROL OFF'
+# 完整版（连接真实 AOS）
+python3 -c "
+import sys
+sys.path.insert(0, '.')
+from backend.app.dashboard_realtime import serve_dashboard
+serve_dashboard(host='127.0.0.1', port=8080, aos_host='10.21.31.103')
+" &
 ```
 
-### 导航控制模式验证
+### 验证服务
 
 ```bash
-# 检查导航服务状态
-curl -fsS http://127.0.0.1:8080/api/v1/navigation/status
-# 预期：{"authorized": false, "control_enabled": true, ...}
+# 检查端口
+ss -tlnp | grep 8080
 
-# 检查页面标识
-curl -fsS http://127.0.0.1:8080/ | grep 'REAL / AUTHORIZED'
+# 测试 API
+curl http://127.0.0.1:8080/api/v1/status/latest
+
+# 健康检查
+curl http://127.0.0.1:8080/api/v1/health
 ```
-
----
-
-## 停止与回滚
 
 ### 停止服务
 
 ```bash
-systemctl --user stop m20-patrol-realtime.service
-systemctl --user disable m20-patrol-realtime.service
+pkill -f dashboard_simple
+# 或
+pkill -f dashboard_realtime
 ```
-
-### 回滚到上一版本
-
-```bash
-bash deploy/scripts/rollback-gos.sh \
-  --target-root "$HOME/.local/share/m20-patrol-robot" \
-  --ref <PREVIOUS_COMMIT_SHA>
-```
-
-回滚脚本会：
-1. 保存当前状态（链接、服务文件）
-2. 停止当前服务
-3. 卸载当前 release
-4. 恢复上一版本
-5. 启动上一版本服务
-6. 验证回滚结果
 
 ---
 
-## 现场执行检查清单
+## 从笔记本访问
 
-### 部署前检查
+```powershell
+# 端口转发
+ssh -L 8080:127.0.0.1:8080 user@10.21.31.104
 
-- [ ] GOS 账户可用，非 root
-- [ ] Python 3 可用：`command -v python3`
-- [ ] systemd 用户管理器可用：`systemctl --user show-environment`
-- [ ] pytest 可用：`python3 -m pytest --version`
-- [ ] ffprobe 可用（视频接入）：`command -v ffprobe`
-- [ ] ffmpeg 可用（视频转码）：`command -v ffmpeg`
-- [ ] 仓库已检出，commit SHA 已确认
-- [ ] 现场负责人已批准部署
-
-### 部署后验证
-
-- [ ] 服务启动成功：`systemctl --user status m20-patrol-realtime`
-- [ ] API 响应正常：`curl http://127.0.0.1:8080/api/v1/status/latest`
-- [ ] Web 页面可访问：`curl http://127.0.0.1:8080/`
-- [ ] 状态数据源正确：`"source": "REAL"` 或 `"SIMULATED"`
-- [ ] 连接状态正确：`"connected": true` 或 `false`
-- [ ] 控制开关正确：`"control_enabled": false`（默认）
-
-### RTSP 视频测试
-
-```bash
-# 测试前相机
-ffprobe -v error -show_streams rtsp://10.21.31.103:8554/video1
-
-# 测试后相机
-ffprobe -v error -show_streams rtsp://10.21.31.103:8554/video2
+# 浏览器访问
+http://localhost:8080/
 ```
 
-预期输出包含：
-- `codec_name`：h264 或 hevc
-- `width`/`height`：分辨率
-- `r_frame_rate`：帧率
+---
+
+## 验证清单
+
+| 检查项 | 命令 | 预期结果 |
+|---|---|---|
+| 端口监听 | `ss -tlnp \| grep 8080` | 显示 `:8080` |
+| API 响应 | `curl http://127.0.0.1:8080/api/v1/status/latest` | JSON 响应 |
+| 健康检查 | `curl http://127.0.0.1:8080/api/v1/health` | `{"status": "ok"}` |
+| 页面访问 | `curl http://127.0.0.1:8080/` | HTML 页面 |
+| 状态标识 | `grep -E 'SIMULATED|REAL'` | 显示对应标识 |
 
 ---
 
@@ -212,14 +114,15 @@ ffprobe -v error -show_streams rtsp://10.21.31.103:8554/video2
 ### 服务无法启动
 
 ```bash
-# 查看详细日志
-journalctl --user -u m20-patrol-realtime -n 50 --no-pager
+# 查看日志
+tail -50 /tmp/dashboard_simple.log
+tail -50 /tmp/dashboard_realtime.log
 
 # 检查端口占用
-netstat -tlnp | grep 8080
+ss -tlnp | grep 8080
 
 # 检查 Python 环境
-ls -la ~/m20-patrol-robot/.venv/bin/python
+python3 --version
 ```
 
 ### 无法连接 AOS
@@ -228,21 +131,8 @@ ls -la ~/m20-patrol-robot/.venv/bin/python
 # 测试 TCP 连通性
 nc -zv 10.21.31.103 30001
 
-# 测试 RTSP 连通性
-ffprobe -v error -show_format rtsp://10.21.31.103:8554/video1
-
 # 检查防火墙
 sudo iptables -L -n | grep 30001
-```
-
-### 视频无法播放
-
-```bash
-# 检查编码格式
-ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of csv=p=0 rtsp://10.21.31.103:8554/video1
-
-# 检查 FFmpeg 编解码器
-ffmpeg -codecs | grep -E 'h264|hevc'
 ```
 
 ---

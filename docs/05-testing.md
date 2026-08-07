@@ -8,7 +8,7 @@
 PYTHONPATH=. uv run --with pytest pytest -q
 ```
 
-当前结果：**76 passed**
+当前结果：**89 passed**（含 read_only 参数测试）
 
 ### 编译检查
 

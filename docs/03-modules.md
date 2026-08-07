@@ -188,6 +188,43 @@ GAIT_PLATFORM标准 = 0x1002 # 高台标准
 - 返回 `source=SIMULATED`、`connected=false`、`control_enabled=false`
 - 不连接机器人、不发送心跳、不下发导航
 
+### dashboard_simple.py — 简化版仪表盘（Python 3.8 兼容）
+
+**职责：** 无外部依赖的 Web 仪表盘，适配 GOS Python 3.8.10 环境。
+
+**特点：**
+- 仅使用 Python 标准库（http.server、json、socketserver）
+- 不导入 backend 模块，避免依赖问题
+- 绑定 `127.0.0.1:8080`，仅本机访问
+- 返回 SIMULATED 状态，明确标识未连接真实设备
+
+**启动方式：**
+```bash
+python3 backend/app/dashboard_simple.py
+```
+
+### dashboard_realtime.py — 实时仪表盘（连接真实 AOS）
+
+**职责：** 连接真实 AOS basic_server，显示实时状态。
+
+**特点：**
+- 连接 AOS TCP 30001，read_only 模式
+- 每 1Hz 发送心跳，接收状态消息
+- 绑定 `127.0.0.1:8080`（可通过 SSH 端口转发访问）
+- 返回 `source=REAL` 或 `source=SIMULATED`
+
+**启动方式：**
+```bash
+# 方式1：直接启动（需要 Python 3.11+ 或手动处理 UTC 兼容）
+python3 -c "from backend.app.dashboard_realtime import serve_dashboard; serve_dashboard()"
+
+# 方式2：通过 systemd 服务
+systemctl --user start m20-patrol-realtime.service
+
+# 方式3：使用部署脚本（推荐）
+bash deploy/scripts/start.sh
+```
+
 ---
 
 ## 测试对应关系

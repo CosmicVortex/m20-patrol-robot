@@ -11,7 +11,12 @@ import threading
 import time
 from collections import deque
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime, timezone
+# Python 3.8 compatibility: UTC was added in Python 3.11
+try:
+    from datetime import UTC
+except ImportError:
+    UTC = timezone.utc
 from typing import Any, Deque
 
 from backend.app.robot.basic_client import (
@@ -115,7 +120,7 @@ class TelemetryAdapter:
 
         while self._running:
             try:
-                client.connect(timeout_seconds=3.0)
+                client.connect(timeout_seconds=3.0, read_only=True)
                 self._update_snapshot(client, connected=True)
                 
                 while self._running:

@@ -8,7 +8,12 @@ other control request is refused unless control_enabled is explicitly configured
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
+# Python 3.8 compatibility: UTC was added in Python 3.11
+try:
+    from datetime import UTC
+except ImportError:
+    UTC = timezone.utc
 from collections import deque
 from ipaddress import IPv4Address
 import socket
@@ -113,15 +118,26 @@ class BasicServerClient:
         elapsed = (now.astimezone(UTC) - self._last_received_at).total_seconds()
         return elapsed >= self.config.stale_after_seconds
 
-    def connect(self, *, timeout_seconds: float = 3.0) -> None:
+    def connect(self, *, timeout_seconds: float = 3.0, read_only: bool = False) -> None:
         """Connect only to the configured, validated basic_server TCP endpoint.
-        
-        V1.2.1: control_enabled must be True for real connection.
-        Read-only test connections use connect_for_test().
+
+        V1.2.1:
+        - control_enabled=True allows full control with evidence
+        - read_only=True allows status subscription only (no control)
+        - Default: raises error if control is disabled
         """
         if self._socket is not None:
             raise ClientStateError("client is already connected")
-        # V1.2.1: enforce control_enabled gate for real connections
+
+        # Read-only mode: allow connection for status subscription only
+        if read_only:
+            if type(timeout_seconds) not in (int, float) or timeout_seconds <= 0:
+                raise ValueError("timeout_seconds must be positive")
+            connection = socket.create_connection((self.config.host, self.config.tcp_port), timeout_seconds)
+            connection.settimeout(timeout_seconds)
+            self._socket = connection
+            return
+        # Full control mode: requires evidence and authorization
         if not self.config.control_enabled:
             raise ClientStateError("control is disabled; cannot connect to real device")
         if not all(
