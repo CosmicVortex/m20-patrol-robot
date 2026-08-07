@@ -97,6 +97,12 @@ class RealTimeDashboard:
         rows.append(self._row("步态", self._gait_label(basic.get("Gait"))))
         rows.append(self._row("充电状态", self._charge_label(basic.get("Charge"))))
 
+        # Motion metrics (handle None safely)
+        roll_val = motion.get('Roll', 0)
+        pitch_val = motion.get('Pitch', 0)
+        yaw_val = motion.get('Yaw', 0)
+        height_val = motion.get('Height', '—')
+
         # Battery
         battery = device.get("BatteryStatus", {}) or {}
         left = battery.get("Left", {}) or {}
@@ -109,9 +115,11 @@ class RealTimeDashboard:
         if errors:
             error_items = []
             for e in errors[-5:]:
+                if e is None:
+                    continue
                 code = e.get("errorCode", "?")
                 comp = e.get("component", e.get("message", "?"))
-                error_items.append(f'<span class="err"><span class="err-code">{code}</span> {html.escape(str(comp))}</span>')
+                error_items.append(f'<span class="err"><span class="err-code">{html.escape(str(code))}</span> {html.escape(str(comp))}</span>')
             error_html = "<div class='errs'>" + "".join(error_items) + "</div>"
         else:
             error_html = '<span class="ok">无异常</span>'
@@ -343,10 +351,10 @@ main {{
     <article class="card">
         <h2>姿态数据</h2>
         <div class="metrics">
-            <div class="metric"><div class="num">{motion.get('Roll', 0):.1f}</div><div class="lbl">Roll °</div></div>
-            <div class="metric"><div class="num">{motion.get('Pitch', 0):.1f}</div><div class="lbl">Pitch °</div></div>
-            <div class="metric"><div class="num">{motion.get('Yaw', 0):.1f}</div><div class="lbl">Yaw °</div></div>
-            <div class="metric"><div class="num">{motion.get('Height', '—')}</div><div class="lbl">Height mm</div></div>
+            <div class="metric"><div class="num">{roll_val if roll_val is not None else '—'}</div><div class="lbl">Roll °</div></div>
+            <div class="metric"><div class="num">{pitch_val if pitch_val is not None else '—'}</div><div class="lbl">Pitch °</div></div>
+            <div class="metric"><div class="num">{yaw_val if yaw_val is not None else '—'}</div><div class="lbl">Yaw °</div></div>
+            <div class="metric"><div class="num">{height_val if height_val is not None else '—'}</div><div class="lbl">Height mm</div></div>
         </div>
     </article>
     <article class="card">
