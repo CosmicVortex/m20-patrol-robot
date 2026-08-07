@@ -140,18 +140,25 @@ class RealTimeDashboard:
     --muted: #85959c;
     --panel: #111b20;
     --line: #26363e;
-    --accent: #56ddad;
+    --accent: #4a9fd4;
     --warn: #ffc24a;
     --err: #ff6b6b;
     --bg: #071116;
 }}
-* {{ box-sizing: border-box; }}
+* {{ box-sizing:border-box; }}
 body {{
-    margin: 0;
-    font-family: "Noto Sans SC", "Source Han Sans SC", -apple-system, sans-serif;
-    background: radial-gradient(circle at 70% 0, #14353b 0, transparent 30%), var(--bg);
-    color: var(--ink);
-    min-height: 100vh;
+    margin:0;
+    font-family:"Noto Sans SC","Source Han Sans SC",-apple-system,sans-serif;
+    background:radial-gradient(circle at 70% 0,#14353b 0,transparent 40%),var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+    line-height:1.6;
+}}
+/* Focus styles for accessibility */
+:focus-visible {{
+    outline:2px solid var(--accent);
+    outline-offset:2px;
+    border-radius:4px;
 }}
 header {{
     padding: 28px clamp(20px, 5vw, 72px);

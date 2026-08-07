@@ -60,7 +60,7 @@ class SimpleDashboardHandler(http.server.BaseHTTPRequestHandler):
     <title>M20 巡逻机器人</title>
     <style>
         :root {
-            --bg: #0a0b0e;
+            --bg: #0d0f14;
             --surface: #14161a;
             --surface-hover: #1a1d22;
             --border: #2a2d34;
@@ -89,8 +89,15 @@ class SimpleDashboardHandler(http.server.BaseHTTPRequestHandler):
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            line-height: 1.5;
-            -webkit-font-smoothing: antialiased;
+            line-height: 1.6;
+        }
+
+        /* Focus styles for accessibility */
+        :focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
         }
 
         /* Layout */
