@@ -5,16 +5,34 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MANIFEST="$ROOT/deploy/readonly-manifest.json"
 TARGET_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/m20-patrol-robot"
 SERVICE_NAME='m20-patrol-readonly.service'
-GOS_HOST='10.21.31.104'
-AOS_HOST='10.21.31.103'
-NOS_HOST='13.21.31.106'
-AOS_TCP_PORT=30001
-AOS_UDP_PORT=30000
-RTSP_PORT=8554
-WEB_PORT=8080
+GOS_HOST=''
+AOS_HOST=''
+NOS_HOST=''
+AOS_TCP_PORT=''
+AOS_UDP_PORT=''
+RTSP_PORT=''
+WEB_PORT=''
+STALE_AFTER_SECONDS=''
+PYTHON_BIN=''
 
 say() { printf '%s\n' "$*"; }
 fail() { say "BLOCKED:$*" >&2; exit 2; }
+
+load_manifest_values() {
+  [ -f "$MANIFEST" ] || fail 'MANIFEST_MISSING'
+  IFS=$'\t' read -r GOS_HOST AOS_HOST NOS_HOST AOS_TCP_PORT AOS_UDP_PORT RTSP_PORT WEB_PORT STALE_AFTER_SECONDS < <(
+    python3 - "$MANIFEST" <<'PY'
+import json, sys
+d=json.load(open(sys.argv[1]))
+print("\t".join([
+    d["targets"]["gos_host"], d["targets"]["aos_host"], d["targets"]["nos_host"],
+    str(d["ports"]["aos_tcp"]), str(d["ports"]["aos_udp"]),
+    str(d["ports"]["rtsp"]), str(d["ports"]["web"]),
+    str(d["stale_after_seconds"]),
+]))
+PY
+  )
+}
 
 check_manifest() {
   [ -f "$MANIFEST" ] || fail 'MANIFEST_MISSING'
@@ -35,7 +53,7 @@ assert d["targets"] == {"gos_host":"10.21.31.104","aos_host":"10.21.31.103","nos
 assert d["ports"] == {"aos_tcp":30001,"aos_udp":30000,"rtsp":8554,"web":8080}
 assert d["credentials_included"] is False
 PY
-  grep -R -n '10\.21\.31\.101' "$ROOT/deploy" "$ROOT/backend" --include='*.py' --include='*.sh' --include='*.service' >/dev/null && fail 'DEPRECATED_ADDRESS_PRESENT'
+  if grep -R -n '10\.21\.31\.101' "$ROOT/deploy" "$ROOT/backend" --include='*.py' --include='*.sh' --include='*.service' >/dev/null; then fail 'DEPRECATED_ADDRESS_PRESENT'; fi
   if grep -R -n -E 'pkill|nohup' "$ROOT/deploy/scripts" --include='*.sh' --exclude='deploy-readonly.sh' >/dev/null; then
     fail 'UNSAFE_PROCESS_CONTROL_PRESENT'
   fi
@@ -46,12 +64,12 @@ check_clean_source() {
 }
 
 check_python() {
-  local version
-  version="$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
-  [ "$version" = 3.8 ] || fail 'PY38_RUNTIME_CHECK_BLOCKED'
+  PYTHON_BIN="$(command -v python3.8 || true)"
+  [ -n "$PYTHON_BIN" ] || fail 'PY38_RUNTIME_CHECK_BLOCKED'
+  "$PYTHON_BIN" -c 'import sys; assert sys.version_info[:3] == (3,8,10)' || fail 'PY38_RUNTIME_CHECK_BLOCKED'
   say 'PY38_RUNTIME_CHECK=PASS'
-  python3 -m compileall -q "$ROOT/backend" || fail 'COMPILE_FAILED'
-  python3 - <<'PY' || fail 'PY38_IMPORT_CHECK_FAILED'
+  "$PYTHON_BIN" -m compileall -q "$ROOT/backend" || fail 'COMPILE_FAILED'
+  PYTHONPATH="$ROOT" "$PYTHON_BIN" - <<'PY' || fail 'PY38_IMPORT_CHECK_FAILED'
 from backend.app.dashboard_realtime import DashboardConfig, RealTimeDashboard
 from backend.app.robot.telemetry import ConnectionConfig
 assert DashboardConfig().read_only_mode is True
@@ -68,10 +86,13 @@ check_host() {
   command -v systemctl >/dev/null || fail 'SYSTEMCTL_MISSING'
   systemctl --user show-environment >/dev/null 2>&1 || fail 'SYSTEMD_USER_UNAVAILABLE'
   [ "$(id -u)" != 0 ] || fail 'ROOT_USER_NOT_ALLOWED'
+  command -v ip >/dev/null || fail 'IP_COMMAND_MISSING'
+  ip -4 -o addr show | awk '{print $4}' | cut -d/ -f1 | grep -Fxq "$GOS_HOST" || fail 'GOS_IDENTITY_MISMATCH'
   df -Pk "$TARGET_ROOT" 2>/dev/null | tail -1 || true
 }
 
 preflight() {
+  load_manifest_values
   check_manifest
   check_python
   grep -Fq 'M20_RUNTIME_MODE=realtime_readonly' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_RUNTIME_MODE_MISMATCH'
@@ -80,12 +101,12 @@ preflight() {
   grep -Fq 'port=8080' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_WEB_PORT_MISMATCH'
   grep -Fq 'control_enabled=False' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_CONTROL_NOT_DISABLED'
   grep -Fq 'telemetry_tx_enabled=False' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_TX_NOT_DISABLED'
-  if command -v systemctl >/dev/null 2>&1; then
-    systemctl --user is-active --quiet m20-patrol-realtime.service && fail 'CONFLICTING_REALTIME_SERVICE_ACTIVE' || true
-    systemctl --user is-enabled --quiet m20-patrol-realtime.service && fail 'CONFLICTING_REALTIME_SERVICE_ENABLED' || true
-  fi
+  conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || fail 'CONFLICTING_SERVICE_STATE_UNKNOWN'
+  conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || fail 'CONFLICTING_SERVICE_ENABLEMENT_UNKNOWN'
+  [ "$conflict_active" != active ] || fail 'CONFLICTING_REALTIME_SERVICE_ACTIVE'
+  [ "$conflict_enabled" != enabled ] || fail 'CONFLICTING_REALTIME_SERVICE_ENABLED'
   check_host
-  say 'TARGET_IDENTITY_CONFIRMED=PROJECT_OWNER_CONFIRMED_FIXED_FACT'
+  say 'TARGET_IDENTITY_CONFIRMED=PASS'
   say 'TELEMETRY_TX_ENABLED=false'
   say 'CONTROL_ENABLED=false'
   say 'WEB_REALTIME_ENABLED=true'
@@ -102,22 +123,36 @@ install() {
 }
 
 start() {
+  preflight
   systemctl --user start "$SERVICE_NAME"
   say 'SERVICE_START=REQUESTED'
 }
 
 status() {
+  preflight
+  load_manifest_values
   systemctl --user --no-pager is-active "$SERVICE_NAME" >/dev/null || fail 'SERVICE_NOT_ACTIVE'
   local payload
-  curl -fsS "http://${GOS_HOST}:${WEB_PORT}/api/v1/health" >/dev/null || fail 'REALTIME_HEALTH_NOT_READY'
+  local health
+  health="$(curl -fsS "http://${GOS_HOST}:${WEB_PORT}/api/v1/health")" || fail 'REALTIME_HEALTH_NOT_READY'
+  PYTHONPATH="$ROOT" "$PYTHON_BIN" - "$health" "$STALE_AFTER_SECONDS" <<'PY' || fail 'HEALTH_STATUS_STRICT_CHECK_FAILED'
+import json, sys
+d=json.loads(sys.argv[1]); limit=float(sys.argv[2]) * 1000
+if d.get("healthy") is not True or d.get("runtime_mode") != "realtime_readonly" or d.get("read_only_mode") is not True or d.get("source") != "REAL" or d.get("connected") is not True:
+    raise SystemExit("HEALTH_NOT_REAL")
+if d.get("control_enabled") is not False or d.get("telemetry_tx_enabled") is not False:
+    raise SystemExit("HEALTH_SAFETY_FLAGS_INVALID")
+if d.get("valid_frames", 0) <= 0 or not isinstance(d.get("age_ms"), (int, float)) or not 0 <= d["age_ms"] < limit:
+    raise SystemExit("HEALTH_NOT_FRESH")
+PY
   payload="$(curl -fsS "http://${GOS_HOST}:${WEB_PORT}/api/v1/status/latest")" || fail 'STATUS_ENDPOINT_UNAVAILABLE'
-  python3 - "$payload" <<'PY'
+  PYTHONPATH="$ROOT" "$PYTHON_BIN" - "$payload" "$STALE_AFTER_SECONDS" <<'PY'
 import json, sys
 d=json.loads(sys.argv[1])
 required=("source","connected","valid_frames","age_ms")
 missing=[k for k in required if k not in d]
 if missing: raise SystemExit("STATUS_FIELDS_MISSING="+','.join(missing))
-if d.get("source") != "REAL" or d.get("connected") is not True or d.get("valid_frames", 0) <= 0 or d.get("age_ms") is None or d.get("age_ms") < 0 or d.get("age_ms") >= 3000:
+if d.get("source") != "REAL" or d.get("connected") is not True or d.get("control_enabled") is not False or d.get("telemetry_tx_enabled") is not False or d.get("valid_frames", 0) <= 0 or d.get("age_ms") is None or d.get("age_ms") < 0 or d.get("age_ms") >= float(sys.argv[2]) * 1000:
   raise SystemExit("REALTIME_DATA_NOT_FRESH")
 print(json.dumps(d, ensure_ascii=False))
 PY
@@ -125,7 +160,7 @@ PY
 
 case "${1:---one-shot}" in
   --preflight) preflight ;;
-  --dry-run) check_manifest; say 'DRY_RUN=true'; say 'NO_FILES_WRITTEN=true'; say 'NO_SYSTEMD_CHANGE=true' ;;
+  --dry-run) load_manifest_values; check_manifest; say 'DRY_RUN=true'; say 'NO_FILES_WRITTEN=true'; say 'NO_SYSTEMD_CHANGE=true'; say 'NO_NETWORK_SIDE_EFFECT=true' ;;
   --install) install ;;
   --start) start ;;
   --status) status ;;

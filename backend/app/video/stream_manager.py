@@ -264,7 +264,11 @@ class VideoStreamManager:
                 logger.info("Stopped RTSP stream for %s", source)
                 return {"status": "stopped", "source": source}
             except asyncio.CancelledError:
-                await asyncio.shield(self._finalize_stop(source, proc))
+                cleanup_task = asyncio.create_task(self._finalize_stop(source, proc))
+                try:
+                    await asyncio.shield(cleanup_task)
+                except asyncio.CancelledError:
+                    await asyncio.shield(cleanup_task)
                 raise
             except Exception as error:
                 with self._lock:

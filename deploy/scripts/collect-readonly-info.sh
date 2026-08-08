@@ -1,6 +1,6 @@
 # 第一阶段现场只读采集脚本
-# 用法：在现场负责人已签认 AOS_HOST/GOS_HOST/NOS_HOST 后，分别在GOS与NOS执行。
-# 示例：AOS_HOST=10.0.0.11 GOS_HOST=10.0.0.12 NOS_HOST=10.0.0.13 bash collect-readonly-info.sh
+# 用法：仅在固定现场地址上执行，不扫描或猜测目标地址。
+# 示例：AOS_HOST=10.21.31.103 GOS_HOST=10.21.31.104 NOS_HOST=13.21.31.106 bash collect-readonly-info.sh
 # 本脚本不发布ROS2消息，不发送basic_server报文，不修改配置或服务。
 
 set -u

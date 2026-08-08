@@ -20,6 +20,7 @@ tar -czf "${OUTPUT_DIR}/m20-patrol-minimal-${TIMESTAMP}.tar.gz" \
   --exclude='.git/' \
   --exclude='dist/' \
   backend/app/ \
+  deploy/readonly-manifest.json \
   deploy/scripts/ \
   deploy/systemd/
 

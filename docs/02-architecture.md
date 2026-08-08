@@ -27,12 +27,11 @@ GOS (10.21.31.104)
   │     ├── stream_manager.py    RTSP流管理（ffprobe探测、FFmpeg拉流）
   │     └── ws_handler.py        WebSocket视频流处理
   │
-  ├─ backend.app.dashboard      模拟仪表盘（绑定127.0.0.1）
-  └─ backend.app.dashboard_realtime  实时仪表盘（连接真实AOS）
+  └─ backend.app.dashboard_realtime  唯一实时仪表盘入口（连接真实AOS；默认只读）
        │
        ├─ TCP 30001 → AOS basic_server（状态订阅）
        ├─ RTSP 8554 → 本体前后相机（待实测）
-       └─ Web 8080 → 浏览器（状态、控制）
+       ├─ Web 8080 → 浏览器（非控制状态展示）
 
 现场机器人网络
   ├─ AOS (10.21.31.103)          basic_server、运动控制
@@ -48,8 +47,8 @@ GOS (10.21.31.104)
 | 状态消息解析 | ✅ 已实现 | 1002/3,4,5,6 + 1007/1,2,3 + 2002/1 |
 | TCP 客户端 + 门禁 | ✅ 已实现 | control_enabled 默认 False |
 | **真实状态订阅** | ✅ **已实现** | TelemetryAdapter 连接 AOS TCP 30001，read_only 模式 |
-| **实时仪表盘** | ✅ **已实现** | 显示 REAL/SIMULATED 状态，绑定 127.0.0.1 |
-| **简化版仪表盘** | ✅ **已实现** | dashboard_simple.py，无外部依赖，适配 Python 3.8 |
+| **实时仪表盘** | ✅ **已实现** | `realtime_readonly`，绑定 manifest 指定的 GOS 地址 |
+| **历史仪表盘入口** | ⚠️ 兼容保留 | 不得由 one-shot 或默认 systemd unit 调用 |
 | 导航报文构造 | ✅ 已实现 | Gait=0x3002，安全门控 |
 | **导航控制服务** | ✅ **已实现** | Web 授权，审计日志 |
 | 视频管理器 | 🟡 基础框架 | RTSP 地址已配置，拉流待实测 |

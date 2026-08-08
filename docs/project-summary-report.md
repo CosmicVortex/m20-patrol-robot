@@ -3,7 +3,7 @@
 **报告日期：** 2026-08-07
 **代码版本：** a550839
 **手册依据：** V1.2.1 (2026-05-18)
-**测试状态：** 93 passed
+**测试状态：** 云端 Python 3.13 与隔离 Python 3.8.10 均为 114 passed
 
 ---
 
@@ -49,10 +49,10 @@
 
 ### 1.4 关键约束
 
-1. `control_enabled=false` 为默认值，真实连接必须显式启用
+1. 只读实时入口固定 `control_enabled=false`、`TELEMETRY_TX_ENABLED=false`
 2. 导航发送前必须满足：型号确认、版本兼容、权限批准、真实样本、状态正常、书面放行
-3. 所有地址、端口为候选值，必须现场签认（AOS 地址已确认：10.21.31.103）
-4. 模拟状态标注 `SIMULATED`，不得伪装为真实设备状态
+3. 固定现场地址来自项目负责人确认：GOS 10.21.31.104、AOS 10.21.31.103、NOS 13.21.31.106；运行入口不得切换候选地址
+4. 无真实消息时标注 `NO_DATA`/`STALE`/`ERROR`，不得伪装为 `REAL`
 
 ---
 
@@ -72,7 +72,7 @@
 | WebSocket 处理器 | `video/ws_handler.py` | 🟡 基础框架 | — |
 | 模拟仪表盘 | `dashboard.py` | ✅ 已实现 | 2 tests |
 | **实时仪表盘** | `dashboard_realtime.py` | ✅ 已实现 | — |
-| **简化版仪表盘** | `dashboard_simple.py` | ✅ 已实现 | Python 3.8 兼容 |
+| **历史仪表盘** | `dashboard_simple.py` | ⚠️ 兼容保留 | 不得由只读 one-shot 入口调用 |
 | 安装脚本 | `deploy/scripts/install-gos.sh` | ✅ 已实现 | — |
 | 回滚脚本 | `deploy/scripts/rollback-gos.sh` | ✅ 已实现 | — |
 
@@ -247,22 +247,16 @@ bash deploy/scripts/install-gos.sh \
   --ref a550839
 
 # 8. 验证服务状态
-systemctl --user status m20-patrol-realtime --no-pager
+systemctl --user status m20-patrol-readonly.service --no-pager
 
 # 9. 验证 API 响应
-curl -fsS http://127.0.0.1:8080/api/v1/status/latest | python3 -m json.tool
+curl -fsS http://10.21.31.104:8080/api/v1/status/latest | python3 -m json.tool
 ```
 
 #### 第五阶段：书面放行与导航启用
 
 ```bash
-# 10. 修改服务配置启用导航控制
-nano ~/.config/systemd/user/m20-patrol-realtime.service
-# 添加 navigation_enabled=True
-
-# 11. 重启服务
-systemctl --user daemon-reload
-systemctl --user restart m20-patrol-realtime.service
+# 本周期不启用导航、控制或心跳 TX；建图和导航保持 BLOCKED
 ```
 
 #### 第六阶段：Web 授权与导航测试
@@ -348,7 +342,7 @@ systemctl --user restart m20-patrol-realtime.service
 ### 7.1 测试统计
 
 ```
-93 passed in 2.27s
+Python 3.13 与 Python 3.8.10：114 passed
 compileall 通过
 git diff --check 通过
 ```

@@ -8,7 +8,7 @@ backend/app/
 ├── robot/             # 机器人交互层：TCP客户端、状态解析
 ├── navigation/        # 导航业务层：报文构造、安全门控
 ├── video/             # 视频流管理层：RTSP管理、WebSocket
-└── dashboard.py       # Web仪表盘：HTTP服务
+└── dashboard_realtime.py # 唯一只读实时 Web 入口
 ```
 
 ## 1. protocol/ — 协议层
@@ -60,7 +60,7 @@ PatrolMessage(
 **核心方法：**
 - `connect(*, read_only=False)` — 建立真实连接；`read_only=True` 允许只读连接（状态订阅）
 - `connect_for_test()` — 测试用回环连接
-- `send_read_only(message)` — 发送只读查询消息（按 message_id 匹配响应）
+- `send_read_only(message)` — 仅在显式测试/授权 transport 配置下发送只读查询；生产只读入口禁用 TX
 - `send_control(message)` — 发送控制命令（需 control_enabled 门禁）
 - `receive_messages()` — 接收主动上报消息
 - `close()` — 断开连接
@@ -74,7 +74,7 @@ firmware_evidence is approved
 permission_evidence is approved
 ```
 
-**心跳机制：** 客户端至少 1Hz 保活；服务端 2 秒无请求停止主动上报；客户端 3 秒无响应判定断线。
+**生产只读策略：** `TELEMETRY_TX_ENABLED=false`，不自动发送心跳；客户端按 3 秒新鲜度阈值判定数据过期。
 
 **对应官方文档：** `docs/official/山猫M20basic_server通信协议总览.md` §心跳机制
 
@@ -185,19 +185,19 @@ GAIT_PLATFORM标准 = 0x1002 # 高台标准
 **职责：** 提供只读 Web 界面，显示模拟状态和相机占位。
 
 **当前行为：**
-- 绑定 `127.0.0.1:8080`
-- 返回 `source=SIMULATED`、`connected=false`、`control_enabled=false`
+- 历史模拟入口，仅用于兼容测试，不得由 one-shot 或默认 systemd unit 调用
+- realtime 生产入口绑定 manifest 指定的 `10.21.31.104:8080`
+- 无真实消息返回 `NO_DATA`/`STALE`/`ERROR`，不得伪装为 `REAL`
 - 不连接机器人、不发送心跳、不下发导航
 
-### dashboard_simple.py — 简化版仪表盘（Python 3.8 兼容）
+### dashboard_simple.py — 历史兼容仪表盘
 
 **职责：** 无外部依赖的 Web 仪表盘，适配 GOS Python 3.8.10 环境。
 
 **特点：**
 - 仅使用 Python 标准库（http.server、json、socketserver）
 - 不导入 backend 模块，避免依赖问题
-- 绑定 `127.0.0.1:8080`，仅本机访问
-- 返回 SIMULATED 状态，明确标识未连接真实设备
+- 不得由 realtime one-shot 入口调用
 
 **启动方式：**
 ```bash
@@ -210,17 +210,14 @@ python3 backend/app/dashboard_simple.py
 
 **特点：**
 - 连接 AOS TCP 30001，read_only 模式
-- 每 1Hz 发送心跳，接收状态消息
-- 绑定 `127.0.0.1:8080`（可通过 SSH 端口转发访问）
-- 返回 `source=REAL` 或 `source=SIMULATED`
+- 生产只读入口不发送心跳，`TELEMETRY_TX_ENABLED=false`
+- 绑定 manifest 指定的 `10.21.31.104:8080`
+- 返回 `source=REAL`；无真实消息时返回 `NO_DATA`/`STALE`/`ERROR`
 
 **启动方式：**
 ```bash
-# 方式1：直接启动（需要 Python 3.11+ 或手动处理 UTC 兼容）
-python3 -c "from backend.app.dashboard_realtime import serve_dashboard; serve_dashboard()"
-
-# 方式2：通过 systemd 服务
-systemctl --user start m20-patrol-realtime.service
+# 唯一方式：在 GOS 本机执行
+bash deploy/scripts/deploy-readonly.sh --one-shot
 
 # 方式3：使用部署脚本（推荐）
 bash deploy/scripts/start.sh

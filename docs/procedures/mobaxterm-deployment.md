@@ -18,14 +18,14 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                      GOS (10.21.31.104)                         │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │  Python Web 服务（HTTP 服务端，监听 127.0.0.1:8080）     │   │
+│  │  Python Web 服务（HTTP 服务端，监听 10.21.31.104:8080）  │   │
 │  │  - 提供 /api/v1/status/latest                            │   │
 │  │  - 提供 Web 页面                                         │   │
 │  └─────────────────────┬───────────────────────────────────┘   │
 │                        │                                        │
 │  ┌─────────────────────▼───────────────────────────────────┐   │
 │  │  TelemetryAdapter（TCP 客户端，连接 AOS 30001）           │   │
-│  │  - 每 1 秒发送心跳（Type=100, Cmd=100）                  │   │
+│  │  - 生产只读模式不发送心跳（TELEMETRY_TX_ENABLED=false）   │  │
 │  │  - 接收状态消息并解析                                     │   │
 │  └─────────────────────────────────────────────────────────┘   │
 └─────────────────────┬───────────────────────────────────────────┘
@@ -72,8 +72,7 @@ m20-patrol-robot/
 │   │   ├── rollback-gos.sh     # 回滚脚本
 │   │   └── collect-readonly-info.sh  # 只读信息收集
 │   └── systemd/
-│       ├── m20-patrol-readonly.service  # 模拟模式服务
-│       └── m20-patrol-realtime.service  # 真实模式服务
+│       └── m20-patrol-readonly.service  # 唯一默认只读实时服务
 └── docs/                       # 文档（约 6.6MB，部署时可省略）
 ```
 
@@ -214,24 +213,21 @@ ln -sfn ~/.local/share/m20-patrol-robot/releases/manual \
 ### 4.3 启动服务
 
 ```bash
-# 启动模拟只读模式
-systemctl --user start m20-patrol-readonly.service
-
-# 或启动真实状态订阅模式
-systemctl --user start m20-patrol-realtime.service
+# 唯一入口（在 GOS 本机执行）
+bash deploy/scripts/deploy-readonly.sh --one-shot
 
 # 查看状态
-systemctl --user status m20-patrol-realtime.service --no-pager
+systemctl --user status m20-patrol-readonly.service --no-pager
 ```
 
 ### 4.4 验证运行
 
 ```bash
 # 检查 API
-curl -fsS http://127.0.0.1:8080/api/v1/status/latest
+curl -fsS http://10.21.31.104:8080/api/v1/status/latest
 
 # 检查 Web 页面
-curl -fsS http://127.0.0.1:8080/ | head -20
+curl -fsS http://10.21.31.104:8080/ | head -20
 
 # 从笔记本访问（如网络互通）
 # curl -fsS http://10.21.31.104:8080/api/v1/status/latest

@@ -46,7 +46,7 @@
 ### 测试结果
 
 ```
-93 passed in 2.27s
+Python 3.13 与 Python 3.8.10：114 passed
 ```
 
 ### 新增文件
@@ -73,7 +73,7 @@
 
 **TelemetryAdapter（真实状态订阅）：**
 - 自动连接到 AOS basic_server TCP 30001
-- 每 1Hz 发送心跳
+- 生产只读模式不发送心跳，`TELEMETRY_TX_ENABLED=false`
 - 接收并解析状态消息
 - 断线自动重连
 

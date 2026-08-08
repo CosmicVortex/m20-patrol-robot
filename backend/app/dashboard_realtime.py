@@ -38,6 +38,18 @@ class DashboardConfig:
     telemetry_receive_enabled: bool = True
     stale_after_s: float = 3.0
 
+    def __post_init__(self) -> None:
+        if type(self.read_only_mode) is not bool:
+            raise ValueError("read_only_mode must be boolean")
+        if type(self.control_enabled) is not bool:
+            raise ValueError("control_enabled must be boolean")
+        if type(self.telemetry_tx_enabled) is not bool:
+            raise ValueError("telemetry_tx_enabled must be boolean")
+        if self.telemetry_tx_enabled:
+            raise ValueError("telemetry transmission is disabled in this release")
+        if not self.read_only_mode or self.control_enabled:
+            raise ValueError("dashboard requires read_only_mode=true and control_enabled=false")
+
 
 class RealTimeDashboard:
     """Dashboard that connects to real AOS basic_server for status."""
@@ -57,8 +69,7 @@ class RealTimeDashboard:
             raise ValueError("realtime mode requires a field-confirmed aos_host")
         if not self.config.read_only_mode or self.config.control_enabled:
             raise ValueError("dashboard requires read_only_mode=true and control_enabled=false")
-        if self.config.read_only_mode and self.config.telemetry_tx_enabled:
-            raise ValueError("read-only dashboard cannot enable telemetry transmission")
+
         self._running = True
         print(
             "READ_ONLY_MODE=%s CONTROL_ENABLED=%s M20_RUNTIME_MODE=%s "

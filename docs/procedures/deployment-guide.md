@@ -1,512 +1,119 @@
-# 办公室现场部署执行手册
+# M20 Pro GOS 现场部署指南
 
-**适用型号：** 山猫 M20 Pro
-**部署地点：** 华翔智行办公室
-**固件版本：** V1.1.8（已确认）
-**AOS 地址：** 10.21.31.103（已确认）
-**NOS 地址：** 10.21.31.106
-**GOS 地址：** 10.21.31.104
+## 1. 适用范围
 
----
+本指南仅用于山猫 M20 Pro，在 GOS `10.21.31.104` 本机执行真实只读状态观测。当前不执行建图、导航、巡逻、云台、拍照或任何控制报文。
 
-## 一、部署前准备
+## 2. 固定目标
 
-### 1.1 设备清单
+所有地址和端口以 `deploy/readonly-manifest.json` 为唯一配置来源：
 
-| 设备 | 数量 | 用途 |
-|---|---|---|
-| 山猫 M20 Pro | 1 | 巡逻本体 |
-| GOS 主机 | 1 | 二次开发程序运行 |
-| 笔记本电脑 | 1 | 部署管理、Web 监控 |
-| 官方遥控器/APP | 1 | 导航基线测试 |
+```text
+GOS=10.21.31.104
+AOS=10.21.31.103
+NOS=13.21.31.106
+AOS_TCP=30001
+AOS_UDP=30000
+RTSP=8554
+WEB=8080
+```
 
-### 1.2 网络检查
+不得使用旧地址 `10.21.31.101`，不得扫描网段或切换候选地址。
+
+## 3. 获取已验证版本
+
+在 GOS 本机执行，只允许 fast-forward：
 
 ```bash
-# 在 GOS 上执行
-ping -c 3 10.21.31.103  # AOS
-ping -c 3 10.21.31.106  # NOS
-
-# 检查 basic_server 端口
-nc -zv 10.21.31.103 30001
-nc -zv 10.21.31.103 30000
+cd /opt/data/m20-patrol-robot
+git fetch origin --prune
+git checkout feat/m20-readonly-one-shot-20260808
+git pull --ff-only origin feat/m20-readonly-one-shot-20260808
+git status --short
 ```
 
-### 1.3 版本确认
+工作区有未提交修改时停止，并报告 `DIRTY_WORKTREE_BLOCKED`。不得执行 `reset --hard` 或 `clean -fd`。
+
+## 4. 主机预检
 
 ```bash
-# 在 NOS 上执行
-ssh user@10.21.31.106 "cat /var/opt/robot/release_note.json"
+hostname
+ip -brief address
+python3 --version
+python3.8 -c 'import sys; print(sys.executable); print(sys.version)'
+python3.8 -c 'import backend; print("IMPORT_OK")'
+systemctl --user is-system-running
+ss -ltnup
 ```
 
-预期输出包含：
-- `software_version`: "V1.1.8"
-- `firmware_version`: "V1.1.8" 或更高
-- `aos_version`, `nos_version`, `gos_version`
+必须确认：
 
-### 1.4 地图备份
+- 主机地址包含 `10.21.31.104`；
+- Python 为实际 3.8.x 运行时；
+- user systemd 可用；
+- AOS 固定目标路由可达；
+- 不存在冲突服务 `m20-patrol-realtime.service` active 或 enabled。
+
+## 5. 唯一部署命令
 
 ```bash
-# 在 NOS 上执行
-ssh user@10.21.31.106 "drmap pack"
-ssh user@10.21.31.106 "ls -la /home/user/Downloads/*.zip"
-ssh user@10.21.31.106 "sha256sum /home/user/Downloads/*.zip"
+bash deploy/scripts/deploy-readonly.sh --preflight
+bash deploy/scripts/deploy-readonly.sh --one-shot
 ```
 
-记录地图包文件名和 SHA-256。
+`--one-shot` 会自动执行 manifest 校验、Python 版本检查、release/venv/unit/current 事务、服务启动和严格健康检查。
 
----
+安全开关必须保持：
 
-## 二、GOS 部署流程
+```text
+M20_RUNTIME_MODE=realtime_readonly
+READ_ONLY_MODE=true
+CONTROL_ENABLED=false
+TELEMETRY_RX_ENABLED=true
+TELEMETRY_TX_ENABLED=false
+WEB_REALTIME_ENABLED=true
+```
 
-### 2.1 克隆仓库
+## 6. 严格验证
 
 ```bash
-# 在 GOS 上执行
-cd ~
-git clone /path/to/m20-patrol-robot.git
-cd m20-patrol-robot
-git checkout <APPROVED_COMMIT>
+systemctl --user status m20-patrol-readonly.service --no-pager
+curl --fail --silent --show-error http://10.21.31.104:8080/api/v1/health
+curl --fail --silent --show-error http://10.21.31.104:8080/api/v1/status/latest
+ss -ltnup
 ```
 
-### 2.2 运行安装脚本
+只有以下条件全部成立，才可报告真实状态新鲜可观测：
+
+```text
+healthy=true
+source=REAL
+connected=true
+valid_frames>0
+message_parsed=true
+status_accepted=true
+age_ms < stale_after_seconds*1000
+```
+
+HTTP 200、进程存在、端口监听和页面可打开均不能替代真实遥测证据。
+
+## 7. 视频边界
+
+RTSP endpoint 未由 manifest 或现场批准配置明确提供时，不启动 FFmpeg，视频标记为 `UNVERIFIED`。不得使用猜测地址。
+
+## 8. 停止和回滚
 
 ```bash
-bash deploy/scripts/install-gos.sh \
-  --repo "$PWD" \
-  --ref $(git rev-parse HEAD)
+systemctl --user stop m20-patrol-readonly.service
+bash deploy/scripts/deploy-readonly.sh --rollback <INSTALLED_COMMIT_SHA>
 ```
 
-### 2.3 验证安装
-
-```bash
-# 检查服务状态
-systemctl --user status m20-patrol-realtime --no-pager
-
-# 检查 API
-curl -fsS http://127.0.0.1:8080/api/v1/status/latest | python3 -m json.tool
-
-# 检查页面
-curl -fsS http://127.0.0.1:8080/ | grep -E 'REAL|SIMULATED'
-```
-
----
-
-## 三、状态订阅验证
-
-### 3.1 连接验证
-
-```bash
-# 查看实时日志
-journalctl --user -u m20-patrol-realtime -f
-```
-
-预期日志：
-```
-INFO: Connecting to AOS 10.21.31.103:30001
-INFO: Connected to AOS basic_server
-INFO: Received basic_status (1002/6)
-INFO: Received motion_status (1002/4)
-INFO: Received device_status (1002/5)
-```
-
-### 3.2 API 验证
-
-```bash
-# 获取状态
-curl -s http://127.0.0.1:8080/api/v1/status/latest | python3 -m json.tool
-```
-
-预期响应：
-```json
-{
-  "source": "REAL",
-  "connected": true,
-  "control_enabled": false,
-  "received_at": "2026-08-06T23:45:12+08:00",
-  "age_ms": 120,
-  "data": {
-    "robot": "M20 Pro",
-    "navigation": "SUBSCRIBING",
-    "basic": {
-      "MotionState": 17,
-      "Gait": 12290,
-      "Charge": 0
-    },
-    "motion": {
-      "Roll": 0.12,
-      "Pitch": -0.05,
-      "Yaw": 45.2
-    },
-    "device": {
-      "BatteryStatus": {
-        "Left": {"BatteryLevel": 85},
-        "Right": {"BatteryLevel": 87}
-      }
-    },
-    "errors": []
-  }
-}
-```
-
-### 3.3 Web 页面验证
-
-在浏览器访问 `http://10.21.31.104:8080/`（从笔记本访问）
-
-检查项：
-- [ ] 页面标题显示 "M20 巡逻状态"
-- [ ] 右上角徽章显示 "REAL / CONTROL OFF"
-- [ ] 连接状态显示 "已连接"
-- [ ] 数据延迟 < 500ms
-- [ ] 运动状态、步态、电量显示正确
-- [ ] 异常列表为空或显示实际异常
-
----
-
-## 四、视频接入验证
-
-### 4.1 RTSP 可达性测试
-
-```bash
-# 测试前相机
-ffprobe -v error -show_streams rtsp://10.21.31.103:8554/video1
-
-# 测试后相机
-ffprobe -v error -show_streams rtsp://10.21.31.103:8554/video2
-```
-
-预期输出包含：
-- `codec_name`: h264 或 hevc
-- `width`, `height`: 分辨率
-- `r_frame_rate`: 帧率（如 30/1）
-
-### 4.2 视频流启动
-
-在 GOS 上测试 FFmpeg 拉流：
-
-```bash
-# 启动视频流（后台）
-ffmpeg -hide_banner -loglevel warning \
-  -i rtsp://10.21.31.103:8554/video1 \
-  -c:v copy -an -f h264 pipe:1 \
-  > /tmp/front.h264 &
-
-# 检查进程
-ps aux | grep ffmpeg
-
-# 停止
-kill %1
-```
-
-### 4.3 Web 端验证
-
-在浏览器访问视频页面，检查：
-- [ ] 前相机画面可显示
-- [ ] 后相机画面可显示
-- [ ] 画面切换正常
-- [ ] 延迟 < 500ms
-
----
-
-## 五、导航控制启用（需书面放行）
-
-### 5.1 放行条件检查
-
-- [ ] 现场负责人书面放行签字
-- [ ] 安全观察员在场
-- [ ] 急停按钮可用
-- [ ] 隔离区域已设置
-- [ ] 操作员已培训
-
-### 5.2 启用导航控制
-
-```bash
-# 编辑服务配置
-nano ~/.config/systemd/user/m20-patrol-realtime.service
-```
-
-修改 ExecStart 行，添加 `navigation_enabled=True`：
-
-```ini
-ExecStart=%h/m20-patrol-robot/.venv/bin/python -c 'from backend.app.dashboard_realtime import serve_dashboard; serve_dashboard(host="127.0.0.1", port=8080, aos_host="10.21.31.103", navigation_enabled=True)'
-```
-
-重载并重启：
-
-```bash
-systemctl --user daemon-reload
-systemctl --user restart m20-patrol-realtime.service
-```
-
-### 5.3 Web 授权流程
-
-1. 操作员登录 Web 页面
-2. 点击"授权导航"按钮
-3. 填写操作员姓名和备注
-4. 系统检查安全条件：
-   - control_enabled = true
-   - TCP 已连接
-   - 定位正常
-   - 避障开启
-   - 急停未触发
-   - 无保护异常
-   - 电量 ≥ 20%
-   - 当前无导航任务
-5. 授权成功后，徽章变为 "REAL / AUTHORIZED"
-
-### 5.4 发送导航命令
-
-1. 点击"前往点位"按钮
-2. 输入坐标（PosX, PosY, PosZ, AngleYaw）
-3. 点击"发送导航"
-4. 系统发送 1003/1 命令
-5. 机器人开始移动
-6. 观察状态变化
-
-### 5.5 取消导航
-
-1. 点击"取消导航"按钮
-2. 系统发送 1004/1 命令
-3. 机器人停止移动
-4. 查看审计日志确认
-
----
-
-## 六、审计日志查看
-
-```bash
-# 通过 API 查看
-curl -s http://127.0.0.1:8080/api/v1/navigation/audit | python3 -m json.tool
-```
-
-预期输出：
-```json
-{
-  "audit_log": [
-    {
-      "timestamp": "2026-08-06T23:45:00+08:00",
-      "action": "authorize",
-      "details": "Operator: operator1, Note: Test navigation",
-      "success": true
-    },
-    {
-      "timestamp": "2026-08-06T23:46:00+08:00",
-      "action": "send",
-      "details": "Task 1: navigate to (1.0, 2.0)",
-      "success": true
-    },
-    {
-      "timestamp": "2026-08-06T23:47:00+08:00",
-      "action": "cancel",
-      "details": "Navigation cancelled",
-      "success": true
-    }
-  ]
-}
-```
-
----
-
-## 七、故障排查
-
-### 7.1 服务无法启动
-
-```bash
-# 查看详细日志
-journalctl --user -u m20-patrol-realtime -n 100 --no-pager
-
-# 检查端口占用
-netstat -tlnp | grep 8080
-
-# 检查 Python 环境
-ls -la ~/m20-patrol-robot/.venv/bin/python
-```
-
-### 7.2 无法连接 AOS
-
-```bash
-# 测试 TCP 连通性
-nc -zv 10.21.31.103 30001
-
-# 检查防火墙
-sudo iptables -L -n | grep 30001
-
-# 检查 basic_server 状态
-ssh user@10.21.31.106 "systemctl --user status basic_server"
-```
-
-### 7.3 视频无法播放
-
-```bash
-# 检查编码格式
-ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of csv=p=0 rtsp://10.21.31.103:8554/video1
-
-# 检查 FFmpeg 编解码器
-ffmpeg -codecs | grep -E 'h264|hevc'
-
-# 测试本地播放
-ffplay -autoexit rtsp://10.21.31.103:8554/video1
-```
-
----
-
-## 八、回滚流程
-
-### 8.1 停止服务
-
-```bash
-systemctl --user stop m20-patrol-realtime.service
-```
-
-### 8.2 回滚到上一版本
-
-```bash
-bash deploy/scripts/rollback-gos.sh \
-  --target-root "$HOME/.local/share/m20-patrol-robot" \
-  --ref <PREVIOUS_COMMIT_SHA>
-```
-
-### 8.3 验证回滚
-
-```bash
-systemctl --user status m20-patrol-realtime --no-pager
-curl -fsS http://127.0.0.1:8080/api/v1/status/latest
-```
-
----
-
-## 九、收尾工作
-
-### 9.1 状态记录
-
-填写以下记录表：
-
-| 项目 | 值 |
-|---|---|
-| 部署时间 | |
-| 部署人员 | |
-| Commit SHA | |
-| 固件版本 | |
-| 地图文件名 | |
-| 地图 SHA-256 | |
-| 状态订阅 | 成功/失败 |
-| 视频接入 | 成功/失败 |
-| 导航控制 | 成功/失败 |
-| 问题记录 | |
-
-### 9.2 照片记录
-
-拍摄以下照片：
-- [ ] GOS 主机状态（指示灯、连接线）
-- [ ] Web 页面显示（状态、视频）
-- [ ] 机器人状态（运动、电量、异常）
-- [ ] 导航执行过程
-
-### 9.3 文档归档
-
-将本次部署记录保存到：
-```
-docs/archive/deployments/YYYY-MM-DD-<site>-<commit>.md
-```
-
----
-
-## 五、WiFi 网络访问说明
-
-### 5.1 Web 服务绑定地址
-
-**默认配置：** `127.0.0.1:8080`（仅本机访问）
-
-```python
-# backend/app/dashboard_realtime.py:22
-host: str = "127.0.0.1"
-```
-
-**安全原因：**
-- 防止局域网内其他设备访问
-- 避免未授权控制
-- 符合最小权限原则
-
-### 5.2 从笔记本电脑访问
-
-**方案一：修改绑定地址（推荐）**
-
-在 GOS 上修改 systemd 服务配置：
-
-```bash
-# 编辑服务文件
-nano ~/.config/systemd/user/m20-patrol-realtime.service
-```
-
-将 `host="127.0.0.1"` 改为 `host="0.0.0.0"`：
-
-```ini
-ExecStart=%h/m20-patrol-robot/.venv/bin/python -c 'from backend.app.dashboard_realtime import serve_dashboard; serve_dashboard(host="0.0.0.0", port=8080, aos_host="10.21.31.103")'
-```
-
-重载并重启：
-
-```bash
-systemctl --user daemon-reload
-systemctl --user restart m20-patrol-realtime.service
-```
-
-然后从笔记本访问：
-```
-http://10.21.31.104:8080/
-```
-
-**方案二：端口转发（更安全）**
-
-在笔记本上执行：
-```bash
-ssh -L 8080:127.0.0.1:8080 user@10.21.31.104
-```
-
-然后访问：
-```
-http://localhost:8080/
-```
-
-### 5.3 访问验证
-
-在笔记本浏览器打开：
-```
-http://10.21.31.104:8080/
-```
-
-或
-```
-http://10.21.31.104:8080/api/v1/status/latest
-```
-
-**预期响应（未建图前）：**
-```json
-{
-  "source": "REAL",
-  "connected": true,
-  "control_enabled": false,
-  "received_at": "2026-08-07 09:30:00",
-  "age_ms": 120,
-  "data": {
-    "basic": {"MotionState": 17, "Gait": 12290, "Charge": 0},
-    "motion": {"Roll": 0.1, "Pitch": -0.05, "Yaw": 45.2},
-    "errors": []
-  }
-}
-```
-
-**如果显示 SIMULATED：**
-- TCP 未连接（检查 AOS 地址和端口）
-- 服务配置未生效（检查 systemctl 日志）
-
----
-
-## 六、未建图阶段的预期行为
-
-- 导航控制启用前必须获得书面放行
-- 操作员必须经过培训
-- 安全观察员必须到场
-- 急停按钮必须可用
-- 所有操作必须记录审计日志
-- 异常情况立即停止并回滚
+回滚目标必须通过只读 manifest、固定地址、服务模板、入口文件和 Python 版本校验。不得停止、删除或修改未知用户服务。
+
+## 9. 禁止操作
+
+- 发送 Type=100/Command=100 心跳；
+- 发送运动、导航、巡逻、云台、拍照或建图报文；
+- 修改 AOS/NOS 配置、网络、路由、防火墙或系统级 systemd；
+- 使用 `pkill -9 -f`、广泛 kill、`reset --hard`、`clean -fd`；
+- 将模拟、缓存或旧日志写成真实状态。
