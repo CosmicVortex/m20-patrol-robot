@@ -62,7 +62,7 @@ def test_builds_v010_low_speed_autonomous_task_point_request_after_all_gates_pas
     ],
 )
 def test_refuses_navigation_when_any_required_safety_gate_fails(change):
-    values = valid_snapshot().__dict__ | change
+    values = {**valid_snapshot().__dict__, **change}
     task = SinglePointNavigation(1, 0, 0.0, 0.0, 0.0, 0.0)
 
     with pytest.raises(NavigationInterlockError):
@@ -75,6 +75,6 @@ def test_refuses_navigation_when_any_required_safety_gate_fails(change):
     "protective_fault_active", "active_task",
 ])
 def test_refuses_non_boolean_safety_fields(field):
-    values = valid_snapshot().__dict__ | {field: 1}
+    values = {**valid_snapshot().__dict__, field: 1}
     with pytest.raises(NavigationInterlockError, match="boolean"):
         NavigationSafetySnapshot(**values).validate_for_navigation()

@@ -57,8 +57,11 @@ class VideoStreamManager:
             source: None for source in self._streams
         }
         self._processes: Dict[str, asyncio.subprocess.Process] = {}
-        self._process_locks: Dict[str, asyncio.Lock] = {
-            source: asyncio.Lock() for source in self._streams
+        # Create asyncio locks lazily inside a running event loop. Python 3.8
+        # binds Lock construction to the current loop and may have no loop at
+        # manager construction time.
+        self._process_locks: Dict[str, Optional[asyncio.Lock]] = {
+            source: None for source in self._streams
         }
         self._watchers: Dict[str, asyncio.Task] = {}
         self._drainers: Dict[str, Set[asyncio.Task]] = {
@@ -66,6 +69,13 @@ class VideoStreamManager:
         }
         self._selected_source: Optional[str] = None
         self._lock = threading.Lock()
+
+    def _get_process_lock(self, source: str) -> asyncio.Lock:
+        lock = self._process_locks[source]
+        if lock is None:
+            lock = asyncio.Lock()
+            self._process_locks[source] = lock
+        return lock
 
     def get_camera_config(self, source: str) -> Optional[CameraConfig]:
         return self._streams.get(source)
@@ -181,7 +191,7 @@ class VideoStreamManager:
         if not config:
             return {"error": f"Unknown camera source: {source}"}
 
-        async with self._process_locks[source]:
+        async with self._get_process_lock(source):
             existing = self._processes.get(source)
             if existing is not None and existing.returncode is None:
                 return {"status": "already_running", "source": source}
@@ -237,7 +247,7 @@ class VideoStreamManager:
         """Stop a stream, retaining failed process references for retry/diagnosis."""
         if source not in self._streams:
             return {"error": f"Unknown camera source: {source}"}
-        async with self._process_locks[source]:
+        async with self._get_process_lock(source):
             proc = self._processes.get(source)
             if proc is None:
                 return {"status": "not_running", "source": source}
