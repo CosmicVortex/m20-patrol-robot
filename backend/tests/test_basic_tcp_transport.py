@@ -36,7 +36,7 @@ def test_tcp_client_sends_heartbeat_and_receives_response_and_status_frame():
     thread.start()
     assert ready.wait(1)
 
-    client = BasicServerClient(BasicServerConfig(host="10.21.31.103"))
+    client = BasicServerClient(BasicServerConfig(host="10.21.31.103", transmit_enabled=True))
     client.connect_for_test(address[0])
     response = client.send_read_only(client.build_heartbeat())
     messages = client.receive_messages(timeout_seconds=1)
@@ -73,7 +73,7 @@ def test_tcp_client_reassembles_split_response_frame():
     thread = threading.Thread(target=server, daemon=True)
     thread.start()
     assert ready.wait(1)
-    client = BasicServerClient(BasicServerConfig(host="10.21.31.103"))
+    client = BasicServerClient(BasicServerConfig(host="10.21.31.103", transmit_enabled=True))
     client.connect_for_test(address[0])
     response = client.send_read_only(client.build_heartbeat())
     client.close()

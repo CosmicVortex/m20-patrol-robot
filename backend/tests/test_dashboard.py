@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from backend.app.dashboard import DashboardServer, serve_dashboard
+from backend.app.dashboard_realtime import DashboardConfig, RealTimeDashboard
 
 
 def test_dashboard_serves_status_and_dual_camera_placeholders(tmp_path: Path):
@@ -40,3 +41,29 @@ def test_dashboard_rejects_non_loopback_bind_address():
 def test_dashboard_rejects_invalid_port():
     with pytest.raises(ValueError, match="port"):
         serve_dashboard(port=0)
+
+
+def test_realtime_dashboard_defaults_to_safe_simulated_mode():
+    dashboard = RealTimeDashboard(DashboardConfig())
+    assert dashboard.config.runtime_mode == "simulated"
+    assert dashboard.config.read_only_mode is True
+    assert dashboard.config.control_enabled is False
+    assert dashboard.config.telemetry_tx_enabled is False
+    assert dashboard.get_status_payload()["source"] == "NO_DATA"
+
+
+def test_realtime_mode_requires_confirmed_target_host():
+    dashboard = RealTimeDashboard(DashboardConfig(runtime_mode="realtime"))
+    with pytest.raises(ValueError, match="field-confirmed"):
+        dashboard.start()
+
+
+def test_realtime_dashboard_allows_confirmed_gos_bind_address():
+    dashboard = RealTimeDashboard(
+        DashboardConfig(
+            host="10.21.31.104",
+            aos_host="10.21.31.103",
+            runtime_mode="realtime_readonly",
+        )
+    )
+    assert dashboard.config.host == "10.21.31.104"

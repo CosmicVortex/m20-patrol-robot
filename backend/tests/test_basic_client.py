@@ -6,6 +6,7 @@ except ImportError:
     UTC = timezone.utc
 
 import pytest
+import socket
 
 from backend.app.protocol.messages import PatrolMessage
 from backend.app.robot.basic_client import BasicServerClient, BasicServerConfig, ClientStateError, DeploymentEvidence
@@ -104,7 +105,7 @@ def test_send_control_requires_control_enabled():
 
 def test_send_read_only_rejects_navigation_commands():
     """send_read_only() should reject navigation control commands."""
-    client = BasicServerClient(BasicServerConfig(host="10.21.31.103", control_enabled=True))
+    client = BasicServerClient(BasicServerConfig(host="10.21.31.103", control_enabled=True, transmit_enabled=True))
 
     # Navigation command should be rejected by send_read_only
     nav_msg = PatrolMessage(1003, 1, datetime.now(UTC).isoformat(), {})
@@ -119,10 +120,27 @@ def test_send_read_only_rejects_navigation_commands():
 
 def test_send_read_only_allows_heartbeat():
     """send_read_only() should allow heartbeat messages."""
-    client = BasicServerClient(BasicServerConfig(host="10.21.31.103", control_enabled=True))
+    client = BasicServerClient(BasicServerConfig(host="10.21.31.103", control_enabled=True, transmit_enabled=True))
 
     # Heartbeat should be allowed
     heartbeat = PatrolMessage(100, 100, datetime.now(UTC).isoformat(), {})
     # This will fail because we're not connected, but it should pass the type check
     # We just verify the message is not rejected by the type check
     assert (heartbeat.message_type, heartbeat.command) in ((100, 100), (1007, 2), (2002, 1))
+
+
+def test_receive_timeout_returns_no_messages_without_incrementing_errors():
+    client = BasicServerClient(BasicServerConfig(host="10.21.31.103"))
+
+    class TimeoutSocket:
+        def settimeout(self, timeout):
+            self.timeout = timeout
+
+        def recv(self, size):
+            raise socket.timeout()
+
+    from typing import cast
+    client._socket = cast(socket.socket, TimeoutSocket())
+    assert client.receive_messages(timeout_seconds=0.01) == []
+    assert client.bytes_received == 0
+    assert client.invalid_frames == 0

@@ -17,7 +17,7 @@ try:
     from datetime import UTC
 except ImportError:
     UTC = timezone.utc
-from typing import Any, Deque
+from typing import Any, Deque, Optional, Tuple
 
 from backend.app.robot.basic_client import (
     BasicServerClient,
@@ -37,6 +37,23 @@ class ConnectionConfig:
     heartbeat_interval_s: float = 1.0
     stale_after_s: float = 3.0
     read_only: bool = True  # Always True - no control commands
+    runtime_mode: str = "simulated"
+    telemetry_receive_enabled: bool = True
+    telemetry_tx_enabled: bool = False
+
+    def __post_init__(self) -> None:
+        if self.runtime_mode not in {"simulated", "realtime", "realtime_readonly"}:
+            raise ValueError("runtime_mode must be simulated, realtime, or realtime_readonly")
+        if type(self.read_only) is not bool:
+            raise ValueError("read_only must be boolean")
+        if type(self.telemetry_receive_enabled) is not bool:
+            raise ValueError("telemetry_receive_enabled must be boolean")
+        if type(self.telemetry_tx_enabled) is not bool:
+            raise ValueError("telemetry_tx_enabled must be boolean")
+        if self.telemetry_tx_enabled:
+            raise ValueError("telemetry transmission is disabled in this release")
+        if self.runtime_mode in {"realtime", "realtime_readonly"} and not self.read_only:
+            raise ValueError("realtime telemetry requires read_only=true")
 
 
 @dataclass
@@ -44,8 +61,8 @@ class StatusSnapshot:
     """Latest parsed status data."""
     source: str  # "REAL" or "SIMULATED"
     connected: bool
-    received_at: str | None
-    age_ms: int | None
+    received_at: Optional[str]
+    age_ms: Optional[int]
     basic: dict[str, Any] = field(default_factory=dict)
     motion: dict[str, Any] = field(default_factory=dict)
     device: dict[str, Any] = field(default_factory=dict)
@@ -61,18 +78,25 @@ class TelemetryAdapter:
 
     def __init__(self, config: ConnectionConfig) -> None:
         self.config = config
-        self._client: BasicServerClient | None = None
+        self._client: Optional[BasicServerClient] = None
         self._snapshot = StatusSnapshot(
-            source="SIMULATED",
+            source="NO_DATA",
             connected=False,
             received_at=None,
             age_ms=None,
         )
         self._lock = threading.Lock()
         self._running = False
-        self._thread: threading.Thread | None = None
+        self._thread: Optional[threading.Thread] = None
         self._message_count = 0
         self._error_count = 0
+        self._connection_count = 0
+        self._reconnect_count = 0
+        self._last_message_type: Optional[Tuple[int, int]] = None
+        self._connection_received_messages = 0
+        self._bytes_received = 0
+        self._valid_frames = 0
+        self._invalid_frames = 0
 
     @property
     def snapshot(self) -> StatusSnapshot:
@@ -110,36 +134,57 @@ class TelemetryAdapter:
 
     def _run_loop(self) -> None:
         """Main loop: heartbeat + receive status messages."""
+        if self.config.runtime_mode == "simulated":
+            while self._running:
+                self._update_snapshot_no_client(error="simulated mode: robot I/O disabled")
+                time.sleep(0.5)
+            return
         config = BasicServerConfig(
             host=self.config.host,
             tcp_port=self.config.tcp_port,
             control_enabled=False,  # Read-only mode
             stale_after_seconds=self.config.stale_after_s,
         )
+        if not self.config.telemetry_receive_enabled:
+            self._update_snapshot_no_client(error="telemetry receive disabled")
+            return
         client = BasicServerClient(config)
+        self._client = client
 
         while self._running:
             try:
                 client.connect(timeout_seconds=3.0, read_only=True)
+                self._connection_received_messages = 0
+                self._connection_count += 1
+                if self._connection_count > 1:
+                    self._reconnect_count += 1
                 self._update_snapshot(client, connected=True)
                 
                 while self._running:
                     # Receive active status messages
                     messages = client.receive_messages(timeout_seconds=0.5)
+                    self._bytes_received = client.bytes_received
+                    self._valid_frames = client.valid_frames
+                    self._invalid_frames = client.invalid_frames
                     for msg in messages:
                         self._process_message(client, msg)
                     
                     # Send heartbeat every interval
-                    time.sleep(self.config.heartbeat_interval_s / 2)
-                    heartbeat = client.build_heartbeat()
-                    try:
-                        client.send_read_only(heartbeat)
-                    except ClientStateError:
-                        pass  # Heartbeat may not get response, that's OK
+                    if self.config.telemetry_tx_enabled:
+                        time.sleep(self.config.heartbeat_interval_s / 2)
+                        heartbeat = client.build_heartbeat()
+                        try:
+                            client.send_read_only(heartbeat)
+                        except ClientStateError:
+                            pass
                     
                     # Check staleness
                     now = datetime.now(UTC)
-                    if client.is_stale(now):
+                    # A connection with no first frame yet is not stale; keep
+                    # waiting so slow or quiet read-only endpoints do not
+                    # churn through reconnects. Once a frame was received,
+                    # the normal freshness threshold applies.
+                    if client._last_received_at is not None and client.is_stale(now):
                         self._update_snapshot(client, connected=True, stale=True)
                         break  # Reconnect on next iteration
 
@@ -151,6 +196,14 @@ class TelemetryAdapter:
                 time.sleep(1)
 
         client.close()
+        self._client = None
+
+    def _update_snapshot_no_client(self, *, error: str) -> None:
+        with self._lock:
+            self._snapshot.connected = False
+            self._snapshot.source = "SIMULATED" if self.config.runtime_mode == "simulated" else "NO_DATA"
+            self._snapshot.received_at = None
+            self._snapshot.error_message = error
 
     def _process_message(self, client: BasicServerClient, msg: PatrolMessage) -> None:
         """Parse and store status message."""
@@ -158,18 +211,25 @@ class TelemetryAdapter:
             result = parse_status_message(msg)
             with self._lock:
                 self._message_count += 1
+                self._connection_received_messages += 1
+                self._last_message_type = (msg.message_type, msg.command)
                 self._update_snapshot_inner(client, result)
         except Exception as e:
             with self._lock:
                 self._error_count += 1
+                self._snapshot.connected = False
+                self._snapshot.source = "ERROR"
+                self._snapshot.received_at = None
                 self._snapshot.error_message = f"Parse error: {e}"
 
     def _update_snapshot(self, client: BasicServerClient, *, connected: bool, 
                          stale: bool = False, error: str = "") -> None:
         with self._lock:
-            self._snapshot.connected = connected and not stale
-            self._snapshot.source = "REAL" if connected and not stale else "SIMULATED"
-            self._snapshot.received_at = datetime.now(UTC).isoformat() if connected else None
+            self._snapshot.connected = connected and not stale and self._connection_received_messages > 0
+            self._snapshot.source = "REAL" if connected and not stale and self._connection_received_messages > 0 else (
+                "STALE" if stale else "ERROR" if error else "NO_DATA"
+            )
+            self._snapshot.received_at = datetime.now(UTC).isoformat() if self._snapshot.connected else None
             self._snapshot.error_message = error
             if connected and client._last_received_at:
                 age = (datetime.now(UTC) - client._last_received_at).total_seconds() * 1000
@@ -210,6 +270,14 @@ class TelemetryAdapter:
                 "source": snap.source,
                 "connected": snap.connected,
                 "control_enabled": False,
+                "telemetry_tx_enabled": self.config.telemetry_tx_enabled,
+                "connection_state": "CONNECTED" if snap.connected else snap.source,
+                "bytes_received": self._bytes_received,
+                "valid_frames": self._valid_frames,
+                "invalid_frames": self._invalid_frames,
+                "connection_count": self._connection_count,
+                "reconnect_count": self._reconnect_count,
+                "last_message_type": self._last_message_type,
                 "received_at": snap.received_at,
                 "age_ms": snap.age_ms,
                 "message_count": self._message_count,

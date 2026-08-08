@@ -5,7 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-D="${SCRIPT_DIR}"
+ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 echo "=== M20 巡逻机器人启动脚本 ==="
 echo "脚本目录：${SCRIPT_DIR}"
@@ -15,52 +15,48 @@ echo ""
 echo "[1/4] 检查 Python 环境..."
 PYTHON_VERSION=$(python3 --version 2>&1 | cut -d' ' -f2)
 echo "    Python 版本：${PYTHON_VERSION}"
+case "${PYTHON_VERSION}" in
+    3.8.*) ;;
+    *) echo "    ✗ 需要真实 Python 3.8.x 运行时"; exit 1 ;;
+esac
 
 # 验证编译
 echo "[2/4] 验证代码编译..."
-if python3 -m compileall -q "${D}/backend/" 2>/dev/null; then
+if python3 -m compileall -q "${ROOT}/backend/" 2>/dev/null; then
     echo "    ✓ 编译通过"
 else
     echo "    ✗ 编译失败"
     exit 1
 fi
 
-# 停止旧进程
-echo "[3/4] 停止旧服务..."
-pkill -9 -f "python3.*dashboard" 2>/dev/null || true
-sleep 1
-
-# 启动服务
-echo "[4/4] 启动服务..."
-cd "$D"
-
-# 检查依赖
-if python3 -c "import fastapi" 2>/dev/null; then
-    echo "    检测到 fastapi，尝试启动完整版..."
-    nohup python3 -c "
-import sys
-sys.path.insert(0, '.')
-from backend.app.dashboard_realtime import serve_dashboard
-serve_dashboard(host='127.0.0.1', port=8080, aos_host='10.21.31.103')
-" > /tmp/dashboard_realtime.log 2>&1 &
-else
-    echo "    启动简化版（无外部依赖）..."
-    nohup python3 backend/app/dashboard_simple.py > /tmp/dashboard_simple.log 2>&1 &
+# 只通过本项目的用户级 systemd 服务停止旧实例，避免误杀其他进程
+echo "[3/4] 检查本项目服务..."
+if command -v systemctl >/dev/null 2>&1 && systemctl --user is-active --quiet m20-patrol-realtime.service; then
+    echo "    检测到冲突服务 m20-patrol-realtime.service 正在运行；拒绝启动"
+    exit 1
+fi
+if command -v systemctl >/dev/null 2>&1 && systemctl --user is-enabled --quiet m20-patrol-realtime.service; then
+    echo "    检测到冲突服务 m20-patrol-realtime.service 已启用；拒绝启动"
+    exit 1
+fi
+if command -v systemctl >/dev/null 2>&1 && systemctl --user is-active --quiet m20-patrol-readonly.service; then
+    echo "    本项目服务已运行；请使用 systemctl --user stop m20-patrol-readonly.service 管理它"
+    exit 0
 fi
 
-DASHBOARD_PID=$!
-echo "    服务 PID: $DASHBOARD_PID"
+echo "[4/4] 通过唯一部署入口启动 realtime_readonly..."
+"${SCRIPT_DIR}/deploy-readonly.sh" --one-shot
 
 # 等待服务启动
 echo "    等待服务启动..."
 for i in $(seq 1 10); do
-    if curl -s http://127.0.0.1:8080/api/v1/health > /dev/null 2>&1; then
+    if curl -fsS http://10.21.31.104:8080/api/v1/health | python3 -c 'import json,sys; d=json.load(sys.stdin); raise SystemExit(0 if d.get("healthy") is True and d.get("source") == "REAL" and d.get("connected") is True and d.get("valid_frames", 0) > 0 and isinstance(d.get("age_ms"), (int,float)) and 0 <= d["age_ms"] < 3000 else 1)' >/dev/null 2>&1; then
         echo "    ✓ 服务启动成功"
         break
     fi
     if [ $i -eq 10 ]; then
         echo "    ✗ 服务启动超时"
-        echo "    查看日志：cat /tmp/dashboard_simple.log"
+        echo "    查看日志：journalctl --user -u m20-patrol-readonly.service"
         exit 1
     fi
     sleep 1
@@ -68,11 +64,11 @@ done
 
 echo ""
 echo "=========================================="
-echo "访问地址：http://127.0.0.1:8080/"
+echo "访问地址：http://10.21.31.104:8080/"
 echo ""
 echo "从笔记本访问请执行："
-echo "  ssh -L 8080:127.0.0.1:8080 user@10.21.31.104"
+echo "  ssh -L 8080:10.21.31.104:8080 user@10.21.31.104"
 echo ""
 echo "停止服务："
-echo "  pkill -f dashboard"
+echo "  systemctl --user stop m20-patrol-readonly.service"
 echo "=========================================="

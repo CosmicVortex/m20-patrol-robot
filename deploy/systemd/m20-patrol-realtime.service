@@ -4,11 +4,15 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/m20-patrol-robot
-Environment=PYTHONPATH=%h/m20-patrol-robot
-# Bind to big cores (4-7) per V1.0.0 compute platform documentation
-ExecStartPre=/usr/bin/taskset -c 4-7 /bin/true
-ExecStart=%h/m20-patrol-robot/.venv/bin/python -c 'from backend.app.dashboard_realtime import serve_dashboard; serve_dashboard(host="127.0.0.1", port=8080, aos_host="10.21.31.103")'
+WorkingDirectory=%h/m20-patrol-robot/current
+Environment=PYTHONPATH=%h/m20-patrol-robot/current
+Environment=M20_RUNTIME_MODE=realtime_readonly
+Environment=M20_READ_ONLY_MODE=true
+Environment=M20_CONTROL_ENABLED=false
+Environment=M20_TELEMETRY_TX_ENABLED=false
+Environment=M20_TARGET_HOST=10.21.31.103
+Environment=M20_TARGET_PORT=30001
+ExecStart=%h/m20-patrol-robot/current/.venv/bin/python -c 'from backend.app.dashboard_realtime import serve_dashboard; serve_dashboard(host="10.21.31.104", port=8080, aos_host="10.21.31.103", runtime_mode="realtime_readonly", read_only_mode=True, control_enabled=False, telemetry_tx_enabled=False, telemetry_receive_enabled=True)'
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true

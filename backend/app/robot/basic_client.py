@@ -17,16 +17,16 @@ except ImportError:
 from collections import deque
 from ipaddress import IPv4Address
 import socket
-from typing import Final, Deque
+from typing import Deque, Final, List, Optional, Tuple
 
 from backend.app.protocol.frame import FrameCodec, IncrementalDecoder, m20_v010_layout
 from backend.app.protocol.messages import ASDUFormat, decode_patrol_message, encode_patrol_message
 from backend.app.protocol.messages import PatrolMessage
 
 
-_HEARTBEAT: Final[tuple[int, int]] = (100, 100)
-_LOCATION_QUERY: Final[tuple[int, int]] = (1007, 2)
-_NAVIGATION_PERCEPTION_QUERY: Final[tuple[int, int]] = (2002, 1)
+_HEARTBEAT: Final[Tuple[int, int]] = (100, 100)
+_LOCATION_QUERY: Final[Tuple[int, int]] = (1007, 2)
+_NAVIGATION_PERCEPTION_QUERY: Final[Tuple[int, int]] = (2002, 1)
 
 
 class ClientStateError(RuntimeError):
@@ -54,9 +54,10 @@ class BasicServerConfig:
     tcp_port: int = 30001
     control_enabled: bool = False
     stale_after_seconds: float = 3.0
-    protocol_evidence: DeploymentEvidence | None = None
-    firmware_evidence: DeploymentEvidence | None = None
-    permission_evidence: DeploymentEvidence | None = None
+    protocol_evidence: Optional[DeploymentEvidence] = None
+    firmware_evidence: Optional[DeploymentEvidence] = None
+    permission_evidence: Optional[DeploymentEvidence] = None
+    transmit_enabled: bool = False
 
     def __post_init__(self) -> None:
         try:
@@ -69,6 +70,8 @@ class BasicServerConfig:
             raise ValueError("tcp_port must be an integer from 1 to 65535")
         if type(self.control_enabled) is not bool:
             raise ValueError("control_enabled must be boolean")
+        if type(self.transmit_enabled) is not bool:
+            raise ValueError("transmit_enabled must be boolean")
         if type(self.stale_after_seconds) not in (int, float) or self.stale_after_seconds <= 0:
             raise ValueError("stale_after_seconds must be positive")
 
@@ -78,12 +81,15 @@ class BasicServerClient:
 
     def __init__(self, config: BasicServerConfig) -> None:
         self.config = config
-        self._last_received_at: datetime | None = None
+        self._last_received_at: Optional[datetime] = None
         self._codec = FrameCodec(m20_v010_layout(), max_payload_size=65535)
         self._decoder = IncrementalDecoder(self._codec)
-        self._socket: socket.socket | None = None
+        self._socket: Optional[socket.socket] = None
         self._next_message_id = 0
         self._inbox: Deque[PatrolMessage] = deque()
+        self.bytes_received = 0
+        self.valid_frames = 0
+        self.invalid_frames = 0
 
     @staticmethod
     def _now_text() -> str:
@@ -162,7 +168,7 @@ class BasicServerClient:
         connection.settimeout(timeout_seconds)
         self._socket = connection
 
-    def connect_for_test(self, address: tuple[str, int]) -> None:
+    def connect_for_test(self, address: Tuple[str, int]) -> None:
         """Test-only loopback seam; production callers must use connect()."""
         host, port = address
         if host != "127.0.0.1" or type(port) is not int:
@@ -173,12 +179,14 @@ class BasicServerClient:
         self._socket.settimeout(1)
 
     def send_read_only(self, message: PatrolMessage) -> PatrolMessage:
+        if not self.config.transmit_enabled:
+            raise ClientStateError("transmit is disabled for this client")
         if (message.message_type, message.command) not in (_HEARTBEAT, _LOCATION_QUERY, _NAVIGATION_PERCEPTION_QUERY):
             raise ClientStateError("only documented read-only messages may use send_read_only")
         frame_id = self._send(message)
         deadline = datetime.now(UTC).timestamp() + 3
         while datetime.now(UTC).timestamp() < deadline:
-            response: PatrolMessage | None = None
+            response: Optional[PatrolMessage] = None
             remaining = max(0.05, deadline - datetime.now(UTC).timestamp())
             for received in self._receive_from_socket(timeout_seconds=remaining):
                 # V1.2.1: match by message_id for request/response correlation
@@ -196,7 +204,7 @@ class BasicServerClient:
         frame_id = self._send(message)
         deadline = datetime.now(UTC).timestamp() + 5
         while datetime.now(UTC).timestamp() < deadline:
-            response: PatrolMessage | None = None
+            response: Optional[PatrolMessage] = None
             remaining = max(0.05, deadline - datetime.now(UTC).timestamp())
             for received in self._receive_from_socket(timeout_seconds=remaining):
                 if response is None and received.message_id == frame_id:
@@ -207,20 +215,30 @@ class BasicServerClient:
                 return response
         raise ClientStateError(f"no response for message_id={frame_id}")
 
-    def receive_messages(self, *, timeout_seconds: float) -> list[PatrolMessage]:
+    def receive_messages(self, *, timeout_seconds: float) -> List[PatrolMessage]:
         if self._inbox:
             messages = list(self._inbox)
             self._inbox.clear()
             return messages
         return self._receive_from_socket(timeout_seconds=timeout_seconds)
 
-    def _receive_from_socket(self, *, timeout_seconds: float) -> list[PatrolMessage]:
+    def _receive_from_socket(self, *, timeout_seconds: float) -> List[PatrolMessage]:
         connection = self._require_socket()
         connection.settimeout(timeout_seconds)
-        data = connection.recv(65536)
+        try:
+            data = connection.recv(65536)
+        except socket.timeout:
+            return []
         if not data:
             raise ClientStateError("basic_server closed TCP connection")
-        messages = [decode_patrol_message(frame.payload, ASDUFormat(frame.flags)) for frame in self._decoder.feed(data)]
+        self.bytes_received += len(data)
+        try:
+            frames = self._decoder.feed(data)
+            messages = [decode_patrol_message(frame.payload, ASDUFormat(frame.flags)) for frame in frames]
+        except Exception:
+            self.invalid_frames += 1
+            raise
+        self.valid_frames += len(messages)
         self.record_received_at(datetime.now(UTC))
         return messages
 

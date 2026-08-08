@@ -8,7 +8,7 @@
 - **演示阶段场地**：华翔智行办公室
 - **目标部署场地**：东莞中升之星奔驰 4S 店
 - **实施顺序**：办公室先完成建图、状态接入、视频切换、单点导航控制验收；全部通过后，门店重新建图并单独验收
-- **部署主机**：GOS（10.21.31.104，候选值，须现场签认）
+- **部署主机**：GOS（10.21.31.104，项目负责人确认固定地址）
 - **当前阶段**：离线基线完成，等待办公室实机准入
 
 ## 当前交付
@@ -50,7 +50,7 @@
 ```bash
 # 运行全部测试
 PYTHONPATH=. uv run --with pytest pytest -q
-# 76 passed
+# 当前测试结果以本轮执行报告为准
 
 # 编译检查
 python3 -m compileall -q backend
@@ -62,10 +62,10 @@ git diff --check
 ## GOS 部署
 
 ```bash
-bash deploy/scripts/install-gos.sh --repo /path/to/m20-patrol-robot --ref <approved-commit>
+bash deploy/scripts/deploy-readonly.sh --one-shot
 ```
 
-安装前须确认：GOS 上的 Python、systemd、运行账户、安装目录和现场批准的提交。完整说明见 [docs/06-deployment.md](./06-deployment.md)。
+入口会自动检查 GOS 上的 Python 3.8.x、systemd、运行账户、安装目录、固定地址和只读安全开关。完整说明见 [docs/06-deployment.md](./06-deployment.md)。
 
 ## 文档导航
 

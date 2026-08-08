@@ -1,8 +1,6 @@
 """Video stream manager for M20 Pro body cameras.
 
-Based on V0.1.0 handbook Appendix 3:
-- Front camera: rtsp://10.21.31.103:8554/video1
-- Back camera:  rtsp://10.21.31.103:8554/video2
+Based on V0.1.0 handbook Appendix 3; endpoint remains field-confirmed configuration only.
 """
 
 from __future__ import annotations
@@ -43,8 +41,8 @@ class VideoStreamManager:
     """Manage M20 Pro camera streams."""
 
     # Official RTSP URLs from V0.1.0 handbook
-    DEFAULT_FRONT_CAMERA = "rtsp://10.21.31.103:8554/video1"
-    DEFAULT_BACK_CAMERA = "rtsp://10.21.31.103:8554/video2"
+    DEFAULT_FRONT_CAMERA = ""
+    DEFAULT_BACK_CAMERA = ""
 
     def __init__(self) -> None:
         self._streams: dict[VideoSource, CameraConfig] = {
@@ -121,6 +119,15 @@ class VideoStreamManager:
         return True
 
 
-def get_default_video_manager() -> VideoStreamManager:
-    """Create default video stream manager."""
-    return VideoStreamManager()
+def get_default_video_manager():
+    """Compatibility factory returning the unified lifecycle manager."""
+    from backend.app.video.stream_manager import VideoStreamManager as ManagedVideoStreamManager
+
+    return ManagedVideoStreamManager()
+
+
+def get_unified_video_manager():
+    """Explicit unified factory for new callers."""
+    from backend.app.video.stream_manager import VideoStreamManager as ManagedVideoStreamManager
+
+    return ManagedVideoStreamManager()

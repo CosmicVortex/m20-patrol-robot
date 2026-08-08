@@ -9,6 +9,7 @@ from __future__ import annotations
 import html
 import json
 import threading
+import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
 try:
@@ -25,11 +26,17 @@ from backend.app.robot.telemetry import TelemetryAdapter, ConnectionConfig
 class DashboardConfig:
     host: str = "127.0.0.1"
     port: int = 8080
-    aos_host: str = "10.21.31.103"
+    aos_host: str = ""
     aos_port: int = 30001
     required_firmware_version: str = "V1.1.8"
     video_enabled: bool = True
     navigation_enabled: bool = False
+    runtime_mode: str = "simulated"
+    read_only_mode: bool = True
+    control_enabled: bool = False
+    telemetry_tx_enabled: bool = False
+    telemetry_receive_enabled: bool = True
+    stale_after_s: float = 3.0
 
 
 class RealTimeDashboard:
@@ -44,10 +51,35 @@ class RealTimeDashboard:
     def start(self) -> None:
         if self._running:
             return
+        if self.config.runtime_mode not in {"simulated", "realtime", "realtime_readonly"}:
+            raise ValueError("runtime_mode must be simulated, realtime, or realtime_readonly")
+        if self.config.runtime_mode in {"realtime", "realtime_readonly"} and not self.config.aos_host:
+            raise ValueError("realtime mode requires a field-confirmed aos_host")
+        if not self.config.read_only_mode or self.config.control_enabled:
+            raise ValueError("dashboard requires read_only_mode=true and control_enabled=false")
+        if self.config.read_only_mode and self.config.telemetry_tx_enabled:
+            raise ValueError("read-only dashboard cannot enable telemetry transmission")
         self._running = True
+        print(
+            "READ_ONLY_MODE=%s CONTROL_ENABLED=%s M20_RUNTIME_MODE=%s "
+            "ALLOW_ROBOT_TELEMETRY_TX=%s TARGET_HOST=%s TARGET_PORT=%s"
+            % (
+                str(self.config.read_only_mode).lower(),
+                str(self.config.control_enabled).lower(),
+                self.config.runtime_mode,
+                str(self.config.telemetry_tx_enabled).lower(),
+                self.config.aos_host or "<unset>",
+                self.config.aos_port,
+            ),
+            flush=True,
+        )
         telemetry_config = ConnectionConfig(
             host=self.config.aos_host,
             tcp_port=self.config.aos_port,
+            runtime_mode=self.config.runtime_mode,
+            read_only=self.config.read_only_mode,
+            telemetry_tx_enabled=self.config.telemetry_tx_enabled,
+            telemetry_receive_enabled=self.config.telemetry_receive_enabled,
         )
         self._adapter = TelemetryAdapter(telemetry_config)
         self._adapter.start()
@@ -62,7 +94,7 @@ class RealTimeDashboard:
         if self._adapter:
             return self._adapter.get_status_payload()
         return {
-            "source": "SIMULATED",
+            "source": "NO_DATA",
             "connected": False,
             "control_enabled": False,
             "received_at": None,
@@ -70,7 +102,7 @@ class RealTimeDashboard:
             "data": {
                 "robot": "M20 Pro",
                 "navigation": "NOT_CONNECTED",
-                "message": "Adapter not started.",
+                "message": "Adapter not started; no robot data is available.",
             },
         }
 
@@ -477,14 +509,34 @@ function htmlEscape(s) {{ return String(s).replace(/&/g,'&amp;').replace(/</g,'&
         )
 
 
-def serve_dashboard(host: str = "127.0.0.1", port: int = 8080, aos_host: str = "10.21.31.103") -> None:
+def serve_dashboard(
+    host: str = "127.0.0.1",
+    port: int = 8080,
+    aos_host: str = "",
+    runtime_mode: str = "simulated",
+    read_only_mode: bool = True,
+    control_enabled: bool = False,
+    telemetry_tx_enabled: bool = False,
+    telemetry_receive_enabled: bool = True,
+) -> None:
     """Serve the real-time dashboard."""
-    if host != "127.0.0.1":
-        raise ValueError("dashboard may bind only to 127.0.0.1")
+    if host not in {"127.0.0.1", "10.21.31.104"}:
+        raise ValueError("dashboard may bind only to 127.0.0.1 or confirmed GOS address")
     if type(port) is not int or not 1 <= port <= 65535:
         raise ValueError("port must be an integer from 1 to 65535")
 
-    config = DashboardConfig(host=host, port=port, aos_host=aos_host)
+    config = DashboardConfig(
+        host=host,
+        port=port,
+        aos_host=aos_host or os.environ.get("M20_TARGET_HOST", ""),
+        aos_port=int(os.environ.get("M20_TARGET_PORT", "30001")),
+        runtime_mode=os.environ.get("M20_RUNTIME_MODE", runtime_mode),
+        read_only_mode=read_only_mode,
+        control_enabled=control_enabled,
+        telemetry_tx_enabled=telemetry_tx_enabled,
+        telemetry_receive_enabled=telemetry_receive_enabled,
+        stale_after_s=float(os.environ.get("M20_STALE_AFTER_SECONDS", "3")),
+    )
     dashboard = RealTimeDashboard(config)
     dashboard.start()
 
@@ -498,6 +550,36 @@ def serve_dashboard(host: str = "127.0.0.1", port: int = 8080, aos_host: str = "
                     payload = dashboard.get_status_payload()
                     body = json.dumps(payload, ensure_ascii=False).encode()
                     self._send(200, "application/json", body)
+                elif self.path == "/api/v1/health":
+                    payload = dashboard.get_status_payload()
+                    health = {
+                        "service": "m20-patrol-readonly",
+                        "runtime_mode": dashboard.config.runtime_mode,
+                        "read_only_mode": dashboard.config.read_only_mode,
+                        "control_enabled": dashboard.config.control_enabled,
+                        "telemetry_tx_enabled": dashboard.config.telemetry_tx_enabled,
+                        "source": payload.get("source"),
+                        "connected": payload.get("connected"),
+                        "valid_frames": payload.get("valid_frames", 0),
+                        "age_ms": payload.get("age_ms"),
+                        "message_parsed": payload.get("valid_frames", 0) > 0,
+                        "status_accepted": payload.get("source") == "REAL" and payload.get("connected") is True,
+                    }
+                    healthy = (
+                        health["runtime_mode"] == "realtime_readonly"
+                        and health["read_only_mode"] is True
+                        and health["control_enabled"] is False
+                        and health["telemetry_tx_enabled"] is False
+                        and health["connected"] is True
+                        and health["valid_frames"] > 0
+                        and health["source"] == "REAL"
+                        and health["message_parsed"] is True
+                        and health["status_accepted"] is True
+                        and isinstance(health["age_ms"], (int, float))
+                        and 0 <= health["age_ms"] < dashboard.config.stale_after_s * 1000
+                    )
+                    health["healthy"] = healthy
+                    self._send(200 if healthy else 503, "application/json", json.dumps(health).encode())
                 else:
                     self._send(404, "text/plain; charset=utf-8", b"not found\n")
 
