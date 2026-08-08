@@ -69,7 +69,7 @@ echo "[4/4] 通过唯一部署入口启动 realtime_readonly..."
 # 等待服务启动
 echo "    等待服务启动..."
 for i in $(seq 1 10); do
-    if curl -fsS "http://${WEB_BIND_HOST}:${WEB_PORT}/api/v1/health" | "$PYTHON_BIN" - "$STALE_AFTER_MS" -c 'import json,sys; d=json.load(sys.stdin); limit=int(sys.argv[1]); raise SystemExit(0 if d.get("healthy") is True and d.get("runtime_mode") == "realtime_readonly" and d.get("read_only_mode") is True and d.get("control_enabled") is False and d.get("telemetry_tx_enabled") is False and d.get("source") == "REAL" and d.get("connected") is True and d.get("valid_frames", 0) > 0 and isinstance(d.get("age_ms"), (int,float)) and 0 <= d.get("age_ms") < limit else 1)' >/dev/null 2>&1; then
+    if curl -fsS "http://${WEB_BIND_HOST}:${WEB_PORT}/api/v1/health" | "$PYTHON_BIN" - "$STALE_AFTER_MS" -c 'import json,sys; d=json.load(sys.stdin); limit=int(sys.argv[1]); required=("network_ready","tcp_connected","bytes_received","frame_valid","message_parsed","status_accepted","telemetry_fresh","data_state"); raise SystemExit(0 if d.get("healthy") is True and d.get("runtime_mode") == "realtime_readonly" and d.get("read_only_mode") is True and d.get("control_enabled") is False and d.get("telemetry_tx_enabled") is False and all(k in d for k in required) and d.get("network_ready") is True and d.get("tcp_connected") is True and d.get("bytes_received",0)>0 and d.get("frame_valid") is True and d.get("message_parsed") is True and d.get("status_accepted") is True and d.get("telemetry_fresh") is True and d.get("data_state") == "REAL_FRESH" and d.get("source") == "REAL" and d.get("connected") is True and d.get("valid_frames",0)>0 and isinstance(d.get("age_ms"),(int,float)) and 0 <= d.get("age_ms") < limit else 1)' >/dev/null 2>&1; then
         echo "    ✓ 服务启动成功"
         break
     fi
@@ -86,7 +86,7 @@ echo "=========================================="
 echo "访问地址：http://${WEB_BIND_HOST}:${WEB_PORT}/"
 echo ""
 echo "从笔记本访问请执行："
-echo "  ssh -L 8080:10.21.31.104:8080 user@10.21.31.104"
+echo "  ssh -L ${WEB_PORT}:${WEB_BIND_HOST}:${WEB_PORT} user@${WEB_BIND_HOST}"
 echo ""
 echo "停止服务："
 echo "  systemctl --user stop m20-patrol-readonly.service"

@@ -97,6 +97,7 @@ class TelemetryAdapter:
         self._bytes_received = 0
         self._valid_frames = 0
         self._invalid_frames = 0
+        self._tcp_connected = False
 
     @property
     def snapshot(self) -> StatusSnapshot:
@@ -154,6 +155,7 @@ class TelemetryAdapter:
         while self._running:
             try:
                 client.connect(timeout_seconds=3.0, read_only=True)
+                self._tcp_connected = True
                 self._connection_received_messages = 0
                 self._connection_count += 1
                 if self._connection_count > 1:
@@ -186,16 +188,24 @@ class TelemetryAdapter:
                     # the normal freshness threshold applies.
                     if client._last_received_at is not None and client.is_stale(now):
                         self._update_snapshot(client, connected=True, stale=True)
+                        client.close()
+                        self._client = None
+                        self._tcp_connected = False
+                        client = BasicServerClient(config)
+                        self._client = client
                         break  # Reconnect on next iteration
 
             except ClientStateError as e:
+                self._tcp_connected = False
                 self._update_snapshot(client, connected=False, error=str(e))
                 time.sleep(1)
             except Exception as e:
+                self._tcp_connected = False
                 self._update_snapshot(client, connected=False, error=str(e))
                 time.sleep(1)
 
         client.close()
+        self._tcp_connected = False
         self._client = None
 
     def _update_snapshot_no_client(self, *, error: str) -> None:
@@ -272,9 +282,15 @@ class TelemetryAdapter:
                 "control_enabled": False,
                 "telemetry_tx_enabled": self.config.telemetry_tx_enabled,
                 "connection_state": "CONNECTED" if snap.connected else snap.source,
+                "network_ready": self._connection_count > 0,
+                "tcp_connected": self._tcp_connected,
                 "bytes_received": self._bytes_received,
                 "valid_frames": self._valid_frames,
                 "invalid_frames": self._invalid_frames,
+                "frame_valid": self._valid_frames > 0,
+                "message_parsed": self._message_count > 0,
+                "status_accepted": snap.source == "REAL" and snap.connected,
+                "telemetry_fresh": snap.source == "REAL" and snap.connected and snap.age_ms is not None and 0 <= snap.age_ms < self.config.stale_after_s * 1000,
                 "connection_count": self._connection_count,
                 "reconnect_count": self._reconnect_count,
                 "last_message_type": self._last_message_type,

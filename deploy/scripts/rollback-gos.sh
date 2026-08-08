@@ -6,6 +6,21 @@ TARGET_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/m20-patrol-robot"
 SERVICE_NAME='m20-patrol-readonly.service'
 REF=''
 UNIT_PATH="$HOME/.config/systemd/user/$SERVICE_NAME"
+GOS_HOST=''
+AOS_HOST=''
+AOS_TCP_PORT=''
+WEB_PORT=''
+STALE_AFTER_SECONDS=''
+load_manifest_values() {
+  local manifest="$1"
+  IFS=$'\t' read -r GOS_HOST AOS_HOST AOS_TCP_PORT WEB_PORT STALE_AFTER_SECONDS < <(
+    python3 - "$manifest" <<'PY'
+import json, sys
+d=json.load(open(sys.argv[1]))
+print("\t".join([d["targets"]["gos_host"], d["targets"]["aos_host"], str(d["ports"]["aos_tcp"]), str(d["ports"]["web"]), str(d["stale_after_seconds"])]))
+PY
+  )
+}
 
 usage() { printf 'Usage: %s --ref COMMIT [--target-root PATH]\n' "$0"; }
 while [ "$#" -gt 0 ]; do
@@ -25,11 +40,6 @@ fi
 command -v systemctl >/dev/null || { printf 'ERROR: systemctl is required on the target GOS\n' >&2; exit 2; }
 systemctl --user show-environment >/dev/null 2>&1 || { printf 'ERROR: systemd user manager is unavailable\n' >&2; exit 2; }
 command -v ip >/dev/null || { printf 'ERROR: ip is required on the target GOS\n' >&2; exit 2; }
-ip -4 -o addr show | awk '{print $4}' | cut -d/ -f1 | grep -Fxq '10.21.31.104' || { printf 'ERROR: GOS identity mismatch\n' >&2; exit 2; }
-conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service state is unknown\n' >&2; exit 2; }
-conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service enablement is unknown\n' >&2; exit 2; }
-[ "$conflict_active" != active ] || { printf 'ERROR: conflicting realtime service is active\n' >&2; exit 2; }
-[ "$conflict_enabled" != enabled ] || { printf 'ERROR: conflicting realtime service is enabled\n' >&2; exit 2; }
 case "$TARGET_ROOT" in
   /*) ;;
   *) printf 'ERROR: --target-root must be absolute\n' >&2; exit 2 ;;
@@ -44,6 +54,25 @@ fi
 COMMIT="$(printf '%s' "$REF" | tr '[:upper:]' '[:lower:]')"
 RELEASE="$TARGET_ROOT/releases/$COMMIT"
 [ -d "$RELEASE" ] || { printf 'ERROR: installed release not found: %s\n' "$RELEASE" >&2; exit 2; }
+RELEASE_REAL="$(readlink -f "$RELEASE")"
+ROOT_REAL="$(readlink -f "$TARGET_ROOT/releases")"
+[ "$RELEASE_REAL" = "$ROOT_REAL/$COMMIT" ] || { printf 'ERROR: release path escapes releases root\n' >&2; exit 2; }
+[ "$(basename "$RELEASE_REAL")" = "$COMMIT" ] || { printf 'ERROR: release identity mismatch\n' >&2; exit 2; }
+load_manifest_values "$RELEASE/deploy/readonly-manifest.json"
+[ -f "$RELEASE/.m20-release-provenance.json" ] || { printf 'ERROR: release provenance is missing\n' >&2; exit 2; }
+python3 - "$RELEASE/.m20-release-provenance.json" "$RELEASE/deploy/readonly-manifest.json" "$COMMIT" <<'PY'
+import hashlib, json, pathlib, sys
+p=json.loads(pathlib.Path(sys.argv[1]).read_text())
+if p.get("commit") != sys.argv[3]: raise SystemExit("release provenance commit mismatch")
+digest=hashlib.sha256(pathlib.Path(sys.argv[2]).read_bytes()).hexdigest()
+if p.get("manifest_sha256") != digest: raise SystemExit("release provenance manifest mismatch")
+PY
+[ "$GOS_HOST" = "10.21.31.104" ] || { printf 'ERROR: release GOS target is not approved\n' >&2; exit 2; }
+ip -4 -o addr show | awk '{print $4}' | cut -d/ -f1 | grep -Fxq "$GOS_HOST" || { printf 'ERROR: GOS identity mismatch\n' >&2; exit 2; }
+conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service state is unknown\n' >&2; exit 2; }
+conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service enablement is unknown\n' >&2; exit 2; }
+[ "$conflict_active" = inactive ] || { printf 'ERROR: conflicting realtime service state is not inactive: %s\n' "$conflict_active" >&2; exit 2; }
+[ "$conflict_enabled" = disabled ] || { printf 'ERROR: conflicting realtime service is not disabled: %s\n' "$conflict_enabled" >&2; exit 2; }
 [ ! -e "$TARGET_ROOT/current" ] && [ ! -L "$TARGET_ROOT/current" ] || [ -L "$TARGET_ROOT/current" ] || { printf 'ERROR: current must be a symlink\n' >&2; exit 2; }
 if [ -L "$TARGET_ROOT/current" ]; then
   python3 - "$TARGET_ROOT/current" "$TARGET_ROOT" <<'PY'
@@ -54,7 +83,10 @@ if target.parent != root / "releases" or len(target.name) != 40 or any(c not in 
     raise SystemExit("current target is outside releases or invalid")
 PY
 fi
-[ -L "$UNIT_PATH" ] && { printf 'ERROR: systemd unit path must not be a symlink\n' >&2; exit 2; }
+if [ -L "$UNIT_PATH" ] || { [ -e "$UNIT_PATH" ] && [ ! -f "$UNIT_PATH" ]; }; then
+  printf 'ERROR: systemd unit path must be absent or a regular file\n' >&2
+  exit 2
+fi
 [ -x "$RELEASE/.venv/bin/python" ] || { printf 'ERROR: release Python is missing\n' >&2; exit 2; }
 [ -f "$RELEASE/backend/app/dashboard_realtime.py" ] || { printf 'ERROR: release realtime dashboard is missing\n' >&2; exit 2; }
 [ -f "$RELEASE/deploy/systemd/$SERVICE_NAME" ] || { printf 'ERROR: release systemd template is missing\n' >&2; exit 2; }
@@ -70,7 +102,7 @@ assert m["targets"] == {"gos_host":"10.21.31.104","aos_host":"10.21.31.103","nos
 assert m["ports"] == {"aos_tcp":30001,"aos_udp":30000,"rtsp":8554,"web":8080}
 assert m["credentials_included"] is False
 unit=(r / "deploy/systemd/m20-patrol-readonly.service").read_text()
-for item in ("M20_RUNTIME_MODE=realtime_readonly","M20_READ_ONLY_MODE=true","M20_CONTROL_ENABLED=false","M20_TELEMETRY_TX_ENABLED=false","M20_TARGET_HOST=10.21.31.103","host=\"10.21.31.104\"","port=8080","telemetry_receive_enabled=True"):
+for item in ("M20_RUNTIME_MODE=realtime_readonly","M20_READ_ONLY_MODE=true","M20_CONTROL_ENABLED=false","M20_TELEMETRY_TX_ENABLED=false","M20_TARGET_HOST=@AOS_HOST@","M20_TARGET_PORT=@AOS_TCP_PORT@","host=\"@GOS_HOST@\"","port=@WEB_PORT@","telemetry_receive_enabled=True","stale_after_s=@STALE_AFTER_SECONDS@"):
     assert item in unit, item
 assert (r / "backend/app/dashboard_realtime.py").is_file()
 PY
@@ -91,7 +123,6 @@ old_enabled_state="$(systemctl --user show -p UnitFileState --value "$SERVICE_NA
 [ "$old_enabled_state" = enabled ] || [ "$old_enabled_state" = disabled ] || { printf 'ERROR: unsupported target service enablement: %s\n' "$old_enabled_state" >&2; exit 2; }
 OLD_SERVICE_ACTIVE_STATE="$old_active_state"
 OLD_SERVICE_ENABLED_STATE="$old_enabled_state"
-STATE_SNAPSHOT_COMPLETE=true
 restore_service_state() {
   systemctl --user daemon-reload
   if [ "$OLD_SERVICE_ACTIVE_STATE" = active ]; then
@@ -135,17 +166,26 @@ trap cleanup EXIT
 # Save current unit file before overwriting
 if [ -f "$UNIT_PATH" ]; then
   OLD_UNIT_EXISTS=true
-  cp -p "$UNIT_PATH" "$SAVED_UNIT"
+  cp -p "$UNIT_PATH" "$SAVED_UNIT" || exit 1
 fi
 if [ -L "$TARGET_ROOT/current" ]; then
   OLD_CURRENT_EXISTS=true
-  readlink "$TARGET_ROOT/current" > "$SAVED_CURRENT_LINK"
+  readlink "$TARGET_ROOT/current" > "$SAVED_CURRENT_LINK" || exit 1
 fi
-
+STATE_SNAPSHOT_COMPLETE=true
 mkdir -p "$HOME/.config/systemd/user"
 UNIT_TMP="$HOME/.config/systemd/user/.${SERVICE_NAME}.tmp.$$"
 trap cleanup EXIT
-sed "s#%h/m20-patrol-robot/current#$TARGET_ROOT/current#g; s#%h/m20-patrol-robot#$RELEASE#g" "$RELEASE/deploy/systemd/$SERVICE_NAME" > "$UNIT_TMP"
+sed -e "s#%h/m20-patrol-robot/current#$TARGET_ROOT/current#g" \
+    -e "s#%h/m20-patrol-robot#$RELEASE#g" \
+    -e "s#@GOS_HOST@#$GOS_HOST#g" -e "s#@AOS_HOST@#$AOS_HOST#g" \
+    -e "s#@AOS_TCP_PORT@#$AOS_TCP_PORT#g" -e "s#@WEB_PORT@#$WEB_PORT#g" \
+    -e "s#@STALE_AFTER_SECONDS@#$STALE_AFTER_SECONDS#g" \
+    "$RELEASE/deploy/systemd/$SERVICE_NAME" > "$UNIT_TMP"
+if grep -Eq '@[A-Z0-9_]+@' "$UNIT_TMP"; then
+  printf 'ERROR: unresolved systemd template placeholders\n' >&2
+  exit 1
+fi
 grep -Fq "ExecStart=$TARGET_ROOT/current/.venv/bin/python" "$UNIT_TMP" || { printf 'ERROR: generated unit path check failed\n' >&2; exit 1; }
 chmod 600 "$UNIT_TMP"
 mv -f "$UNIT_TMP" "$UNIT_PATH"
@@ -156,4 +196,4 @@ systemctl --user daemon-reload
 restore_service_state
 rm -f "$SAVED_UNIT" "$SAVED_CURRENT_LINK"
 trap - EXIT
-printf 'ROLLED_BACK_COMMIT=%s\nSERVICE=%s\nCONTROL_ENABLED=false\nWEB_BIND_HOST=10.21.31.104\nWEB_PORT=8080\n' "$COMMIT" "$SERVICE_NAME"
+printf 'ROLLED_BACK_COMMIT=%s\nSERVICE=%s\nCONTROL_ENABLED=false\nWEB_BIND_HOST=%s\nWEB_PORT=%s\n' "$COMMIT" "$SERVICE_NAME" "$GOS_HOST" "$WEB_PORT"

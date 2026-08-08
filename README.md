@@ -1,6 +1,6 @@
-# 山猫 M20 Pro 巡逻项目
+# 山猫 M20 Pro 只读实时观测项目
 
-山猫 M20 Pro 巡逻安防系统的二次开发代码库。部署在 M20 Pro 的 GOS（用户开发主机）上，通过 basic_server 协议与 AOS（运动主机）通信，实现状态监控、视频回传和受控导航。
+山猫 M20 Pro 巡逻安防系统的二次开发代码库。本阶段只提供 GOS 上的非控制实时状态观测；通过 basic_server 协议从 AOS 接收状态，不启动导航、巡逻、云台、拍照或其他控制路径。
 
 ## 项目身份
 
@@ -9,7 +9,36 @@
 - **目标部署场地**：东莞中升之星奔驰 4S 店
 - **实施顺序**：办公室先完成建图、状态接入、视频切换、单点导航控制验收；全部通过后，门店重新建图并单独验收
 - **部署主机**：GOS（10.21.31.104，项目负责人确认固定地址）
-- **当前阶段**：云端离线基线完成，等待 GOS `10.21.31.104` 本机执行
+- **当前阶段**：云端离线基线已完成，GOS 真机部署和真实遥测仍未验证，当前状态为 `BLOCKED`
+
+## 固定目标、端口与配置来源
+
+唯一配置来源是版本化 `deploy/readonly-manifest.json`：
+
+```text
+GOS_HOST=10.21.31.104
+AOS_HOST=10.21.31.103
+NOS_HOST=13.21.31.106
+AOS_TCP_PORT=30001
+AOS_UDP_PORT=30000
+RTSP_PORT=8554
+WEB_PORT=8080
+M20_RUNTIME_MODE=realtime_readonly
+READ_ONLY_MODE=true
+CONTROL_ENABLED=false
+TELEMETRY_RX_ENABLED=true
+TELEMETRY_TX_ENABLED=false
+WEB_REALTIME_ENABLED=true
+```
+
+现场不需要手工修改 IP、端口或运行开关。主机仍必须满足 Python 3.8.10、项目依赖、用户级 systemd、固定路由和端口条件。已废弃地址 `10.21.31.101` 禁止使用。
+
+## 安全边界与运行模式
+
+- `REAL_RECEIVE_ONLY`：只建立经批准的接收链路，永不发送心跳。
+- `REAL_READONLY_WITH_HEARTBEAT`：本 release 不启用；若未来协议证据证明接收必须发送 Type=100/Command=100，必须另行审查和批准。
+- `SIMULATED`：仅测试使用，不创建机器人 socket，不得冒充真实状态。
+- 建图、导航、巡逻、运动、云台、拍照和控制均不属于本只读 release。
 
 ## 当前交付
 
@@ -35,6 +64,16 @@
 - 多点巡逻状态机
 - 审计日志
 - 数尔安防云台/视频适配
+
+真实状态只有同时满足以下条件才可判定为 `REAL`：
+
+```text
+TARGET_IDENTITY_CONFIRMED=PASS
+MESSAGE_PARSED=PASS
+TELEMETRY_FRESH=PASS
+```
+
+TCP 建连、收到字节、HTTP 200、进程运行和端口监听都不能替代上述条件。
 
 ## 安全边界
 
@@ -66,7 +105,30 @@ git diff --check
 bash deploy/scripts/deploy-readonly.sh --one-shot
 ```
 
-入口会自动检查 GOS 上的 Python 3.8.x、systemd、运行账户、安装目录、固定地址和只读安全开关。完整说明见 [docs/06-deployment.md](./06-deployment.md)。
+入口会自动检查 GOS 上的 Python 3.8.10、systemd、运行账户、安装目录、固定地址、端口冲突和只读安全开关。部署前可先执行：
+
+```bash
+bash deploy/scripts/deploy-readonly.sh --preflight
+bash deploy/scripts/deploy-readonly.sh --dry-run
+```
+
+`--dry-run` 必须输出 `NO_FILES_WRITTEN=true`、`NO_SYSTEMD_CHANGE=true` 和 `NO_NETWORK_SIDE_EFFECT=true`。任一前置条件失败都必须安全阻断；当前未取得 GOS 现场证据前，最终状态只能是 `BLOCKED` 或 `HOST_EXECUTION_REQUIRED`。
+
+健康接口：
+
+```text
+http://10.21.31.104:8080/api/v1/health
+http://10.21.31.104:8080/api/v1/status/latest
+```
+
+视频：manifest 未配置 RTSP endpoint 时保持 `UNVERIFIED`，不得猜测 URL 或启动 FFmpeg。完整说明见 [docs/06-deployment.md](./docs/06-deployment.md)。
+
+## 当前发布与分支状态
+
+- 当前历史 feature 分支：`feat/m20-readonly-one-shot-20260808`。
+- 该分支尚未迁移到规范命名；建议后续使用 `feature/readonly-realtime` 或 `fix/<scope>`，不删除或重写现有历史。
+- 未取得 GOS Python 3.8.10 和真实遥测证据前，不创建正式 SemVer tag 或 production release。
+- GitHub feature 分支同步不代表 GOS 部署完成。
 
 ## 文档导航
 

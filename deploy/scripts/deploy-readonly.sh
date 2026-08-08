@@ -96,15 +96,15 @@ preflight() {
   check_manifest
   check_python
   grep -Fq 'M20_RUNTIME_MODE=realtime_readonly' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_RUNTIME_MODE_MISMATCH'
-  grep -Fq 'M20_TARGET_HOST=10.21.31.103' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_TARGET_MISMATCH'
-  grep -Fq 'host="10.21.31.104"' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_BIND_MISMATCH'
-  grep -Fq 'port=8080' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_WEB_PORT_MISMATCH'
+  grep -Fq 'M20_TARGET_HOST=@AOS_HOST@' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_TARGET_TEMPLATE_MISSING'
+  grep -Fq 'host="@GOS_HOST@"' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_BIND_TEMPLATE_MISSING'
+  grep -Fq 'port=@WEB_PORT@' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_WEB_PORT_TEMPLATE_MISSING'
   grep -Fq 'control_enabled=False' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_CONTROL_NOT_DISABLED'
   grep -Fq 'telemetry_tx_enabled=False' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_TX_NOT_DISABLED'
   conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || fail 'CONFLICTING_SERVICE_STATE_UNKNOWN'
   conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || fail 'CONFLICTING_SERVICE_ENABLEMENT_UNKNOWN'
-  [ "$conflict_active" != active ] || fail 'CONFLICTING_REALTIME_SERVICE_ACTIVE'
-  [ "$conflict_enabled" != enabled ] || fail 'CONFLICTING_REALTIME_SERVICE_ENABLED'
+  [ "$conflict_active" = inactive ] || fail "CONFLICTING_REALTIME_SERVICE_STATE=$conflict_active"
+  [ "$conflict_enabled" = disabled ] || fail "CONFLICTING_REALTIME_SERVICE_ENABLEMENT=$conflict_enabled"
   check_host
   say 'TARGET_IDENTITY_CONFIRMED=PASS'
   say 'TELEMETRY_TX_ENABLED=false'
@@ -116,7 +116,7 @@ preflight() {
 install() {
   preflight
   check_clean_source
-  [ -x "$ROOT/deploy/scripts/install-gos.sh" ] || chmod +x "$ROOT/deploy/scripts/install-gos.sh"
+  [ -x "$ROOT/deploy/scripts/install-gos.sh" ] || fail 'INSTALL_SCRIPT_NOT_EXECUTABLE'
   local ref
   ref="$(git -C "$ROOT" rev-parse HEAD)"
   "$ROOT/deploy/scripts/install-gos.sh" --repo "$ROOT" --ref "$ref" --target-root "$TARGET_ROOT" --apply
@@ -140,19 +140,22 @@ import json, sys
 d=json.loads(sys.argv[1]); limit=float(sys.argv[2]) * 1000
 if d.get("healthy") is not True or d.get("runtime_mode") != "realtime_readonly" or d.get("read_only_mode") is not True or d.get("source") != "REAL" or d.get("connected") is not True:
     raise SystemExit("HEALTH_NOT_REAL")
+required=("network_ready","tcp_connected","bytes_received","frame_valid","message_parsed","status_accepted","telemetry_fresh","data_state")
+missing=[k for k in required if k not in d]
+if missing: raise SystemExit("HEALTH_FIELDS_MISSING="+','.join(missing))
 if d.get("control_enabled") is not False or d.get("telemetry_tx_enabled") is not False:
     raise SystemExit("HEALTH_SAFETY_FLAGS_INVALID")
-if d.get("valid_frames", 0) <= 0 or not isinstance(d.get("age_ms"), (int, float)) or not 0 <= d["age_ms"] < limit:
+if (d.get("network_ready") is not True or d.get("tcp_connected") is not True or d.get("bytes_received", 0) <= 0 or d.get("frame_valid") is not True or d.get("message_parsed") is not True or d.get("status_accepted") is not True or d.get("telemetry_fresh") is not True or d.get("data_state") != "REAL_FRESH" or d.get("valid_frames", 0) <= 0 or not isinstance(d.get("age_ms"), (int, float)) or not 0 <= d["age_ms"] < limit):
     raise SystemExit("HEALTH_NOT_FRESH")
 PY
   payload="$(curl -fsS "http://${GOS_HOST}:${WEB_PORT}/api/v1/status/latest")" || fail 'STATUS_ENDPOINT_UNAVAILABLE'
   PYTHONPATH="$ROOT" "$PYTHON_BIN" - "$payload" "$STALE_AFTER_SECONDS" <<'PY'
 import json, sys
 d=json.loads(sys.argv[1])
-required=("source","connected","valid_frames","age_ms")
+required=("source","connected","valid_frames","age_ms","network_ready","tcp_connected","bytes_received","frame_valid","message_parsed","status_accepted","telemetry_fresh","data_state")
 missing=[k for k in required if k not in d]
 if missing: raise SystemExit("STATUS_FIELDS_MISSING="+','.join(missing))
-if d.get("source") != "REAL" or d.get("connected") is not True or d.get("control_enabled") is not False or d.get("telemetry_tx_enabled") is not False or d.get("valid_frames", 0) <= 0 or d.get("age_ms") is None or d.get("age_ms") < 0 or d.get("age_ms") >= float(sys.argv[2]) * 1000:
+if (d.get("source") != "REAL" or d.get("connected") is not True or d.get("control_enabled") is not False or d.get("telemetry_tx_enabled") is not False or d.get("network_ready") is not True or d.get("tcp_connected") is not True or d.get("bytes_received", 0) <= 0 or d.get("frame_valid") is not True or d.get("message_parsed") is not True or d.get("status_accepted") is not True or d.get("telemetry_fresh") is not True or d.get("data_state") != "REAL_FRESH" or d.get("valid_frames", 0) <= 0 or d.get("age_ms") is None or d.get("age_ms") < 0 or d.get("age_ms") >= float(sys.argv[2]) * 1000):
   raise SystemExit("REALTIME_DATA_NOT_FRESH")
 print(json.dumps(d, ensure_ascii=False))
 PY
@@ -160,7 +163,7 @@ PY
 
 case "${1:---one-shot}" in
   --preflight) preflight ;;
-  --dry-run) load_manifest_values; check_manifest; say 'DRY_RUN=true'; say 'NO_FILES_WRITTEN=true'; say 'NO_SYSTEMD_CHANGE=true'; say 'NO_NETWORK_SIDE_EFFECT=true' ;;
+  --dry-run) load_manifest_values; check_manifest; "$ROOT/deploy/scripts/install-gos.sh" --repo "$ROOT" --ref "$(git -C "$ROOT" rev-parse HEAD)" --target-root "$TARGET_ROOT"; say 'NO_FILES_WRITTEN=true'; say 'NO_SYSTEMD_CHANGE=true'; say 'NO_NETWORK_SIDE_EFFECT=true' ;;
   --install) install ;;
   --start) start ;;
   --status) status ;;

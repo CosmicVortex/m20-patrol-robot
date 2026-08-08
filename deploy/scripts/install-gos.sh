@@ -28,6 +28,21 @@ done
 [ -d "$REPO/.git" ] || { printf 'ERROR: --repo must be a Git checkout\n' >&2; exit 2; }
 command -v git >/dev/null || { printf 'ERROR: git is required\n' >&2; exit 2; }
 command -v python3 >/dev/null || { printf 'ERROR: python3 is required\n' >&2; exit 2; }
+GOS_HOST=''
+AOS_HOST=''
+AOS_TCP_PORT=''
+WEB_PORT=''
+STALE_AFTER_SECONDS=''
+load_manifest_values() {
+  local manifest="$1"
+  IFS=$'\t' read -r GOS_HOST AOS_HOST AOS_TCP_PORT WEB_PORT STALE_AFTER_SECONDS < <(
+    python3 - "$manifest" <<'PY'
+import json, sys
+d=json.load(open(sys.argv[1]))
+print("\t".join([d["targets"]["gos_host"], d["targets"]["aos_host"], str(d["ports"]["aos_tcp"]), str(d["ports"]["web"]), str(d["stale_after_seconds"])]))
+PY
+  )
+}
 validate_readonly_release() {
   local release="$1"
   local manifest="$release/deploy/readonly-manifest.json"
@@ -39,14 +54,20 @@ r=pathlib.Path(sys.argv[2])
 assert m["runtime_mode"] == "realtime_readonly"
 assert m["read_only_mode"] is True and m["control_enabled"] is False
 assert m["telemetry_rx_enabled"] is True and m["telemetry_tx_enabled"] is False
-assert m["web_realtime_enabled"] is True and m["web_bind_host"] == "10.21.31.104"
-assert m["stale_after_seconds"] == 3
+assert m["web_realtime_enabled"] is True
+assert m["credentials_included"] is False
+assert isinstance(m["web_bind_host"], str) and m["web_bind_host"] == "10.21.31.104"
+assert isinstance(m["stale_after_seconds"], (int, float)) and m["stale_after_seconds"] > 0
 assert m["targets"] == {"gos_host":"10.21.31.104","aos_host":"10.21.31.103","nos_host":"13.21.31.106"}
 assert m["ports"] == {"aos_tcp":30001,"aos_udp":30000,"rtsp":8554,"web":8080}
-assert m["credentials_included"] is False
 unit=(r / "deploy/systemd/m20-patrol-readonly.service").read_text()
-for item in ("M20_RUNTIME_MODE=realtime_readonly","M20_READ_ONLY_MODE=true","M20_CONTROL_ENABLED=false","M20_TELEMETRY_TX_ENABLED=false","M20_TARGET_HOST=10.21.31.103","host=\"10.21.31.104\"","port=8080","telemetry_receive_enabled=True"):
-    assert item in unit, item
+if "@GOS_HOST@" in unit:
+    for item in ("M20_RUNTIME_MODE=realtime_readonly","M20_READ_ONLY_MODE=true","M20_CONTROL_ENABLED=false","M20_TELEMETRY_TX_ENABLED=false","M20_TARGET_HOST=@AOS_HOST@","M20_TARGET_PORT=@AOS_TCP_PORT@","host=\"@GOS_HOST@\"","port=@WEB_PORT@","telemetry_receive_enabled=True","stale_after_s=@STALE_AFTER_SECONDS@"):
+        assert item in unit, item
+else:
+    for item in ("M20_RUNTIME_MODE=realtime_readonly","M20_READ_ONLY_MODE=true","M20_CONTROL_ENABLED=false","M20_TELEMETRY_TX_ENABLED=false",f"M20_TARGET_HOST={m['targets']['aos_host']}",f"M20_TARGET_PORT={m['ports']['aos_tcp']}",f"host=\"{m['web_bind_host']}\"",f"port={m['ports']['web']}","telemetry_receive_enabled=True"):
+        assert item in unit, item
+    assert f"M20_STALE_AFTER_SECONDS={m['stale_after_seconds']}" in unit
 assert (r / "backend/app/dashboard_realtime.py").is_file()
 PY
 }
@@ -72,12 +93,8 @@ if [ "$APPLY" = true ]; then
   command -v systemctl >/dev/null || { printf 'ERROR: systemctl is required on the target GOS\n' >&2; exit 2; }
   systemctl --user show-environment >/dev/null 2>&1 || { printf 'ERROR: systemd user manager is unavailable\n' >&2; exit 2; }
   command -v ip >/dev/null || { printf 'ERROR: ip is required on the target GOS\n' >&2; exit 2; }
-  ip -4 -o addr show | awk '{print $4}' | cut -d/ -f1 | grep -Fxq '10.21.31.104' || { printf 'ERROR: GOS identity mismatch\n' >&2; exit 2; }
-  conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service state is unknown\n' >&2; exit 2; }
-  conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service enablement is unknown\n' >&2; exit 2; }
-  [ "$conflict_active" != active ] || { printf 'ERROR: conflicting realtime service is active\n' >&2; exit 2; }
-  [ "$conflict_enabled" != enabled ] || { printf 'ERROR: conflicting realtime service is enabled\n' >&2; exit 2; }
-  [ -z "$(git -C "$REPO" status --porcelain)" ] || { printf 'ERROR: repository worktree must be clean for --apply\n' >&2; exit 2; }
+  # GOS identity and conflict state are checked after immutable release manifest load.
+
 fi
 if [[ ! "$REF" =~ ^[0-9a-fA-F]{40}$ ]]; then
   printf 'ERROR: --ref must be a full 40-character hexadecimal commit SHA\n' >&2
@@ -111,29 +128,40 @@ if [ "$APPLY" != true ]; then
     exit 1
   fi
   validate_readonly_release "$DRY_RELEASE" || { printf 'ERROR: candidate release contract failed\n' >&2; exit 1; }
+  load_manifest_values "$DRY_RELEASE/deploy/readonly-manifest.json"
+  DRY_UNIT="$(mktemp "${TMPDIR:-/tmp}/m20-readonly-unit.XXXXXX")"
+  trap 'rm -rf "$DRY_RELEASE" "$DRY_UNIT"' EXIT
+  sed -e "s#%h/m20-patrol-robot/current#$DRY_RELEASE/current#g" \
+      -e "s#%h/m20-patrol-robot#$DRY_RELEASE#g" \
+      -e "s#@GOS_HOST@#$GOS_HOST#g" -e "s#@AOS_HOST@#$AOS_HOST#g" \
+      -e "s#@AOS_TCP_PORT@#$AOS_TCP_PORT#g" -e "s#@WEB_PORT@#$WEB_PORT#g" \
+      -e "s#@STALE_AFTER_SECONDS@#$STALE_AFTER_SECONDS#g" \
+      "$DRY_RELEASE/deploy/systemd/$SERVICE_NAME" > "$DRY_UNIT"
+  grep -Eq '@[A-Z0-9_]+@' "$DRY_UNIT" && { printf 'ERROR: unresolved systemd template placeholders\n' >&2; exit 1; }
+  grep -Fq "ExecStart=$DRY_RELEASE/current/.venv/bin/python" "$DRY_UNIT" || { printf 'ERROR: dry-run generated unit path check failed\n' >&2; exit 1; }
   printf 'DRY_RUN=true\nCANDIDATE_COMMIT=%s\nCANDIDATE_RELEASE=%s\nNO_FILES_WRITTEN=true\nNO_SYSTEMD_CHANGE=true\n' "$COMMIT" "$RELEASE"
   exit 0
 fi
 
 validate_current_link || exit 2
-if [ -L "$UNIT_PATH" ]; then
-  printf 'ERROR: systemd unit path must not be a symlink\n' >&2
+if [ -L "$UNIT_PATH" ] || { [ -e "$UNIT_PATH" ] && [ ! -f "$UNIT_PATH" ]; }; then
+  printf 'ERROR: systemd unit path must be absent or a regular file\n' >&2
   exit 2
 fi
-mkdir -p "$TARGET_ROOT/releases"
-if [ -e "$RELEASE" ]; then
+if [ -e "$RELEASE" ] || [ -L "$RELEASE" ]; then
   printf 'ERROR: release already exists: %s\n' "$RELEASE" >&2
   exit 2
 fi
-
-mkdir -p "$RELEASE"
-RELEASE_CREATED=true
+RELEASE_CREATED=false
 cleanup() {
   local status=$?
   [ "$status" -eq 0 ] || { [ "$RELEASE_CREATED" = true ] && rm -rf "$RELEASE"; }
   exit "$status"
 }
 trap cleanup EXIT
+mkdir -p "$TARGET_ROOT/releases"
+mkdir -p "$RELEASE"
+RELEASE_CREATED=true
 if ! git -C "$REPO" archive "$COMMIT" | tar -x -C "$RELEASE"; then
   rm -rf "$RELEASE"
   exit 1
@@ -141,6 +169,17 @@ fi
 if ! validate_readonly_release "$RELEASE"; then
   rm -rf "$RELEASE"
   exit 1
+fi
+load_manifest_values "$RELEASE/deploy/readonly-manifest.json"
+MANIFEST_SHA256="$(sha256sum "$RELEASE/deploy/readonly-manifest.json" | awk '{print $1}')"
+printf '{"commit":"%s","manifest_sha256":"%s"}\n' "$COMMIT" "$MANIFEST_SHA256" > "$RELEASE/.m20-release-provenance.json"
+if [ "$APPLY" = true ]; then
+  ip -4 -o addr show | awk '{print $4}' | cut -d/ -f1 | grep -Fxq "$GOS_HOST" || { printf 'ERROR: GOS identity mismatch\n' >&2; exit 2; }
+  conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service state is unknown\n' >&2; exit 2; }
+  conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service enablement is unknown\n' >&2; exit 2; }
+  [ "$conflict_active" = inactive ] || { printf 'ERROR: conflicting realtime service state is not inactive: %s\n' "$conflict_active" >&2; exit 2; }
+  [ "$conflict_enabled" = disabled ] || { printf 'ERROR: conflicting realtime service is not disabled: %s\n' "$conflict_enabled" >&2; exit 2; }
+  [ -z "$(git -C "$REPO" status --porcelain)" ] || { printf 'ERROR: repository worktree must be clean for --apply\n' >&2; exit 2; }
 fi
 OLD_CURRENT=''
 OLD_UNIT=''
@@ -222,8 +261,16 @@ PYTHONPATH="$RELEASE" "$RELEASE/.venv/bin/python" -m compileall -q "$RELEASE/bac
 
 mkdir -p "$HOME/.config/systemd/user"
 UNIT_TMP="$HOME/.config/systemd/user/.${SERVICE_NAME}.tmp.$$"
-sed "s#%h/m20-patrol-robot/current#$CURRENT#g; s#%h/m20-patrol-robot#$RELEASE#g" "$RELEASE/deploy/systemd/$SERVICE_NAME" > "$UNIT_TMP"
-grep -Fq "ExecStart=$CURRENT/.venv/bin/python" "$UNIT_TMP" || { printf 'ERROR: generated unit path check failed\n' >&2; exit 1; }
+sed -e "s#%h/m20-patrol-robot/current#$CURRENT#g" \
+    -e "s#%h/m20-patrol-robot#$RELEASE#g" \
+    -e "s#@GOS_HOST@#$GOS_HOST#g" -e "s#@AOS_HOST@#$AOS_HOST#g" \
+    -e "s#@AOS_TCP_PORT@#$AOS_TCP_PORT#g" -e "s#@WEB_PORT@#$WEB_PORT#g" \
+    -e "s#@STALE_AFTER_SECONDS@#$STALE_AFTER_SECONDS#g" \
+    "$RELEASE/deploy/systemd/$SERVICE_NAME" > "$UNIT_TMP"
+if grep -Eq '@[A-Z0-9_]+@' "$UNIT_TMP"; then
+  printf 'ERROR: unresolved systemd template placeholders\n' >&2
+  exit 1
+fi
 chmod 600 "$UNIT_TMP"
 if [ "$APPLY" != true ]; then
   printf 'DRY_RUN=true\nCANDIDATE_RELEASE=%s\nNO_SYSTEMD_CHANGE=true\n' "$RELEASE"

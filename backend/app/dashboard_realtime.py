@@ -45,6 +45,8 @@ class DashboardConfig:
             raise ValueError("control_enabled must be boolean")
         if type(self.telemetry_tx_enabled) is not bool:
             raise ValueError("telemetry_tx_enabled must be boolean")
+        if self.stale_after_s <= 0:
+            raise ValueError("stale_after_s must be positive")
         if self.telemetry_tx_enabled:
             raise ValueError("telemetry transmission is disabled in this release")
         if not self.read_only_mode or self.control_enabled:
@@ -91,6 +93,7 @@ class RealTimeDashboard:
             read_only=self.config.read_only_mode,
             telemetry_tx_enabled=self.config.telemetry_tx_enabled,
             telemetry_receive_enabled=self.config.telemetry_receive_enabled,
+            stale_after_s=self.config.stale_after_s,
         )
         self._adapter = TelemetryAdapter(telemetry_config)
         self._adapter.start()
@@ -529,6 +532,7 @@ def serve_dashboard(
     control_enabled: bool = False,
     telemetry_tx_enabled: bool = False,
     telemetry_receive_enabled: bool = True,
+    stale_after_s: float = 3.0,
 ) -> None:
     """Serve the real-time dashboard."""
     if host not in {"127.0.0.1", "10.21.31.104"}:
@@ -546,7 +550,7 @@ def serve_dashboard(
         control_enabled=control_enabled,
         telemetry_tx_enabled=telemetry_tx_enabled,
         telemetry_receive_enabled=telemetry_receive_enabled,
-        stale_after_s=float(os.environ.get("M20_STALE_AFTER_SECONDS", "3")),
+        stale_after_s=float(os.environ.get("M20_STALE_AFTER_SECONDS", str(stale_after_s))),
     )
     dashboard = RealTimeDashboard(config)
     dashboard.start()
@@ -559,10 +563,16 @@ def serve_dashboard(
                     self._send(200, "text/html; charset=utf-8", body)
                 elif self.path == "/api/v1/status/latest":
                     payload = dashboard.get_status_payload()
+                    payload["data_state"] = "REAL_FRESH" if payload.get("telemetry_fresh") else (
+                        "REAL_STALE" if payload.get("source") == "STALE" else payload.get("source", "NO_DATA")
+                    )
                     body = json.dumps(payload, ensure_ascii=False).encode()
                     self._send(200, "application/json", body)
                 elif self.path == "/api/v1/health":
                     payload = dashboard.get_status_payload()
+                    payload["data_state"] = "REAL_FRESH" if payload.get("telemetry_fresh") else (
+                        "REAL_STALE" if payload.get("source") == "STALE" else payload.get("source", "NO_DATA")
+                    )
                     health = {
                         "service": "m20-patrol-readonly",
                         "runtime_mode": dashboard.config.runtime_mode,
@@ -572,20 +582,32 @@ def serve_dashboard(
                         "source": payload.get("source"),
                         "connected": payload.get("connected"),
                         "valid_frames": payload.get("valid_frames", 0),
+                        "bytes_received": payload.get("bytes_received", 0),
+                        "network_ready": payload.get("network_ready", False),
+                        "tcp_connected": payload.get("tcp_connected", False),
+                        "frame_valid": payload.get("frame_valid", False),
+                        "message_parsed": payload.get("message_parsed", False),
+                        "status_accepted": payload.get("status_accepted", False),
+                        "telemetry_fresh": payload.get("telemetry_fresh", False),
+                        "data_state": payload.get("data_state", payload.get("source", "NO_DATA")),
                         "age_ms": payload.get("age_ms"),
-                        "message_parsed": payload.get("valid_frames", 0) > 0,
-                        "status_accepted": payload.get("source") == "REAL" and payload.get("connected") is True,
                     }
                     healthy = (
                         health["runtime_mode"] == "realtime_readonly"
                         and health["read_only_mode"] is True
                         and health["control_enabled"] is False
                         and health["telemetry_tx_enabled"] is False
+                        and health["network_ready"] is True
+                        and health["tcp_connected"] is True
                         and health["connected"] is True
+                        and health["bytes_received"] > 0
+                        and health["frame_valid"] is True
                         and health["valid_frames"] > 0
                         and health["source"] == "REAL"
                         and health["message_parsed"] is True
                         and health["status_accepted"] is True
+                        and health["telemetry_fresh"] is True
+                        and health["data_state"] == "REAL_FRESH"
                         and isinstance(health["age_ms"], (int, float))
                         and 0 <= health["age_ms"] < dashboard.config.stale_after_s * 1000
                     )
