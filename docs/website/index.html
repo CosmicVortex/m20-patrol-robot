@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M20 Pro 巡逻机器人状态监控</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    
+    :root {
+      --bg-primary: #0a0f14;
+      --bg-secondary: #111820;
+      --bg-card: #161e26;
+      --bg-elevated: #1c2530;
+      --border: #2a3540;
+      --border-light: #3a4a58;
+      --text-primary: #e8ecef;
+      --text-secondary: #8899a6;
+      --text-muted: #5a6a78;
+      --accent: #3b82f6;
+      --accent-light: #60a5fa;
+      --accent-glow: rgba(59, 130, 246, 0.15);
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.15);
+      --warning: #f59e0b;
+      --warning-glow: rgba(245, 158, 11, 0.15);
+      --error: #ef4444;
+      --error-glow: rgba(239, 68, 68, 0.15);
+      --info: #06b6d4;
+      --font-display: 'Space Grotesk', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    /* Animated background mesh */
+    .bg-mesh {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background: 
+        radial-gradient(ellipse 80% 50% at 20% 10%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse 40% 30% at 50% 50%, rgba(6, 182, 212, 0.04) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    
+    .grid-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      background-image: 
+        linear-gradient(rgba(42, 53, 64, 0.3) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(42, 53, 64, 0.3) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+    }
+    
+    /* Layout */
+    .app {
+      position: relative;
+      z-index: 2;
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 28px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(12px);
+    }
+    
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .logo {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--info) 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 700;
+      color: white;
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+    }
+    
+    .brand-text h1 {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    
+    .brand-text p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    
+    .status-group {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background: var(--bg-secondary);
+    }
+    
+    .status-pill.online {
+      border-color: var(--success);
+      background: var(--success-glow);
+      color: var(--success);
+    }
+    
+    .status-pill.warning {
+      border-color: var(--warning);
+      background: var(--warning-glow);
+      color: var(--warning);
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.9); }
+    }
+    
+    /* Main grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 20px;
+    }
+    
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+      border-color: var(--border-light);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    
+    .card-title {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .card-title::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+    
+    .card-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+    
+    /* Span classes */
+    .span-12 { grid-column: span 12; }
+    .span-8 { grid-column: span 8; }
+    .span-6 { grid-column: span 6; }
+    .span-4 { grid-column: span 4; }
+    
+    @media (max-width: 1024px) {
+      .span-8, .span-6, .span-4 { grid-column: span 12; }
+    }
+    
+    /* Telemetry card */
+    .telemetry-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .telemetry-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    
+    .telemetry-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    
+    .telemetry-value {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    
+    .telemetry-value.ok { color: var(--success); }
+    .telemetry-value.warn { color: var(--warning); }
+    .telemetry-value.err { color: var(--error); }
+    
+    /* Metrics row */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    
+    .metric-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .metric-value {
+      font-size: 32px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      color: var(--accent-light);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    
+    .metric-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+    
+    /* Battery */
+    .battery-group {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .battery-item {
+      background: var(--bg-secondary);
+      border-radius: 10px;
+      padding: 16px;
+      border: 1px solid var(--border);
+    }
+    
+    .battery-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+    
+    .battery-name { color: var(--text-secondary); }
+    .battery-pct { 
+      font-family: var(--font-mono); 
+      font-weight: 600;
+      color: var(--success);
+    }
+    .battery-pct.warn { color: var(--warning); }
+    .battery-pct.err { color: var(--error); }
+    
+    .battery-bar {
+      height: 6px;
+      background: var(--bg-primary);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    
+    .battery-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--success) 0%, var(--accent) 100%);
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+    
+    .battery-fill.warn { background: var(--warning); }
+    .battery-fill.err { background: var(--error); }
+    
+    /* Alert list */
+    .alert-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    
+    .alert-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--bg-secondary);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--warning);
+    }
+    
+    .alert-item.error { border-left-color: var(--error); }
+    .alert-item.success { border-left-color: var(--success); }
+    
+    .alert-code {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 4px 8px;
+      background: var(--bg-primary);
+      border-radius: 4px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+    
+    .alert-item.error .alert-code { color: var(--error); background: var(--error-glow); }
+    
+    .alert-message {
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+    
+    .alert-time {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      margin-left: auto;
+    }
+    
+    .no-alerts {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+    }
+    
+    .no-alerts svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+    
+    /* Connection status */
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    
+    .connection-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--success-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--success);
+    }
+    
+    .connection-icon svg {
+      width: 28px;
+      height: 28px;
+      color: var(--success);
+    }
+    
+    .connection-info h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .connection-info p {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    
+    .connection-meta {
+      margin-left: auto;
+      text-align: right;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    
+    /* Demo badge */
+    .demo-badge {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 10px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .demo-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+  </style>
+</head>
+<body>
+  <div class="bg-mesh"></div>
+  <div class="grid-overlay"></div>
+  
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="logo">M20</div>
+        <div class="brand-text">
+          <h1>巡逻机器人状态监控</h1>
+          <p>前后本体相机 · 状态只读 · 巡逻控制默认禁用</p>
+        </div>
+      </div>
+      <div class="status-group">
+        <div class="status-pill online">
+          <span class="status-dot"></span>
+          系统在线
+        </div>
+        <div class="status-pill">
+          <span>READ-ONLY</span>
+        </div>
+      </div>
+    </header>
+    
+    <div class="dashboard-grid">
+      <!-- Connection Status -->
+      <div class="card span-12">
+        <div class="card-header">
+          <div class="card-title">连接状态</div>
+          <div class="card-meta">最后更新: <span id="last-update">2026-08-08 16:30:45</span></div>
+        </div>
+        <div class="connection-status">
+          <div class="connection-icon">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="connection-info">
+            <h3>真实遥测数据已连接</h3>
+            <p>目标: 10.21.31.103:30001 (AOS basic_server)</p>
+          </div>
+          <div class="connection-meta">
+            <div>延迟: <span id="latency" style="color: var(--success)">12ms</span></div>
+            <div>包数: <span style="color: var(--accent-light)">1,247</span></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Telemetry Data -->
+      <div class="card span-8">
+        <div class="card-header">
+          <div class="card-title">遥测数据</div>
+          <div class="card-meta">source: REAL</div>
+        </div>
+        <div class="telemetry-list">
+          <div class="telemetry-row">
+            <span class="telemetry-label">数据源</span>
+            <span class="telemetry-value ok">REAL</span>
+          </div>
+          <div class="telemetry-row">
+            <span class="telemetry-label">连接状态</span>
+            <span class="telemetry-value ok">已连接</span>
+          </div>
+          <div class="telemetry-row">
+            <span class="telemetry-label">运动状态</span>
+            <span class="telemetry-value">静止</span>
+          </div>
+          <div class="telemetry-row">
+            <span class="telemetry-label">步态</span>
+            <span class="telemetry-value">基础标准</span>
+          </div>
+          <div class="telemetry-row">
+            <span class="telemetry-label">充电状态</span>
+            <span class="telemetry-value">未充电</span>
+          </div>
+          <div class="telemetry-row">
+            <span class="telemetry-label">TELEMETRY_TX_ENABLED</span>
+            <span class="telemetry-value err">false (已禁用)</span>
+          </div>
+          <div class="telemetry-row">
+            <span class="telemetry-label">CONTROL_ENABLED</span>
+            <span class="telemetry-value err">false (已禁用)</span>
+          </div>
+          <div class="telemetry-row">
+            <span class="telemetry-label">TELEMETRY_FRESH</span>
+            <span class="telemetry-value ok">true</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Metrics -->
+      <div class="card span-4">
+        <div class="card-header">
+          <div class="card-title">姿态数据</div>
+        </div>
+        <div class="metrics-row" style="grid-template-columns: 1fr;">
+          <div class="metric-card">
+            <div class="metric-value" id="roll-val">+2.4°</div>
+            <div class="metric-label">Roll</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value" id="pitch-val">-0.8°</div>
+            <div class="metric-label">Pitch</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value" id="yaw-val">180.2°</div>
+            <div class="metric-label">Yaw</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Battery -->
+      <div class="card span-6">
+        <div class="card-header">
+          <div class="card-title">电量状态</div>
+          <div class="card-meta">左 / 右双电池</div>
+        </div>
+        <div class="battery-group">
+          <div class="battery-item">
+            <div class="battery-header">
+              <span class="battery-name">左电池</span>
+              <span class="battery-pct" id="left-battery">87%</span>
+            </div>
+            <div class="battery-bar">
+              <div class="battery-fill" id="left-fill" style="width: 87%"></div>
+            </div>
+          </div>
+          <div class="battery-item">
+            <div class="battery-header">
+              <span class="battery-name">右电池</span>
+              <span class="battery-pct" id="right-battery">92%</span>
+            </div>
+            <div class="battery-bar">
+              <div class="battery-fill" id="right-fill" style="width: 92%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Alerts -->
+      <div class="card span-6">
+        <div class="card-header">
+          <div class="card-title">异常列表</div>
+          <div class="card-meta" id="alert-count">0 条</div>
+        </div>
+        <div class="alert-list" id="alert-list">
+          <div class="no-alerts">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>无异常</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- System Info -->
+      <div class="card span-12">
+        <div class="card-header">
+          <div class="card-title">系统信息</div>
+          <div class="card-meta">m20-patrol-readonly v1.0.0</div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+          <div class="telemetry-row">
+            <span class="telemetry-label">GOS_HOST</span>
+            <span class="telemetry-value">10.21.31.104</span>
+          </div>
+          <div class="telemetry-row">
+            <span class="telemetry-label">AOS_HOST</span>
+            <span class="telemetry-value">10.21.31.103</span>
+          </div>
+          <div class="telemetry-row">
+            <span class="telemetry-label">NOS_HOST</span>
+            <span class="telemetry-value">13.21.31.106</span>
+          </div>
+          <div class="telemetry-row">
+            <span class="telemetry-label">AOS_TCP_PORT</span>
+            <span class="telemetry-value">30001</span>
+          </div>
+          <div class="telemetry-row">
+            <span class="telemetry-label">WEB_PORT</span>
+            <span class="telemetry-value">8080</span>
+          </div>
+          <div class="telemetry-row">
+            <span class="telemetry-label">RUNTIME_MODE</span>
+            <span class="telemetry-value ok">realtime_readonly</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="demo-badge">DEMO / CLOUD_TEST</div>
+  
+  <script>
+    // Simulate live data updates
+    function randomBetween(min, max) {
+      return (Math.random() * (max - min) + min).toFixed(1);
+    }
+    
+    function updateMetrics() {
+      const roll = randomBetween(-5, 5);
+      const pitch = randomBetween(-3, 3);
+      const yaw = randomBetween(0, 360);
+      
+      document.getElementById('roll-val').textContent = (roll > 0 ? '+' : '') + roll + '°';
+      document.getElementById('pitch-val').textContent = (pitch > 0 ? '+' : '') + pitch + '°';
+      document.getElementById('yaw-val').textContent = yaw.toFixed(1) + '°';
+      
+      // Random latency
+      const latency = Math.floor(Math.random() * 20) + 5;
+      document.getElementById('latency').textContent = latency + 'ms';
+    }
+    
+    // Update every 2 seconds
+    setInterval(updateMetrics, 2000);
+    
+    // Update timestamp
+    function updateTimestamp() {
+      const now = new Date();
+      const ts = now.toISOString().replace('T', ' ').substring(0, 19);
+      document.getElementById('last-update').textContent = ts;
+    }
+    
+    setInterval(updateTimestamp, 1000);
+    updateTimestamp();
+  </script>
+</body>
+</html>
