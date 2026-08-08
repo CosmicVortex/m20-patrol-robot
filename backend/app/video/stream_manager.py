@@ -57,9 +57,10 @@ class VideoStreamManager:
             source: None for source in self._streams
         }
         self._processes: Dict[str, asyncio.subprocess.Process] = {}
-        # Create asyncio locks lazily inside a running event loop. Python 3.8
-        # binds Lock construction to the current loop and may have no loop at
-        # manager construction time.
+        # Create locks lazily inside one owning event loop. Python 3.8 binds
+        # Lock construction to the current loop; manager state is shared, so
+        # silently creating one lock per loop would not preserve mutual exclusion.
+        self._owner_loop: Optional[asyncio.AbstractEventLoop] = None
         self._process_locks: Dict[str, Optional[asyncio.Lock]] = {
             source: None for source in self._streams
         }
@@ -71,6 +72,11 @@ class VideoStreamManager:
         self._lock = threading.Lock()
 
     def _get_process_lock(self, source: str) -> asyncio.Lock:
+        loop = asyncio.get_running_loop()
+        if self._owner_loop is None:
+            self._owner_loop = loop
+        elif self._owner_loop is not loop:
+            raise RuntimeError("VideoStreamManager must be used by one event loop")
         lock = self._process_locks[source]
         if lock is None:
             lock = asyncio.Lock()
@@ -112,12 +118,12 @@ class VideoStreamManager:
 
     async def probe_camera(self, source: str) -> Dict[str, Any]:
         """Probe RTSP accessibility and codec metadata without leaking ffprobe."""
+        if source not in self._streams:
+            return {"error": f"Unknown camera source: {source}"}
+        self._get_process_lock(source)
         if not self.allow_real_io:
             return {"error": "real video I/O is disabled by default", "status": "BLOCKED"}
-        config = self._streams.get(source)
-        if not config:
-            return {"error": f"Unknown camera source: {source}"}
-
+        config = self._streams[source]
         result: Dict[str, Any] = {
             "source": source,
             "rtsp_url": config.rtsp_url,
@@ -366,6 +372,10 @@ class VideoStreamManager:
 
     async def cleanup(self) -> None:
         """Stop all streams and await cleanup completion."""
+        if self._owner_loop is not None:
+            current_loop = asyncio.get_running_loop()
+            if current_loop is not self._owner_loop:
+                raise RuntimeError("VideoStreamManager must be used by one event loop")
         sources = set(self._processes) | set(self._watchers) | {
             source for source, tasks in self._drainers.items() if tasks
         }

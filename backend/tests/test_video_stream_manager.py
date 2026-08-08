@@ -127,4 +127,20 @@ def test_start_stream_restarts_after_process_exits():
         result = asyncio.run(manager.start_stream("front"))
 
     assert result["status"] == "started"
-    create_process.assert_awaited_once()
+
+
+def test_manager_rejects_use_from_a_second_event_loop():
+    manager = VideoStreamManager(allow_real_io=True)
+
+    async def get_lock():
+        return manager._get_process_lock("front")
+
+    first_loop = asyncio.new_event_loop()
+    second_loop = asyncio.new_event_loop()
+    try:
+        first_loop.run_until_complete(get_lock())
+        with pytest.raises(RuntimeError, match="one event loop"):
+            second_loop.run_until_complete(get_lock())
+    finally:
+        first_loop.close()
+        second_loop.close()

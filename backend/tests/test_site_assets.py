@@ -91,6 +91,12 @@ def test_suer_security_source_stays_disabled_without_a_verified_uri():
     assert source.is_available is False
 
 
+def test_camera_source_kind_matches_python311_strenum_string_behavior():
+    assert str(CameraSourceKind.ROBOT_BODY) == "robot_body"
+    assert format(CameraSourceKind.ROBOT_BODY) == "robot_body"
+    assert CameraSourceKind.ROBOT_BODY == "robot_body"
+
+
 def test_suer_security_source_cannot_be_marked_available_by_generic_asset_flag():
     with pytest.raises(ValueError, match="later adapter"):
         CameraSource(

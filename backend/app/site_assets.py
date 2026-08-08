@@ -8,7 +8,8 @@ import re
 
 
 class StrEnum(str, Enum):
-    pass
+    def __str__(self) -> str:
+        return self.value
 
 
 class CameraSourceKind(StrEnum):
