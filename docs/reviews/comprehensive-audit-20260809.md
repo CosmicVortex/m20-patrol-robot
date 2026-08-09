@@ -3,7 +3,7 @@
 **审查日期**: 2026-08-09  
 **审查范围**: 代码对齐、文档一致性、部署就绪性  
 **当前分支**: `feat/m20-readonly-one-shot-20260808` (已同步到 origin)  
-**当前提交**: `8e976d0`
+**当前提交**: `e1e75e1` (含 Bug 修复)
 
 ---
 
@@ -20,8 +20,48 @@
 | 安全边界 | ✅ 已实现 | control_enabled=false, telemetry_tx_enabled=false |
 | GOS 真机部署 | ❌ 阻塞 | 待用户现场执行 |
 | 真实遥测验证 | ❌ 阻塞 | 待 AOS 连接确认 |
+| **Bug 修复** | ✅ **已修复** | `status_type` → `kind` (telemetry.py) |
 
 **最终结论**: `CLOUD_ENV_READY_GOS_EXECUTION_REQUIRED`
+
+---
+
+## 紧急 Bug 修复 (2026-08-09)
+
+### 发现的问题
+
+子代理审查发现 `backend/app/robot/telemetry.py` 中存在**阻塞性 Bug**：
+
+| 项目 | 内容 |
+|------|------|
+| **文件** | `backend/app/robot/telemetry.py` |
+| **位置** | 第 255-267 行 `_update_snapshot_inner` 方法 |
+| **问题** | 使用 `result.status_type` 但 `StatusResult` 数据类只有 `kind` 字段 |
+| **影响** | 真实模式下所有状态消息解析会抛出 `AttributeError`，无法接收任何状态数据 |
+| **修复** | 将所有 `result.status_type` 改为 `result.kind` |
+| **提交** | `e1e75e1` |
+| **验证** | 114 passed, compileall 通过 |
+
+### Bug 复现
+
+```python
+>>> result = parse_status_message(PatrolMessage(1002, 6, "2026-08-09", {}))
+>>> result.status_type  # ❌ AttributeError: 'StatusResult' object has no attribute 'status_type'
+>>> result.kind  # ✅ 正确字段: 'basic_status'
+```
+
+### 修复后代码
+
+```python
+# telemetry.py:254-268 (修复后)
+data = result.data
+kind = result.kind
+if kind == "basic_status":
+    self._snapshot.basic = data
+elif kind == "motion_status":
+    self._snapshot.motion = data
+# ... 以此类推
+```
 
 ---
 
