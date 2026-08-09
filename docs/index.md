@@ -13,6 +13,7 @@
 | 07 | [changes.md](./changes.md) | 变更记录 |
 | 08 | [branch-policy.md](./branch-policy.md) | 分支策略 |
 | 09 | [official-docs.md](./official-docs.md) | 官方文档索引 |
+| 10 | [09-real-web-integration-contract.md](./09-real-web-integration-contract.md) | 真实Web开发契约与现场门禁 |
 
 ## 操作手册
 
@@ -21,6 +22,7 @@
 | [procedures/operations-manual.md](./procedures/operations-manual.md) | 操作指令速查 |
 | [procedures/deployment-guide.md](./procedures/deployment-guide.md) | 部署执行手册 |
 | [procedures/mapping-test.md](./procedures/mapping-test.md) | 建图测试 |
+| [procedures/real-web-integration-preflight.md](./procedures/real-web-integration-preflight.md) | 真实Web联调前置采集 |
 
 ## 审查记录
 
@@ -43,6 +45,7 @@ docs/
 ├── changes.md               # 变更记录
 ├── branch-policy.md         # 分支策略
 ├── official-docs.md         # 官方文档索引
+├── 09-real-web-integration-contract.md # 真实Web开发契约与现场门禁
 │
 ├── procedures/              # 操作手册
 │   ├── operations-manual.md

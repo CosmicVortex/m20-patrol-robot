@@ -552,6 +552,8 @@ def serve_dashboard(
         telemetry_receive_enabled=telemetry_receive_enabled,
         stale_after_s=float(os.environ.get("M20_STALE_AFTER_SECONDS", str(stale_after_s))),
     )
+    if config.runtime_mode in {"realtime", "realtime_readonly"} and not config.aos_host:
+        raise ValueError("realtime mode requires a field-confirmed aos_host")
     dashboard = RealTimeDashboard(config)
     dashboard.start()
 

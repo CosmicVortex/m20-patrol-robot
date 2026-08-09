@@ -102,7 +102,7 @@ assert m["targets"] == {"gos_host":"10.21.31.104","aos_host":"10.21.31.103","nos
 assert m["ports"] == {"aos_tcp":30001,"aos_udp":30000,"rtsp":8554,"web":8080}
 assert m["credentials_included"] is False
 unit=(r / "deploy/systemd/m20-patrol-readonly.service").read_text()
-for item in ("M20_RUNTIME_MODE=realtime_readonly","M20_READ_ONLY_MODE=true","M20_CONTROL_ENABLED=false","M20_TELEMETRY_TX_ENABLED=false","M20_TARGET_HOST=@AOS_HOST@","M20_TARGET_PORT=@AOS_TCP_PORT@","host=\"@GOS_HOST@\"","port=@WEB_PORT@","telemetry_receive_enabled=True","stale_after_s=@STALE_AFTER_SECONDS@"):
+for item in ("M20_RUNTIME_MODE=realtime_readonly","M20_READ_ONLY_MODE=true","M20_CONTROL_ENABLED=false","M20_TELEMETRY_TX_ENABLED=false","M20_TARGET_HOST=@AOS_HOST@","M20_TARGET_PORT=@AOS_TCP_PORT@","backend.app.server"):
     assert item in unit, item
 assert (r / "backend/app/dashboard_realtime.py").is_file()
 PY

@@ -12,7 +12,7 @@ PYTHON_BIN="$(command -v python3.8 || true)"
 "$PYTHON_BIN" -c 'import sys; assert sys.version_info[:3] == (3,8,10)' || { echo "需要 Python 3.8.10" >&2; exit 1; }
 WEB_BIND_HOST="$($PYTHON_BIN - "$MANIFEST" <<'PY'
 import json,sys
-print(json.load(open(sys.argv[1]))["web_bind_host"])
+d=json.load(open(sys.argv[1])); print(d.get("web_bind_host", d["targets"]["gos_host"]))
 PY
 )"
 WEB_PORT="$($PYTHON_BIN - "$MANIFEST" <<'PY'

@@ -1,0 +1,84 @@
+"""API router for M20 Web service.
+
+Routes HTTP requests to appropriate handlers.
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import Optional
+
+from backend.app.auth.middleware import AuthMiddleware
+from backend.app.auth.store import UserStore
+from backend.app.robot.telemetry import TelemetryAdapter
+from backend.app.api.handlers import (
+    AuthLoginHandler,
+    AuthLogoutHandler,
+    AuthMeHandler,
+    BaseHandler,
+    DevicesListHandler,
+    HealthHandler,
+    NavigationAuthorizeHandler,
+    NavigationStatusHandler,
+    NavigationTaskHandler,
+    StatusLatestHandler,
+)
+
+logger = logging.getLogger(__name__)
+
+
+class ApiRouter:
+    """Routes HTTP requests to handler classes based on path."""
+
+    HANDLERS: dict[str, type[BaseHandler]] = {
+        "/api/v1/health": HealthHandler,
+        "/api/v1/auth/login": AuthLoginHandler,
+        "/api/v1/auth/logout": AuthLogoutHandler,
+        "/api/v1/auth/me": AuthMeHandler,
+        "/api/v1/status/latest": StatusLatestHandler,
+        "/api/v1/devices": DevicesListHandler,
+        "/api/v1/navigation/status": NavigationStatusHandler,
+        "/api/v1/navigation/authorize": NavigationAuthorizeHandler,
+        "/api/v1/navigation/tasks": NavigationTaskHandler,
+    }
+
+    def __init__(
+        self,
+        user_store: UserStore,
+        auth_middleware: AuthMiddleware,
+        telemetry_adapter: Optional[TelemetryAdapter] = None,
+    ) -> None:
+        self.user_store = user_store
+        self.auth_middleware = auth_middleware
+        self.telemetry_adapter = telemetry_adapter
+
+    def route(self, handler: BaseHandler) -> None:
+        """Route the request to the appropriate handler."""
+        handler_class = self.HANDLERS.get(handler.path)
+        if handler_class is None:
+            # Try prefix matching
+            for prefix, cls in self.HANDLERS.items():
+                if handler.path.startswith(prefix):
+                    handler_class = cls
+                    break
+
+        if handler_class is None:
+            handler.send_error_response(404, "Not found")
+            return
+
+        # Inject dependencies
+        handler_class.auth_middleware = self.auth_middleware
+        handler_class.user_store = self.user_store
+        handler_class.telemetry_adapter = self.telemetry_adapter
+
+        # Dispatch on the live request handler. Creating a detached
+        # BaseHTTPRequestHandler bypasses the socket, headers and request body.
+        method = handler.command.lower()
+        handler_method = f"do_{method.upper()}"
+        handler.__class__.auth_middleware = self.auth_middleware
+        handler.__class__.user_store = self.user_store
+        handler.__class__.telemetry_adapter = self.telemetry_adapter
+        if hasattr(handler_class, handler_method):
+            getattr(handler_class, handler_method)(handler)
+        else:
+            handler.send_error_response(405, "Method not allowed")

@@ -15,7 +15,7 @@ Environment=M20_TARGET_PORT=@AOS_TCP_PORT@
 Environment=M20_TELEMETRY_RX_ENABLED=true
 Environment=M20_WEB_REALTIME_ENABLED=true
 Environment=M20_STALE_AFTER_SECONDS=@STALE_AFTER_SECONDS@
-ExecStart=%h/m20-patrol-robot/current/.venv/bin/python -c 'from backend.app.dashboard_realtime import serve_dashboard; serve_dashboard(host="@GOS_HOST@", port=@WEB_PORT@, aos_host="@AOS_HOST@", runtime_mode="realtime_readonly", read_only_mode=True, control_enabled=False, telemetry_tx_enabled=False, telemetry_receive_enabled=True, stale_after_s=@STALE_AFTER_SECONDS@)'
+ExecStart=%h/m20-patrol-robot/current/.venv/bin/python -m backend.app.server --manifest %h/m20-patrol-robot/current/deploy/readonly-manifest.json
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true

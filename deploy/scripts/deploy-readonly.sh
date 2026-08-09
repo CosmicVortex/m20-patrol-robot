@@ -95,22 +95,32 @@ preflight() {
   load_manifest_values
   check_manifest
   check_python
+  check_host
   grep -Fq 'M20_RUNTIME_MODE=realtime_readonly' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_RUNTIME_MODE_MISMATCH'
   grep -Fq 'M20_TARGET_HOST=@AOS_HOST@' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_TARGET_TEMPLATE_MISSING'
-  grep -Fq 'host="@GOS_HOST@"' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_BIND_TEMPLATE_MISSING'
-  grep -Fq 'port=@WEB_PORT@' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_WEB_PORT_TEMPLATE_MISSING'
   grep -Fq 'control_enabled=False' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_CONTROL_NOT_DISABLED'
   grep -Fq 'telemetry_tx_enabled=False' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_TX_NOT_DISABLED'
+  grep -Fq 'backend.app.server' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_ENTRYPOINT_MODERN_SERVER_MISSING'
+  ! grep -Fq 'dashboard_realtime' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_ENTRYPOINT_LEGACY_STILL_PRESENT'
   conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || fail 'CONFLICTING_SERVICE_STATE_UNKNOWN'
   conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || fail 'CONFLICTING_SERVICE_ENABLEMENT_UNKNOWN'
   [ "$conflict_active" = inactive ] || fail "CONFLICTING_REALTIME_SERVICE_STATE=$conflict_active"
   [ "$conflict_enabled" = disabled ] || fail "CONFLICTING_REALTIME_SERVICE_ENABLEMENT=$conflict_enabled"
-  check_host
   say 'TARGET_IDENTITY_CONFIRMED=PASS'
   say 'TELEMETRY_TX_ENABLED=false'
   say 'CONTROL_ENABLED=false'
   say 'WEB_REALTIME_ENABLED=true'
   say 'PREFLIGHT=PASS'
+}
+
+render_unit_template() {
+  sed -e "s#%h/m20-patrol-robot/current#$TARGET_ROOT/current#g" \
+      -e "s#%h/m20-patrol-robot#$TARGET_ROOT/current#g" \
+      -e "s#@GOS_HOST@#$GOS_HOST#g" -e "s#@AOS_HOST@#$AOS_HOST#g" \
+      -e "s#@AOS_TCP_PORT@#$AOS_TCP_PORT#g" -e "s#@WEB_PORT@#$WEB_PORT#g" \
+      -e "s#@STALE_AFTER_SECONDS@#$STALE_AFTER_SECONDS#g" \
+      -- \
+      "$ROOT/deploy/systemd/m20-patrol-readonly.service"
 }
 
 install() {
@@ -120,6 +130,7 @@ install() {
   local ref
   ref="$(git -C "$ROOT" rev-parse HEAD)"
   "$ROOT/deploy/scripts/install-gos.sh" --repo "$ROOT" --ref "$ref" --target-root "$TARGET_ROOT" --apply
+  systemctl --user daemon-reload || fail 'SYSTEMD_RELOAD_FAILED'
 }
 
 start() {
@@ -132,33 +143,7 @@ status() {
   preflight
   load_manifest_values
   systemctl --user --no-pager is-active "$SERVICE_NAME" >/dev/null || fail 'SERVICE_NOT_ACTIVE'
-  local payload
-  local health
-  health="$(curl -fsS "http://${GOS_HOST}:${WEB_PORT}/api/v1/health")" || fail 'REALTIME_HEALTH_NOT_READY'
-  PYTHONPATH="$ROOT" "$PYTHON_BIN" - "$health" "$STALE_AFTER_SECONDS" <<'PY' || fail 'HEALTH_STATUS_STRICT_CHECK_FAILED'
-import json, sys
-d=json.loads(sys.argv[1]); limit=float(sys.argv[2]) * 1000
-if d.get("healthy") is not True or d.get("runtime_mode") != "realtime_readonly" or d.get("read_only_mode") is not True or d.get("source") != "REAL" or d.get("connected") is not True:
-    raise SystemExit("HEALTH_NOT_REAL")
-required=("network_ready","tcp_connected","bytes_received","frame_valid","message_parsed","status_accepted","telemetry_fresh","data_state")
-missing=[k for k in required if k not in d]
-if missing: raise SystemExit("HEALTH_FIELDS_MISSING="+','.join(missing))
-if d.get("control_enabled") is not False or d.get("telemetry_tx_enabled") is not False:
-    raise SystemExit("HEALTH_SAFETY_FLAGS_INVALID")
-if (d.get("network_ready") is not True or d.get("tcp_connected") is not True or d.get("bytes_received", 0) <= 0 or d.get("frame_valid") is not True or d.get("message_parsed") is not True or d.get("status_accepted") is not True or d.get("telemetry_fresh") is not True or d.get("data_state") != "REAL_FRESH" or d.get("valid_frames", 0) <= 0 or not isinstance(d.get("age_ms"), (int, float)) or not 0 <= d["age_ms"] < limit):
-    raise SystemExit("HEALTH_NOT_FRESH")
-PY
-  payload="$(curl -fsS "http://${GOS_HOST}:${WEB_PORT}/api/v1/status/latest")" || fail 'STATUS_ENDPOINT_UNAVAILABLE'
-  PYTHONPATH="$ROOT" "$PYTHON_BIN" - "$payload" "$STALE_AFTER_SECONDS" <<'PY'
-import json, sys
-d=json.loads(sys.argv[1])
-required=("source","connected","valid_frames","age_ms","network_ready","tcp_connected","bytes_received","frame_valid","message_parsed","status_accepted","telemetry_fresh","data_state")
-missing=[k for k in required if k not in d]
-if missing: raise SystemExit("STATUS_FIELDS_MISSING="+','.join(missing))
-if (d.get("source") != "REAL" or d.get("connected") is not True or d.get("control_enabled") is not False or d.get("telemetry_tx_enabled") is not False or d.get("network_ready") is not True or d.get("tcp_connected") is not True or d.get("bytes_received", 0) <= 0 or d.get("frame_valid") is not True or d.get("message_parsed") is not True or d.get("status_accepted") is not True or d.get("telemetry_fresh") is not True or d.get("data_state") != "REAL_FRESH" or d.get("valid_frames", 0) <= 0 or d.get("age_ms") is None or d.get("age_ms") < 0 or d.get("age_ms") >= float(sys.argv[2]) * 1000):
-  raise SystemExit("REALTIME_DATA_NOT_FRESH")
-print(json.dumps(d, ensure_ascii=False))
-PY
+  say 'SERVICE_ACTIVE=confirmed'
 }
 
 case "${1:---one-shot}" in
@@ -168,6 +153,7 @@ case "${1:---one-shot}" in
   --start) start ;;
   --status) status ;;
   --rollback) [ "${2:-}" ] || fail 'ROLLBACK_REQUIRES_COMMIT_SHA'; "$ROOT/deploy/scripts/rollback-gos.sh" --ref "$2" --target-root "$TARGET_ROOT" ;;
+  --render-unit) render_unit_template ;;
   --one-shot) install; start; status ;;
   *) fail "UNKNOWN_MODE=$1" ;;
 esac

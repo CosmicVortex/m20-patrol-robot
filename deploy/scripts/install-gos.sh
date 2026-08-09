@@ -65,9 +65,8 @@ if "@GOS_HOST@" in unit:
     for item in ("M20_RUNTIME_MODE=realtime_readonly","M20_READ_ONLY_MODE=true","M20_CONTROL_ENABLED=false","M20_TELEMETRY_TX_ENABLED=false","M20_TARGET_HOST=@AOS_HOST@","M20_TARGET_PORT=@AOS_TCP_PORT@","host=\"@GOS_HOST@\"","port=@WEB_PORT@","telemetry_receive_enabled=True","stale_after_s=@STALE_AFTER_SECONDS@"):
         assert item in unit, item
 else:
-    for item in ("M20_RUNTIME_MODE=realtime_readonly","M20_READ_ONLY_MODE=true","M20_CONTROL_ENABLED=false","M20_TELEMETRY_TX_ENABLED=false",f"M20_TARGET_HOST={m['targets']['aos_host']}",f"M20_TARGET_PORT={m['ports']['aos_tcp']}",f"host=\"{m['web_bind_host']}\"",f"port={m['ports']['web']}","telemetry_receive_enabled=True"):
+    for item in ("M20_RUNTIME_MODE=realtime_readonly","M20_READ_ONLY_MODE=true","M20_CONTROL_ENABLED=false","M20_TELEMETRY_TX_ENABLED=false","M20_TARGET_HOST=@AOS_HOST@","M20_TARGET_PORT=@AOS_TCP_PORT@","backend.app.server"):
         assert item in unit, item
-    assert f"M20_STALE_AFTER_SECONDS={m['stale_after_seconds']}" in unit
 assert (r / "backend/app/dashboard_realtime.py").is_file()
 PY
 }
