@@ -15,6 +15,17 @@ mkdir -p "$TMP/m20-patrol-robot"
 git archive "$COMMIT" | tar -x -C "$TMP/m20-patrol-robot"
 printf '{"commit":"%s","created_by":"package-deploy.sh"}\n' "$COMMIT" > "$TMP/m20-patrol-robot/deploy/release-provenance.json"
 sha256sum "$TMP/m20-patrol-robot/deploy/readonly-manifest.json" > "$TMP/m20-patrol-robot/deploy/manifest.sha256"
-(cd "$TMP" && zip -qr "$OUT" m20-patrol-robot)
+python3 - "$TMP" "$OUT" <<'PY'
+import sys
+import zipfile
+from pathlib import Path
+
+source = Path(sys.argv[1]) / "m20-patrol-robot"
+out = Path(sys.argv[2])
+with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+    for path in sorted(source.rglob("*")):
+        if path.is_file():
+            archive.write(path, path.relative_to(Path(sys.argv[1])).as_posix())
+PY
 sha256sum "$OUT"
 printf 'PACKAGE=%s\nCOMMIT=%s\n' "$OUT" "$COMMIT"
