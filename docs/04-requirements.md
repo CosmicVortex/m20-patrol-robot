@@ -6,7 +6,7 @@
 |------|------|------|----------|
 | R-01 | APDU 帧编解码 | ✅ | `protocol/frame.py`、`test_frame.py` |
 | R-02 | PatrolDevice 信封 | ✅ | `protocol/messages.py`、`test_messages.py` |
-| R-03 | 模拟状态页面 | ✅ | `dashboard.py`、`test_dashboard.py` |
+| R-03 | 状态监控页面 | ✅ | `dashboard_realtime.py`、`dashboard_simple.py` |
 | R-04 | GOS 现场核验 | 🟡 | `deploy/scripts/collect-readonly-info.sh` |
 | R-05 | 安装/回滚 | ✅ | `install-gos.sh`、`rollback-gos.sh` |
 | R-06 | 真实状态连接 | ✅ | `robot/telemetry.py`、`test_telemetry.py` |
@@ -30,6 +30,8 @@ PYTHONPATH=. uv run --with pytest pytest -q
 ```
 
 模拟页面返回 `source=SIMULATED`、`connected=false`。
+
+真实接入返回 `source=REAL`、`connected=true`。
 
 ### 真实接入条件
 

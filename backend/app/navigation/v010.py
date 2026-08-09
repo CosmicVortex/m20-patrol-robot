@@ -15,10 +15,10 @@ from math import isfinite
 from backend.app.protocol.messages import PatrolMessage
 
 # V1.2.1 official gait constants (hex values)
-GAIT_FLAT敏捷 = 0x3002  # 平地（敏捷运动模式）
-GAIT_STAIRS敏捷 = 0x3003  # 楼梯（敏捷运动模式）
-GAIT_FLAT标准 = 0x1001  # 基础（标准运动模式）
-GAIT_PLATFORM标准 = 0x1002  # 高台（标准运动模式）
+GAIT_FLAT_AGGRESSIVE = 0x3002  # 平地（敏捷运动模式）
+GAIT_STAIRS_AGGRESSIVE = 0x3003  # 楼梯（敏捷运动模式）
+GAIT_FLAT_STANDARD = 0x1001  # 基础（标准运动模式）
+GAIT_PLATFORM_STANDARD = 0x1002  # 高台（标准运动模式）
 
 # V1.2.1 navigation mode constants
 NAV_MODE_STRAIGHT = 0  # 直线导航
@@ -125,7 +125,7 @@ class SinglePointNavigation:
                 "PosZ": float(self.pos_z),
                 "AngleYaw": float(self.angle_yaw),
                 "PointInfo": POINT_TASK,
-                "Gait": GAIT_FLAT敏捷,  # V1.2.1: 平地敏捷模式 = 0x3002
+                "Gait": GAIT_FLAT_AGGRESSIVE,  # V1.2.1: 平地敏捷模式 = 0x3002
                 "Speed": SPEED_SLOW,  # V1.2.1: 低速模式
                 "Manner": 0,  # 前进行走
                 "ObsMode": OBSMODE_ON,  # 开启停避障

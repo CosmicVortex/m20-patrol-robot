@@ -22,7 +22,6 @@ from backend.app.navigation.v010 import (
 )
 from backend.app.robot.basic_client import BasicServerClient, BasicServerConfig
 from backend.app.protocol.messages import PatrolMessage
-from backend.app.robot.status import parse_status_message, StatusResult
 
 logger = logging.getLogger(__name__)
 
