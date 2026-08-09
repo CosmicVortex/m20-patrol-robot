@@ -13,9 +13,9 @@
 | 如何测试、验证 | [05-testing.md](./05-testing.md) |
 | 如何部署、停止、回滚 | [06-deployment.md](./06-deployment.md) |
 | 变更记录、版本历史 | [07-changes.md](./07-changes.md) |
-| **办公室现场部署步骤** | **[procedures/deployment-guide.md](./procedures/deployment-guide.md)** |
+| **[测试场地]现场部署步骤** | **[procedures/deployment-guide.md](./procedures/deployment-guide.md)** |
 | 建图、定位、标点测试 | [procedures/mapping-test.md](./procedures/mapping-test.md) |
-| 办公室验收检查清单 | [procedures/office-acceptance.md](./procedures/office-acceptance.md) |
+| [测试场地]验收检查清单 | [procedures/office-acceptance.md](./procedures/office-acceptance.md) |
 | V1.2.1 对齐状态 | [reviews/v121-alignment.md](./reviews/v121-alignment.md) |
 | 阻塞项修复记录 | [reviews/blockers-fixed.md](./reviews/blockers-fixed.md) |
 | 官方资料台账 | [official-docs-review.md](./official-docs-review.md) |
@@ -36,7 +36,7 @@ docs/
 ├── procedures/              # 现场操作手册
 │   ├── deployment-guide.md  # 部署执行手册
 │   ├── mapping-test.md      # 建图测试
-│   └── office-acceptance.md # 办公室验收
+│   └── office-acceptance.md # [测试场地]验收
 │
 ├── reviews/                 # 审查记录
 │   ├── v121-alignment.md    # V1.2.1对齐

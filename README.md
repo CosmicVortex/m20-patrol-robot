@@ -5,9 +5,9 @@
 ## 项目身份
 
 - **唯一型号**：山猫 M20 Pro（不使用 PRO/STD 等软件型号枚举）
-- **演示阶段场地**：华翔智行办公室
-- **目标部署场地**：东莞中升之星奔驰 4S 店
-- **实施顺序**：办公室先完成建图、状态接入、视频切换、单点导航控制验收；全部通过后，门店重新建图并单独验收
+- **演示阶段场地**：[内部测试场地]
+- **目标部署场地**：[客户场地]
+- **实施顺序**：[测试场地]先完成建图、状态接入、视频切换、单点导航控制验收；全部通过后，[客户场地]重新建图并单独验收
 - **部署主机**：GOS（10.21.31.104，项目负责人确认固定地址）
 - **当前阶段**：云端离线基线已完成，GOS 真机部署和真实遥测仍未验证，当前状态为 `BLOCKED`
 
@@ -142,7 +142,7 @@ http://10.21.31.104:8080/api/v1/status/latest
 | [06-deployment.md](./06-deployment.md) | GOS安装、验证、回滚 |
 | [07-changes.md](./07-changes.md) | 变更记录 |
 | [procedures/mapping-test.md](./procedures/mapping-test.md) | 建图与定位测试操作手册 |
-| [procedures/office-acceptance.md](./procedures/office-acceptance.md) | 办公室验收测试 |
+| [procedures/office-acceptance.md](./procedures/office-acceptance.md) | [测试场地]验收测试 |
 | [reviews/v121-alignment.md](./reviews/v121-alignment.md) | V1.2.1代码对齐审查 |
 | [reviews/blockers-fixed.md](./reviews/blockers-fixed.md) | 阻塞项修复报告 |
 | [official-docs-review.md](./official-docs-review.md) | 官方资料台账与差异记录 |

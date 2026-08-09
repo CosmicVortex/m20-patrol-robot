@@ -1,7 +1,7 @@
 # 建图、定位与标点测试
 
 **适用型号：** 山猫 M20 Pro
-**测试地点：** 华翔智行公司办公室
+**测试地点：** [内部测试场地]
 **测试内容：** 建图、遥控器导航模式、标点工具使用
 
 ## 1. 依据与边界
@@ -112,7 +112,7 @@ test -f "/home/user/Downloads/$MAP_PACKAGE_FILE" || { echo '地图包不存在';
 sha256sum "/home/user/Downloads/$MAP_PACKAGE_FILE" | tee /home/user/map-backup-sha256.txt
 ```
 
-办公室建图不执行 `drmap unpack`；该命令仅用于经批准的整包恢复/迁移。
+[测试场地]建图不执行 `drmap unpack`；该命令仅用于经批准的整包恢复/迁移。
 
 ## 4. RViz 定位核验
 

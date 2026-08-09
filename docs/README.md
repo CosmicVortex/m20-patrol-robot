@@ -16,7 +16,7 @@
 | `07-changes.md` | 变更记录：重大修改历史 | 当前基线 |
 | `official-docs-review.md` | 官方资料台账与差异记录 | 当前基线 |
 | `procedures/mapping-test.md` | 建图与定位测试操作手册 | 现场操作说明 |
-| `procedures/office-acceptance.md` | 办公室阶段验收测试 | 现场操作说明 |
+| `procedures/office-acceptance.md` | [测试场地]阶段验收测试 | 现场操作说明 |
 | `reviews/v121-alignment.md` | V1.2.1代码对齐审查 | 审查记录 |
 | `reviews/blockers-fixed.md` | 阻塞项修复报告 | 审查记录 |
 
