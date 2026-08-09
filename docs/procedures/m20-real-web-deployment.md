@@ -60,10 +60,16 @@ cd m20-patrol-robot
 如果 GOS 没有 `unzip`：
 
 ```bash
-python3 /path/to/python-unzip.py m20-patrol-robot-deploy.zip
+python3 m20-patrol-robot/deploy/python-unzip.py m20-patrol-robot-deploy.zip
 ```
 
-不要把 `python-unzip.py` 复制到系统目录。它应与 ZIP 放在同一目录。
+也可以先把 `deploy/python-unzip.py` 与 ZIP 放在同一目录，再执行：
+
+```bash
+python3 python-unzip.py m20-patrol-robot-deploy.zip
+```
+
+不要把 `python-unzip.py` 复制到系统目录。
 
 ## 解包后验证
 
