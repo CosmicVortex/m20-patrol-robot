@@ -252,19 +252,20 @@ class TelemetryAdapter:
         self._snapshot.received_at = datetime.now(UTC).isoformat()
         
         data = result.data
-        if result.status_type == "basic_status":
+        kind = result.kind
+        if kind == "basic_status":
             self._snapshot.basic = data
-        elif result.status_type == "motion_status":
+        elif kind == "motion_status":
             self._snapshot.motion = data
-        elif result.status_type == "device_status":
+        elif kind == "device_status":
             self._snapshot.device = data
-        elif result.status_type == "error_list":
+        elif kind == "error_list":
             self._snapshot.errors = data.get("errors", [])
-        elif result.status_type == "nav_status":
+        elif kind == "nav_status":
             self._snapshot.nav_status = data
-        elif result.status_type == "position":
+        elif kind == "position":
             self._snapshot.position = data
-        elif result.status_type == "perception":
+        elif kind == "perception":
             self._snapshot.perception = data
         
         # Calculate age
