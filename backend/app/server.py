@@ -24,7 +24,9 @@ from backend.app.config import ConfigLoader, WebServiceConfig
 from backend.app.robot.telemetry import TelemetryAdapter, ConnectionConfig
 from backend.app.api.router import ApiRouter
 from backend.app.api.handlers import BaseHandler
-
+from backend.app.navigation.service import NavigationService
+from backend.app.navigation.v010 import NavigationSafetySnapshot
+from backend.app.robot.basic_client import BasicServerConfig
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +39,7 @@ class M20WebServer:
         self.telemetry_adapter: Optional[TelemetryAdapter] = None
         self.user_store: Optional[UserStore] = None
         self.auth_middleware: Optional[AuthMiddleware] = None
+        self.nav_service: Optional[NavigationService] = None
         self.router: Optional[ApiRouter] = None
         self.server: Optional[ThreadingHTTPServer] = None
 
@@ -69,11 +72,34 @@ class M20WebServer:
         )
         self.telemetry_adapter = TelemetryAdapter(telemetry_config)
 
+        # Setup navigation service (disabled by default until authorized)
+        basic_config = BasicServerConfig(
+            host=self.config.aos_host,
+            tcp_port=self.config.aos_port,
+            control_enabled=self.config.control_enabled,
+            stale_after_seconds=self.config.stale_after_s,
+        )
+        safety_snapshot = NavigationSafetySnapshot(
+            control_enabled=self.config.control_enabled,
+            field_authorization="pending_field_authorization",
+            tcp_connected=False,
+            location_normal=False,
+            obstacle_avoidance_active=True,
+            hard_estop_active=False,
+            protective_fault_active=False,
+            battery_percent=100,
+            active_task=False,
+        )
+        from backend.app.robot.basic_client import BasicServerClient
+        basic_client = BasicServerClient(basic_config)
+        self.nav_service = NavigationService(basic_client, safety_snapshot)
+
         # Setup API router
         self.router = ApiRouter(
             user_store=self.user_store,
             auth_middleware=self.auth_middleware,
             telemetry_adapter=self.telemetry_adapter,
+            nav_service=self.nav_service,
         )
 
     def _ensure_admin_user(self) -> None:

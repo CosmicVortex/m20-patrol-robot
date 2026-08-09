@@ -20,6 +20,7 @@ from backend.app.auth.middleware import AuthMiddleware, AuthRequiredError, AuthR
 from backend.app.auth.store import AuthUser, AuthenticationError, Session, UserStore
 from backend.app.api.response import ApiFormatter, RequestContext
 from backend.app.robot.telemetry import TelemetryAdapter
+from backend.app.navigation.service import NavigationService
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ class BaseHandler(BaseHTTPRequestHandler):
     auth_middleware: Optional[AuthMiddleware] = None
     telemetry_adapter: Optional[TelemetryAdapter] = None
     user_store: Optional[UserStore] = None
+    nav_service: Optional[NavigationService] = None
 
     def log_message(self, format: str, *args: Any) -> None:
         """Override to use structured logging."""
@@ -266,9 +268,13 @@ class NavigationStatusHandler(BaseHandler):
         if not auth and (not self.auth_middleware or not self.auth_middleware.allow_anonymous):
             return
 
-        # TODO: Implement navigation status query
-        # Requires field authorization and safety snapshot
-        self.send_error_response(501, "Navigation status query requires field authorization")
+        nav_service = self.nav_service
+        if nav_service is None:
+            self.send_error_response(503, "Navigation service not configured")
+            return
+
+        status = nav_service.get_status()
+        self.send_json_response(200, status)
 
 
 class NavigationAuthorizeHandler(BaseHandler):
@@ -287,9 +293,21 @@ class NavigationAuthorizeHandler(BaseHandler):
             self.send_error_response(403, "admin role required")
             return
 
-        # TODO: Implement authorization with safety checks
-        # Requires field authorization, safety snapshot, and operator confirmation
-        self.send_error_response(501, "Authorization requires field safety checks and operator confirmation")
+        nav_service = self.nav_service
+        if nav_service is None:
+            self.send_error_response(503, "Navigation service not configured")
+            return
+
+        body = self._parse_json_body()
+        operator = body.get("operator", auth.user.username)
+        note = body.get("note", "")
+
+        try:
+            result = nav_service.authorize(operator, note)
+            self.send_json_response(200, result)
+        except Exception as exc:
+            logger.error("Authorization error: %s", exc)
+            self.send_error_response(500, str(exc))
 
 
 class NavigationTaskHandler(BaseHandler):
@@ -308,4 +326,61 @@ class NavigationTaskHandler(BaseHandler):
             self.send_error_response(403, "admin role required")
             return
 
-        self.send_error_response(501, "Not implemented - requires field authorization")
+        nav_service = self.nav_service
+        if nav_service is None:
+            self.send_error_response(503, "Navigation service not configured")
+            return
+
+        body = self._parse_json_body()
+        action = body.get("action")
+
+        if action == "cancel":
+            try:
+                result = nav_service.cancel_navigation()
+                self.send_json_response(200, result)
+            except Exception as exc:
+                logger.error("Cancel navigation error: %s", exc)
+                self.send_error_response(500, str(exc))
+        else:
+            # Send navigation command
+            pos_x = body.get("pos_x", 0.0)
+            pos_y = body.get("pos_y", 0.0)
+            pos_z = body.get("pos_z", 0.0)
+            angle_yaw = body.get("angle_yaw", 0.0)
+            map_id = body.get("map_id", 1)
+
+            try:
+                result = nav_service.send_navigation(pos_x, pos_y, pos_z, angle_yaw, map_id)
+                self.send_json_response(200, result)
+            except Exception as exc:
+                logger.error("Navigation error: %s", exc)
+                self.send_error_response(500, str(exc))
+
+
+class NavigationCancelHandler(BaseHandler):
+    """POST /api/v1/navigation/cancel - Cancel navigation task."""
+
+    def do_POST(self) -> None:
+        if self.path != "/api/v1/navigation/cancel":
+            self.send_error_response(404, "Not found")
+            return
+
+        auth = self._authenticate()
+        if not auth:
+            return
+
+        if auth.role != "admin":
+            self.send_error_response(403, "admin role required")
+            return
+
+        nav_service = self.nav_service
+        if nav_service is None:
+            self.send_error_response(503, "Navigation service not configured")
+            return
+
+        try:
+            result = nav_service.cancel_navigation()
+            self.send_json_response(200, result)
+        except Exception as exc:
+            logger.error("Cancel navigation error: %s", exc)
+            self.send_error_response(500, str(exc))

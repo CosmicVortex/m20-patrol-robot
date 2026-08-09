@@ -384,7 +384,7 @@ main {{
 <body>
 <header>
     <div>
-        <h1>M20 巡逻状态<small>前后本体相机 · 状态只读 · 巡逻控制默认禁用</small></h1>
+        <h1>M20 巡逻状态<small>前后本体相机 · 状态订阅 · 控制默认禁用</small></h1>
     </div>
     {badge}
 </header>

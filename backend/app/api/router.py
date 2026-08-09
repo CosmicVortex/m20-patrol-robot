@@ -11,6 +11,7 @@ from typing import Optional
 from backend.app.auth.middleware import AuthMiddleware
 from backend.app.auth.store import UserStore
 from backend.app.robot.telemetry import TelemetryAdapter
+from backend.app.navigation.service import NavigationService
 from backend.app.api.handlers import (
     AuthLoginHandler,
     AuthLogoutHandler,
@@ -19,6 +20,7 @@ from backend.app.api.handlers import (
     DevicesListHandler,
     HealthHandler,
     NavigationAuthorizeHandler,
+    NavigationCancelHandler,
     NavigationStatusHandler,
     NavigationTaskHandler,
     StatusLatestHandler,
@@ -40,6 +42,7 @@ class ApiRouter:
         "/api/v1/navigation/status": NavigationStatusHandler,
         "/api/v1/navigation/authorize": NavigationAuthorizeHandler,
         "/api/v1/navigation/tasks": NavigationTaskHandler,
+        "/api/v1/navigation/cancel": NavigationCancelHandler,
     }
 
     def __init__(
@@ -47,10 +50,12 @@ class ApiRouter:
         user_store: UserStore,
         auth_middleware: AuthMiddleware,
         telemetry_adapter: Optional[TelemetryAdapter] = None,
+        nav_service: Optional[NavigationService] = None,
     ) -> None:
         self.user_store = user_store
         self.auth_middleware = auth_middleware
         self.telemetry_adapter = telemetry_adapter
+        self.nav_service = nav_service
 
     def route(self, handler: BaseHandler) -> None:
         """Route the request to the appropriate handler."""
@@ -67,17 +72,15 @@ class ApiRouter:
             return
 
         # Inject dependencies
-        handler_class.auth_middleware = self.auth_middleware
-        handler_class.user_store = self.user_store
-        handler_class.telemetry_adapter = self.telemetry_adapter
+        handler.auth_middleware = self.auth_middleware
+        handler.user_store = self.user_store
+        handler.telemetry_adapter = self.telemetry_adapter
+        handler.nav_service = self.nav_service
 
         # Dispatch on the live request handler. Creating a detached
         # BaseHTTPRequestHandler bypasses the socket, headers and request body.
         method = handler.command.lower()
         handler_method = f"do_{method.upper()}"
-        handler.__class__.auth_middleware = self.auth_middleware
-        handler.__class__.user_store = self.user_store
-        handler.__class__.telemetry_adapter = self.telemetry_adapter
         if hasattr(handler_class, handler_method):
             getattr(handler_class, handler_method)(handler)
         else:
