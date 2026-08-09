@@ -19,6 +19,7 @@
 | `procedures/office-acceptance.md` | [测试场地]阶段验收测试 | 现场操作说明 |
 | `reviews/v121-alignment.md` | V1.2.1代码对齐审查 | 审查记录 |
 | `reviews/blockers-fixed.md` | 阻塞项修复报告 | 审查记录 |
+| `reviews/comprehensive-audit-20260809.md` | 全面代码与文档审查 | 审查记录 |
 
 ## 官方资料库
 
@@ -28,13 +29,16 @@
 
 | 文件 | 说明 |
 |---|---|
-| `archive/plans/phase1-navigation-web.md` | 第一阶段实施计划（历史） |
-| `archive/review/project-multidimensional-review-prompt.md` | 多维度审查提示词（历史） |
+| `archive/legacy/` | 历史执行报告（已归档，不作为当前依据） |
+| `archive/architecture.md` | 历史架构文档 |
+| `archive/requirements.md` | 历史需求文档 |
+| `archive/m20-pro-mapping-navigation-test.md` | 历史建图测试记录 |
+| `archive/office-acceptance-test-plan.md` | 历史验收测试计划 |
 
 ## 编写规则
 
-- 文件版本和机器人软件/固件版本分开记录；
-- 地址、端口、目录和命令标为文档事实或现场事实；
-- 现场操作必须有前置条件、通过标准、停止条件和结果栏；
-- 同类教程只保留一份当前版本；
-- 不在仓库保存密码、Token、地图、视频和未脱敏日志。
+- 文件版本和机器人软件/固件版本分开记录
+- 地址、端口、目录和命令标为文档事实或现场事实
+- 现场操作必须有前置条件、通过标准、停止条件和结果栏
+- 同类教程只保留一份当前版本
+- 不在仓库保存密码、Token、地图、视频和未脱敏日志

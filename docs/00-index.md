@@ -13,11 +13,12 @@
 | 如何测试、验证 | [05-testing.md](./05-testing.md) |
 | 如何部署、停止、回滚 | [06-deployment.md](./06-deployment.md) |
 | 变更记录、版本历史 | [07-changes.md](./07-changes.md) |
-| **[测试场地]现场部署步骤** | **[procedures/deployment-guide.md](./procedures/deployment-guide.md)** |
+| [测试场地] 现场部署步骤 | [procedures/deployment-guide.md](./procedures/deployment-guide.md) |
 | 建图、定位、标点测试 | [procedures/mapping-test.md](./procedures/mapping-test.md) |
-| [测试场地]验收检查清单 | [procedures/office-acceptance.md](./procedures/office-acceptance.md) |
+| [测试场地] 验收检查清单 | [procedures/office-acceptance.md](./procedures/office-acceptance.md) |
 | V1.2.1 对齐状态 | [reviews/v121-alignment.md](./reviews/v121-alignment.md) |
 | 阻塞项修复记录 | [reviews/blockers-fixed.md](./reviews/blockers-fixed.md) |
+| 全面审查报告 | [reviews/comprehensive-audit-20260809.md](./reviews/comprehensive-audit-20260809.md) |
 | 官方资料台账 | [official-docs-review.md](./official-docs-review.md) |
 
 ## 目录结构
@@ -40,11 +41,12 @@ docs/
 │
 ├── reviews/                 # 审查记录
 │   ├── v121-alignment.md    # V1.2.1对齐
-│   └── blockers-fixed.md    # 阻塞项修复
+│   ├── blockers-fixed.md    # 阻塞项修复
+│   └── comprehensive-audit-20260809.md # 全面审查
 │
 ├── official-docs-review.md  # 官方资料台账
 │
-└── official/                # 官方文档（19份，只读）
+└── official/                # 官方文档（只读）
     ├── 3份 PDF
     └── 16份 Markdown
 ```

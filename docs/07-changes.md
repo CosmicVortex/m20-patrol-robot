@@ -1,5 +1,26 @@
 # 变更记录
 
+## 2026-08-09 — 文档架构重构与脱敏
+
+### 变更内容
+
+1. **文档结构调整**
+   - 归档重复的执行报告（5份）至 `docs/archive/legacy/`
+   - 合并 `执行报告-20260809-全面审查.md` 到 `reviews/comprehensive-audit-20260809.md`
+   - 新增 `reviews/comprehensive-audit-20260809.md` 作为当前审查基线
+
+2. **脱敏处理**
+   - 所有具体企业名称替换为占位符
+   - 地点信息统一使用 `[测试场地]`、`[客户场地]` 占位
+
+3. **Bug修复**
+   - 修复 `telemetry.py` 中 `StatusResult.status_type` 应为 `kind` 的阻塞性 Bug（commit `e1e75e1`）
+
+4. **测试**
+   - 114 passed（Python 3.13 和 3.8.10 均通过）
+
+---
+
 ## 2026-08-07 — V0.5 代码核查与部署优化
 
 ### 发现的问题
@@ -17,7 +38,7 @@
 与《山猫M20软件开发指南》V1.2.1 逐项核对：
 
 | 核对项 | 状态 |
-|---|---|
+|--------|------|
 | 协议头部结构（16字节） | ✅ 完全一致 |
 | 同步字 `EB 91 EB 90` | ✅ 正确 |
 | 字节序（小端） | ✅ 正确 |
@@ -49,14 +70,6 @@
 Python 3.13 与 Python 3.8.10：114 passed
 ```
 
-### 新增文件
-
-| 文件 | 说明 |
-|---|---|
-| `backend/app/dashboard_simple.py` | 简化版仪表盘，无外部依赖 |
-| `m20-patrol-deploy-v2.sh` | 改进版部署脚本（项目外） |
-| `m20-code-review-report.md` | 代码核查报告（项目外） |
-
 ---
 
 ## 2026-08-06 — V0.4 真实状态订阅、视频接入、导航控制
@@ -71,28 +84,16 @@ Python 3.13 与 Python 3.8.10：114 passed
 
 ### 功能说明
 
-**TelemetryAdapter（真实状态订阅）：**
+**TelemetryAdapter（真实状态订阅）**：
 - 自动连接到 AOS basic_server TCP 30001
 - 生产只读模式不发送心跳，`TELEMETRY_TX_ENABLED=false`
 - 接收并解析状态消息
 - 断线自动重连
 
-**RealTimeDashboard（实时 Web 仪表盘）：**
-- Web 页面显示实时状态
-- 每 2 秒刷新
-
-**NavigationService（导航控制）：**
+**NavigationService（导航控制）**：
 - Web UI 授权机制
 - 安全门控检查
 - 审计日志记录
-
-### 测试结果
-
-```
-83 passed
-compileall 通过
-git diff --check 通过
-```
 
 ---
 
@@ -108,14 +109,6 @@ git diff --check 通过
 - 新建 `procedures/` 目录：现场操作手册
 - 新建 `reviews/` 目录：审查记录
 - 归档历史文档到 `docs/archive/`
-
-### 测试结果
-
-```
-76 passed
-compileall 通过
-git diff --check 通过
-```
 
 ---
 
@@ -135,11 +128,3 @@ git diff --check 通过
 1. message_id 关联
 2. control_enabled 门禁
 3. 安装回滚脚本
-
-### 测试结果
-
-```
-75 passed
-compileall 通过
-git diff --check 通过
-```

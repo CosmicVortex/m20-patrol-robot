@@ -1,6 +1,6 @@
 # 05 — 测试与现场验证
 
-## 1. 云端离线验证
+## 云端离线验证
 
 当前 feature 分支在云端开发环境和隔离 Python 3.8.10 环境分别验证。
 
@@ -30,7 +30,7 @@ pip check：通过
 
 这些是云端/隔离环境证据，不是 GOS 或真实 AOS 证据。
 
-## 2. 部署入口检查
+## 部署入口检查
 
 ```bash
 bash deploy/scripts/deploy-readonly.sh --dry-run
@@ -46,7 +46,7 @@ NO_SYSTEMD_CHANGE=true
 NO_NETWORK_SIDE_EFFECT=true
 ```
 
-## 3. 真实数据判定
+## 真实数据判定
 
 GOS 本机必须逐层记录：
 
@@ -62,7 +62,7 @@ TELEMETRY_FRESH
 
 只有 `MESSAGE_PARSED` 和 `TELEMETRY_FRESH` 同时通过，才能报告 `REAL` 真实状态。端口监听、进程存在、HTTP 200、mock socket、缓存和模拟页面都不能替代真实数据。
 
-## 4. GOS 现场证据命令
+## GOS 现场证据命令
 
 ```bash
 hostname
@@ -77,14 +77,14 @@ curl --fail --silent --show-error http://10.21.31.104:8080/api/v1/health
 curl --fail --silent --show-error http://10.21.31.104:8080/api/v1/status/latest
 ```
 
-## 5. 禁止项
+## 禁止项
 
 测试阶段仍禁止：
 
-- Type=100/Command=100 心跳；
-- 运动、导航、巡逻、云台、拍照和建图报文；
-- 修改 AOS/NOS 配置；
-- 猜测 RTSP endpoint；
-- 使用旧地址 `10.21.31.101`。
+- Type=100/Command=100 心跳
+- 运动、导航、巡逻、云台、拍照和建图报文
+- 修改 AOS/NOS 配置
+- 猜测 RTSP endpoint
+- 使用旧地址 `10.21.31.101`
 
 RTSP endpoint 未被 manifest 或现场批准配置明确提供时，视频状态为 `UNVERIFIED`。
