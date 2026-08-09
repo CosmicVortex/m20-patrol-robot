@@ -5,7 +5,7 @@ M20 Pro 巡逻安防系统的二次开发代码库。当前 release 仅提供 GO
 ## 项目标识
 
 | 字段 | 值 |
-|------|------|
+|------|-----|
 | 机器型号 | 山猫 M20 Pro（单一型号，无 PRO/STD 区分） |
 | 演示场地 | [内部测试场地] |
 | 目标场地 | [客户场地] |
@@ -122,9 +122,9 @@ http://10.21.31.104:8080/api/v1/status/latest
 
 ## 分支与版本
 
-- 当前 feature 分支：`feat/m20-readonly-one-shot-20260808`
-- 未取得 GOS Python 3.8.10 和真实遥测证据前，不创建 SemVer tag 或 production release
-- GitHub feature 分支同步不代表 GOS 部署完成
+- **main 分支**：唯一稳定分支，保留最新完整代码和文档
+- **tag v0.1.0-draft**：首个云端基线版本，GOS 部署待验证
+- **新功能开发**：在 main 上验证通过后，才考虑新分支
 
 ## 文档结构
 
