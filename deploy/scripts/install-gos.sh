@@ -25,8 +25,8 @@ while [ "$#" -gt 0 ]; do
 done
 
 [ -n "$REPO" ] && [ -n "$REF" ] || { usage >&2; exit 2; }
-[ -d "$REPO/.git" ] || { printf 'ERROR: --repo must be a Git checkout\n' >&2; exit 2; }
-command -v git >/dev/null || { printf 'ERROR: git is required\n' >&2; exit 2; }
+[ -d "$REPO/.git" ] || [ -f "$REPO/deploy/release-provenance.json" ] || { printf 'ERROR: --repo must be a Git checkout or packaged release\n' >&2; exit 2; }
+if [ -d "$REPO/.git" ]; then command -v git >/dev/null || { printf 'ERROR: git is required\n' >&2; exit 2; }; fi
 command -v python3 >/dev/null || { printf 'ERROR: python3 is required\n' >&2; exit 2; }
 GOS_HOST=''
 AOS_HOST=''
@@ -107,13 +107,18 @@ case "$TARGET_ROOT" in
   *[!A-Za-z0-9._/-]*) printf 'ERROR: --target-root contains unsupported characters\n' >&2; exit 2 ;;
 esac
 
-if ! git -C "$REPO" cat-file -e "$REF^{commit}" 2>/dev/null; then
-  printf 'ERROR: commit does not exist in repository: %s\n' "$REF" >&2
-  exit 2
+if [ -d "$REPO/.git" ]; then
+  git -C "$REPO" cat-file -e "$REF^{commit}" 2>/dev/null || { printf 'ERROR: commit does not exist in repository: %s\n' "$REF" >&2; exit 2; }
+  COMMIT=$(git -C "$REPO" rev-parse "$REF^{commit}")
+  [ "$COMMIT" = "$REF" ] || { printf 'ERROR: --ref is not the exact commit SHA\n' >&2; exit 2; }
+else
+  COMMIT=$(python3 - "$REPO/deploy/release-provenance.json" <<'PY'
+import json,sys
+print(json.load(open(sys.argv[1]))["commit"])
+PY
+)
+  [ "$COMMIT" = "$REF" ] || { printf 'ERROR: packaged provenance does not match --ref\n' >&2; exit 2; }
 fi
-
-COMMIT=$(git -C "$REPO" rev-parse "$REF^{commit}")
-[ "$COMMIT" = "$REF" ] || { printf 'ERROR: --ref is not the exact commit SHA\n' >&2; exit 2; }
 RELEASE="$TARGET_ROOT/releases/$COMMIT"
 CURRENT="$TARGET_ROOT/current"
 UNIT_PATH="$HOME/.config/systemd/user/$SERVICE_NAME"
@@ -122,10 +127,7 @@ if [ "$APPLY" != true ]; then
   DRY_RELEASE="$(mktemp -d "${TMPDIR:-/tmp}/m20-release-dry-run.XXXXXX")"
   cleanup_dry_run() { rm -rf "$DRY_RELEASE"; }
   trap cleanup_dry_run EXIT
-  if ! git -C "$REPO" archive "$COMMIT" | tar -x -C "$DRY_RELEASE"; then
-    printf 'ERROR: candidate commit archive failed\n' >&2
-    exit 1
-  fi
+  if [ -d "$REPO/.git" ]; then git -C "$REPO" archive "$COMMIT" | tar -x -C "$DRY_RELEASE"; else cp -a "$REPO"/. "$DRY_RELEASE"/; fi
   validate_readonly_release "$DRY_RELEASE" || { printf 'ERROR: candidate release contract failed\n' >&2; exit 1; }
   load_manifest_values "$DRY_RELEASE/deploy/readonly-manifest.json"
   DRY_UNIT="$(mktemp "${TMPDIR:-/tmp}/m20-readonly-unit.XXXXXX")"
@@ -161,10 +163,7 @@ trap cleanup EXIT
 mkdir -p "$TARGET_ROOT/releases"
 mkdir -p "$RELEASE"
 RELEASE_CREATED=true
-if ! git -C "$REPO" archive "$COMMIT" | tar -x -C "$RELEASE"; then
-  rm -rf "$RELEASE"
-  exit 1
-fi
+if [ -d "$REPO/.git" ]; then git -C "$REPO" archive "$COMMIT" | tar -x -C "$RELEASE"; else cp -a "$REPO"/. "$RELEASE"/; fi
 if ! validate_readonly_release "$RELEASE"; then
   rm -rf "$RELEASE"
   exit 1
@@ -178,7 +177,7 @@ if [ "$APPLY" = true ]; then
   conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service enablement is unknown\n' >&2; exit 2; }
   [ "$conflict_active" = inactive ] || { printf 'ERROR: conflicting realtime service state is not inactive: %s\n' "$conflict_active" >&2; exit 2; }
   [ "$conflict_enabled" = disabled ] || { printf 'ERROR: conflicting realtime service is not disabled: %s\n' "$conflict_enabled" >&2; exit 2; }
-  [ -z "$(git -C "$REPO" status --porcelain)" ] || { printf 'ERROR: repository worktree must be clean for --apply\n' >&2; exit 2; }
+  if [ -d "$REPO/.git" ]; then [ -z "$(git -C "$REPO" status --porcelain)" ] || { printf 'ERROR: repository worktree must be clean for --apply\n' >&2; exit 2; }; fi
 fi
 OLD_CURRENT=''
 OLD_UNIT=''

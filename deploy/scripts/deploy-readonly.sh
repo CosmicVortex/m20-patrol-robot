@@ -60,7 +60,20 @@ PY
 }
 
 check_clean_source() {
-  [ -z "$(git -C "$ROOT" status --porcelain)" ] || fail 'WORKTREE_DIRTY_COMMIT_REQUIRED'
+  if [ -d "$ROOT/.git" ]; then
+    [ -z "$(git -C "$ROOT" status --porcelain)" ] || fail 'WORKTREE_DIRTY_COMMIT_REQUIRED'
+  else
+    [ -f "$ROOT/deploy/release-provenance.json" ] || fail 'RELEASE_PROVENANCE_MISSING'
+  fi
+}
+
+source_ref() {
+  if [ -d "$ROOT/.git" ]; then git -C "$ROOT" rev-parse HEAD; else
+    python3 - "$ROOT/deploy/release-provenance.json" <<'PY'
+import json,sys
+print(json.load(open(sys.argv[1]))["commit"])
+PY
+  fi
 }
 
 check_python() {
@@ -128,7 +141,7 @@ install() {
   check_clean_source
   [ -x "$ROOT/deploy/scripts/install-gos.sh" ] || fail 'INSTALL_SCRIPT_NOT_EXECUTABLE'
   local ref
-  ref="$(git -C "$ROOT" rev-parse HEAD)"
+  ref="$(source_ref)"
   "$ROOT/deploy/scripts/install-gos.sh" --repo "$ROOT" --ref "$ref" --target-root "$TARGET_ROOT" --apply
   systemctl --user daemon-reload || fail 'SYSTEMD_RELOAD_FAILED'
 }
@@ -148,7 +161,7 @@ status() {
 
 case "${1:---one-shot}" in
   --preflight) preflight ;;
-  --dry-run) load_manifest_values; check_manifest; "$ROOT/deploy/scripts/install-gos.sh" --repo "$ROOT" --ref "$(git -C "$ROOT" rev-parse HEAD)" --target-root "$TARGET_ROOT"; say 'NO_FILES_WRITTEN=true'; say 'NO_SYSTEMD_CHANGE=true'; say 'NO_NETWORK_SIDE_EFFECT=true' ;;
+  --dry-run) load_manifest_values; check_manifest; "$ROOT/deploy/scripts/install-gos.sh" --repo "$ROOT" --ref "$(source_ref)" --target-root "$TARGET_ROOT"; say 'NO_FILES_WRITTEN=true'; say 'NO_SYSTEMD_CHANGE=true'; say 'NO_NETWORK_SIDE_EFFECT=true' ;;
   --install) install ;;
   --start) start ;;
   --status) status ;;
