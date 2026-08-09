@@ -49,7 +49,7 @@ assert d["telemetry_tx_enabled"] is False
 assert d["web_realtime_enabled"] is True
 assert d["web_bind_host"] == "10.21.31.104"
 assert d["stale_after_seconds"] == 3
-assert d["targets"] == {"gos_host":"10.21.31.104","aos_host":"10.21.31.103","nos_host":"13.21.31.106"}
+assert d["targets"] == {"gos_host":"10.21.31.104","aos_host":"10.21.31.103","nos_host":"10.21.31.106"}
 assert d["ports"] == {"aos_tcp":30001,"aos_udp":30000,"rtsp":8554,"web":8080}
 assert d["credentials_included"] is False
 PY

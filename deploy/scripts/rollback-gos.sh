@@ -98,7 +98,7 @@ assert m["read_only_mode"] is True and m["control_enabled"] is False
 assert m["telemetry_rx_enabled"] is True and m["telemetry_tx_enabled"] is False
 assert m["web_realtime_enabled"] is True and m["web_bind_host"] == "10.21.31.104"
 assert m["stale_after_seconds"] == 3
-assert m["targets"] == {"gos_host":"10.21.31.104","aos_host":"10.21.31.103","nos_host":"13.21.31.106"}
+assert m["targets"] == {"gos_host":"10.21.31.104","aos_host":"10.21.31.103","nos_host":"10.21.31.106"}
 assert m["ports"] == {"aos_tcp":30001,"aos_udp":30000,"rtsp":8554,"web":8080}
 assert m["credentials_included"] is False
 unit=(r / "deploy/systemd/m20-patrol-readonly.service").read_text()

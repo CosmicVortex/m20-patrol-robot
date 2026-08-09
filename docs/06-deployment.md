@@ -28,7 +28,7 @@ bash deploy/scripts/deploy-readonly.sh --rollback <SHA> # 回滚
 |------|-----|
 | GOS_HOST | 10.21.31.104 |
 | AOS_HOST | 10.21.31.103 |
-| NOS_HOST | 13.21.31.106 |
+| NOS_HOST | 10.21.31.106 |
 | AOS_TCP_PORT | 30001 |
 | AOS_UDP_PORT | 30000 |
 | RTSP_PORT | 8554 |

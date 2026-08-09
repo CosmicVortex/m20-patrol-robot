@@ -249,7 +249,7 @@ class DevicesListHandler(BaseHandler):
             "devices": [
                 {"id": "aos", "type": "application_server", "host": "10.21.31.103", "status": "configured"},
                 {"id": "gos", "type": "guard_operator_station", "host": "10.21.31.104", "status": "configured"},
-                {"id": "nos", "type": "navigation_operator_station", "host": "13.21.31.106", "status": "configured"},
+                {"id": "nos", "type": "navigation_operator_station", "host": "10.21.31.106", "status": "configured"},
             ]
         })
 
@@ -267,10 +267,8 @@ class NavigationStatusHandler(BaseHandler):
             return
 
         # TODO: Implement navigation status query
-        self.send_json_response(200, {
-            "status": "unverified",
-            "message": "Navigation status query not yet implemented"
-        })
+        # Requires field authorization and safety snapshot
+        self.send_error_response(501, "Navigation status query requires field authorization")
 
 
 class NavigationAuthorizeHandler(BaseHandler):
@@ -290,7 +288,8 @@ class NavigationAuthorizeHandler(BaseHandler):
             return
 
         # TODO: Implement authorization with safety checks
-        self.send_error_response(501, "Not implemented - requires field authorization")
+        # Requires field authorization, safety snapshot, and operator confirmation
+        self.send_error_response(501, "Authorization requires field safety checks and operator confirmation")
 
 
 class NavigationTaskHandler(BaseHandler):

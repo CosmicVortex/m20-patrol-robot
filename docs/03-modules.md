@@ -8,7 +8,7 @@ backend/app/
 ├── robot/             # 机器人交互层：TCP客户端、状态解析
 ├── navigation/        # 导航业务层：报文构造、安全门控
 ├── video/             # 视频流管理层：RTSP管理、WebSocket
-└── dashboard_realtime.py # 唯一只读实时 Web 入口
+└── dashboard_realtime.py # 唯一实时仪表盘入口
 ```
 
 ## protocol/ — 协议层
@@ -24,10 +24,10 @@ backend/app/
 
 **关键常量**：
 ```python
-SYNC_WORD = b"\xeb\x91\xeb\x90"      # 同步字
-HEADER_SIZE = 16                        # 帧头固定16字节
-ASDU_FORMAT_JSON = 0x01                 # JSON格式位
-ASDU_FORMAT_XML = 0x00                  # XML格式位
+SYNC_WORD = b"\xeb\x91\xeb\x90"   # 同步字
+HEADER_SIZE = 16                     # 帧头固定16字节
+ASDU_FORMAT_JSON = 0x01              # JSON格式位
+ASDU_FORMAT_XML = 0x00               # XML格式位
 ```
 
 **对应官方文档**：`docs/official/山猫M20basic_server通信协议总览.md` §1.5
@@ -118,15 +118,15 @@ permission_evidence is approved
 **核心类**：
 ```python
 NavigationSafetySnapshot(
-    control_enabled: bool,       # 控制开关
-    field_authorization: str,    # 现场授权说明
-    tcp_connected: bool,         # TCP已连接
-    location_normal: bool,       # 定位正常
-    obstacle_avoidance_active: bool,  # 避障开启
-    hard_estop_active: bool,     # 硬急停未触发
-    protective_fault_active: bool,    # 无保护级异常
-    battery_percent: int,        # 电量百分比
-    active_task: bool,           # 当前无导航任务
+    control_enabled: bool,
+    field_authorization: str,
+    tcp_connected: bool,
+    location_normal: bool,
+    obstacle_avoidance_active: bool,
+    hard_estop_active: bool,
+    protective_fault_active: bool,
+    battery_percent: int,
+    active_task: bool,
 )
 
 SinglePointNavigation(
@@ -146,10 +146,10 @@ SinglePointNavigation(
 
 **步态常量（V1.2.1格式）**：
 ```python
-GAIT_FLAT敏捷 = 0x3002   # 平地敏捷
-GAIT_STAIRS敏捷 = 0x3003 # 楼梯敏捷
-GAIT_FLAT标准 = 0x1001   # 基础标准
-GAIT_PLATFORM标准 = 0x1002 # 高台标准
+GAIT_FLAT_AGGRESSIVE = 0x3002   # 平地敏捷
+GAIT_STAIRS_AGGRESSIVE = 0x3003 # 楼梯敏捷
+GAIT_FLAT_STANDARD = 0x1001     # 基础标准
+GAIT_PLATFORM_STANDARD = 0x1002 # 高台标准
 ```
 
 **对应官方文档**：

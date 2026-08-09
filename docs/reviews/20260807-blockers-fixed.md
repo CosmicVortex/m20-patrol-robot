@@ -3,8 +3,6 @@
 **日期：** 2026-08-06
 **状态：** 全部修复 ✅
 
----
-
 ## 修复汇总
 
 | 阻塞项 | 问题描述 | 修复方案 | 状态 |
@@ -12,8 +10,6 @@
 | message_id关联 | TCP响应按message_type+command匹配，可能误判延迟响应 | 新增message_id字段，按ID匹配 | ✅ |
 | control_enabled门禁 | connect()允许在control_enabled=False时连接 | 增加control_enabled检查 | ✅ |
 | 安装回滚 | rollback-gos.sh失败时无法恢复unit文件 | 保存前置状态，失败自动恢复 | ✅ |
-
----
 
 ## 详细变更
 
@@ -74,8 +70,6 @@ cleanup() {
 trap cleanup EXIT
 ```
 
----
-
 ## 验证结果
 
 ```bash
@@ -89,8 +83,6 @@ $ git diff --check
 # 通过
 ```
 
----
-
 ## 下一步
 
-三个阻塞项已修复，代码已准备好进行[测试场地]阶段实机测试准入评审。
+三个阻塞项已修复，代码已准备好进行测试场地阶段实机测试准入评审。

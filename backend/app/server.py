@@ -109,13 +109,15 @@ class M20WebServer:
             handler,
         )
 
-        print(
-            f"M20 Web Service starting on {self.config.host}:{self.config.port}\n"
-            f"Runtime mode: {self.config.runtime_mode}\n"
-            f"Read-only: {self.config.read_only_mode}\n"
-            f"Control enabled: {self.config.control_enabled}\n"
-            f"Auth enabled: {self.config.auth_enabled}",
-            flush=True,
+        logger.info(
+            "M20 Web Service starting on %s:%s\n"
+            "Runtime mode: %s\n"
+            "Read-only: %s\n"
+            "Control enabled: %s\n"
+            "Auth enabled: %s",
+            self.config.host, self.config.port,
+            self.config.runtime_mode, self.config.read_only_mode,
+            self.config.control_enabled, self.config.auth_enabled,
         )
 
         try:

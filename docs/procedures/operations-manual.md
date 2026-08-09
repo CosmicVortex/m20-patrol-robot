@@ -8,7 +8,7 @@
 
 ```bash
 # 连接到 NOS（建图主机）
-ssh user@13.21.31.106
+ssh user@10.21.31.106
 
 # 连接到 GOS（开发主机）
 ssh user@10.21.31.104
@@ -27,7 +27,7 @@ ssh user@10.21.31.104
 
 ```bash
 # 查询固件版本
-ssh user@13.21.31.106
+ssh user@10.21.31.106
 cat /var/opt/robot/release_note.json
 ```
 
@@ -38,7 +38,7 @@ cat /var/opt/robot/release_note.json
 ```bash
 # 连通性测试
 ping -c 3 10.21.31.103
-ping -c 3 13.21.31.106
+ping -c 3 10.21.31.106
 
 # 端口测试
 nc -zv 10.21.31.103 30001
@@ -143,7 +143,7 @@ command -v ffmpeg
 
 | 任务 | 命令 |
 |------|------|
-| SSH 到 NOS | `ssh user@13.21.31.106` |
+| SSH 到 NOS | `ssh user@10.21.31.106` |
 | 查询固件 | `cat /var/opt/robot/release_note.json` |
 | 启动建图 | `sudo drmap mapping -n <名称>` |
 | 停止建图 | `sudo drmap stop_mapping` |

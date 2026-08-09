@@ -30,7 +30,7 @@ done
 ```bash
 AOS_HOST=10.21.31.103
 GOS_HOST=10.21.31.104
-NOS_HOST=13.21.31.106
+NOS_HOST=10.21.31.106
 
 printf '\n===== NETWORK =====\n'
 ping -c 2 -W 1 "$AOS_HOST" 2>&1 || true
@@ -49,7 +49,7 @@ done
 如果现场已有只读采集脚本，优先执行仓库脚本：
 
 ```bash
-AOS_HOST=10.21.31.103 GOS_HOST=10.21.31.104 NOS_HOST=13.21.31.106 \
+AOS_HOST=10.21.31.103 GOS_HOST=10.21.31.104 NOS_HOST=10.21.31.106 \
 bash deploy/scripts/collect-readonly-info.sh
 ```
 

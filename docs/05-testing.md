@@ -13,7 +13,7 @@ python3 -m compileall -q backend
 bash deploy/scripts/deploy-readonly.sh --dry-run
 ```
 
-结果：Python 3.13 和 3.8.10 均为 114 passed。
+结果：169 passed in 5.25s
 
 ## 部署验证
 

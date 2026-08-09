@@ -58,7 +58,7 @@ assert m["web_realtime_enabled"] is True
 assert m["credentials_included"] is False
 assert isinstance(m["web_bind_host"], str) and m["web_bind_host"] == "10.21.31.104"
 assert isinstance(m["stale_after_seconds"], (int, float)) and m["stale_after_seconds"] > 0
-assert m["targets"] == {"gos_host":"10.21.31.104","aos_host":"10.21.31.103","nos_host":"13.21.31.106"}
+assert m["targets"] == {"gos_host":"10.21.31.104","aos_host":"10.21.31.103","nos_host":"10.21.31.106"}
 assert m["ports"] == {"aos_tcp":30001,"aos_udp":30000,"rtsp":8554,"web":8080}
 unit=(r / "deploy/systemd/m20-patrol-readonly.service").read_text()
 if "@GOS_HOST@" in unit:

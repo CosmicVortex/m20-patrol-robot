@@ -6,6 +6,7 @@ M20 巡逻机器人状态监控 - 简化版
 
 import http.server
 import json
+import logging
 import socketserver
 import sys
 from datetime import datetime
@@ -764,20 +765,15 @@ class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
 
 def serve_dashboard(host="127.0.0.1", port=8080):
     server = ThreadedHTTPServer((host, port), SimpleDashboardHandler)
-    print(f"{'='*50}")
-    print(f"M20 巡逻机器人状态监控服务")
-    print(f"{'='*50}")
-    print(f"Python 版本: {sys.version.split()[0]}")
-    print(f"服务地址: http://{host}:{port}/")
-    print(f"健康检查: http://{host}:{port}/api/v1/health")
-    print(f"状态 API: http://{host}:{port}/api/v1/status/latest")
-    print(f"{'='*50}")
-    print("按 Ctrl+C 停止服务")
-    print(f"{'='*50}")
+    logger = logging.getLogger(__name__)
+    logger.info("M20 Patrol Dashboard starting on %s:%s", host, port)
+    logger.info("Python %s", sys.version.split()[0])
+    logger.info("Health check: http://%s:%s/api/v1/health", host, port)
+    logger.info("Status API: http://%s:%s/api/v1/status/latest", host, port)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\n服务已停止")
+        logger.info("Service stopped")
         server.server_close()
 
 

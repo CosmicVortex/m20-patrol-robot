@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import html
 import json
+import logging
 import threading
 import os
 from dataclasses import dataclass
@@ -20,6 +21,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 from backend.app.robot.telemetry import TelemetryAdapter, ConnectionConfig
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -73,18 +76,15 @@ class RealTimeDashboard:
             raise ValueError("dashboard requires read_only_mode=true and control_enabled=false")
 
         self._running = True
-        print(
+        logger.info(
             "READ_ONLY_MODE=%s CONTROL_ENABLED=%s M20_RUNTIME_MODE=%s "
-            "ALLOW_ROBOT_TELEMETRY_TX=%s TARGET_HOST=%s TARGET_PORT=%s"
-            % (
-                str(self.config.read_only_mode).lower(),
-                str(self.config.control_enabled).lower(),
-                self.config.runtime_mode,
-                str(self.config.telemetry_tx_enabled).lower(),
-                self.config.aos_host or "<unset>",
-                self.config.aos_port,
-            ),
-            flush=True,
+            "ALLOW_ROBOT_TELEMETRY_TX=%s TARGET_HOST=%s TARGET_PORT=%s",
+            str(self.config.read_only_mode).lower(),
+            str(self.config.control_enabled).lower(),
+            self.config.runtime_mode,
+            str(self.config.telemetry_tx_enabled).lower(),
+            self.config.aos_host or "<unset>",
+            self.config.aos_port,
         )
         telemetry_config = ConnectionConfig(
             host=self.config.aos_host,

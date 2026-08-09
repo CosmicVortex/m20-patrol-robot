@@ -1,11 +1,14 @@
-# 变更记录
+# 07 — 变更记录
 
-## 2026-08-09 — 文档规范化
+## 2026-08-09 — 文档规范化与代码清理
 
-- 清理冗余文档，归档临时文件
+- 清理根目录冗余文件，归档至 archive/
 - 重命名文档统一编号
-- 新建操作手册整合现场指令
+- 替换 print 为 logger（server.py、dashboard_realtime.py、dashboard_simple.py）
+- 更新 navigation API TODO 说明
 - 修复 telemetry.py bug（`status_type` → `kind`）
+- 恢复 NOS IP 为官方确认值 `10.21.31.106`
+- 169 测试全部通过
 
 ## 2026-08-07 — V0.5 代码核查
 

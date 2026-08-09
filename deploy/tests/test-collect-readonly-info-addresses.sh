@@ -9,7 +9,7 @@ SCRIPT="$ROOT/deploy/scripts/collect-readonly-info.sh"
 expect_rejected() {
   local address="$1"
   set +e
-  AOS_HOST="$address" GOS_HOST="10.21.31.104" NOS_HOST="13.21.31.106" \
+  AOS_HOST="$address" GOS_HOST="10.21.31.104" NOS_HOST="10.21.31.106" \
     bash "$SCRIPT" >/dev/null 2>&1
   local status=$?
   set -e
