@@ -54,9 +54,8 @@ class ConfigLoader:
         path = manifest_path or cls.DEFAULT_MANIFEST
         config_path = Path(path)
 
-        if not config_path.exists():
-            logger.warning("Manifest not found at %s, using defaults", path)
-            return WebServiceConfig(manifest_path=str(config_path))
+        if not config_path.is_file():
+            raise FileNotFoundError(f"required manifest not found: {config_path}")
 
         with open(config_path, "r", encoding="utf-8") as f:
             data = json.load(f)

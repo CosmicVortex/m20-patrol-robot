@@ -60,7 +60,7 @@ PY
 }
 
 check_clean_source() {
-  if [ -d "$ROOT/.git" ]; then
+  if [ -d "$ROOT/.git" ] || [ -f "$ROOT/.git" ]; then
     [ -z "$(git -C "$ROOT" status --porcelain)" ] || fail 'WORKTREE_DIRTY_COMMIT_REQUIRED'
   else
     [ -f "$ROOT/deploy/release-provenance.json" ] || fail 'RELEASE_PROVENANCE_MISSING'
@@ -68,7 +68,7 @@ check_clean_source() {
 }
 
 source_ref() {
-  if [ -d "$ROOT/.git" ]; then git -C "$ROOT" rev-parse HEAD; else
+  if [ -d "$ROOT/.git" ] || [ -f "$ROOT/.git" ]; then git -C "$ROOT" rev-parse HEAD; else
     python3 - "$ROOT/deploy/release-provenance.json" <<'PY'
 import json,sys
 print(json.load(open(sys.argv[1]))["commit"])

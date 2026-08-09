@@ -14,7 +14,8 @@ trap cleanup EXIT
 mkdir -p "$TMP/m20-patrol-robot"
 git archive "$COMMIT" | tar -x -C "$TMP/m20-patrol-robot"
 printf '{"commit":"%s","created_by":"package-deploy.sh"}\n' "$COMMIT" > "$TMP/m20-patrol-robot/deploy/release-provenance.json"
-sha256sum "$TMP/m20-patrol-robot/deploy/readonly-manifest.json" > "$TMP/m20-patrol-robot/deploy/manifest.sha256"
+(cd "$TMP/m20-patrol-robot" && find . -type f ! -path './deploy/release-provenance.json' ! -path './deploy/package.sha256' ! -path './deploy/manifest.sha256' -print0 | sort -z | xargs -0 sha256sum) > "$TMP/m20-patrol-robot/deploy/package.sha256"
+(cd "$TMP/m20-patrol-robot" && sha256sum deploy/readonly-manifest.json) > "$TMP/m20-patrol-robot/deploy/manifest.sha256"
 python3 - "$TMP" "$OUT" <<'PY'
 import sys
 import zipfile

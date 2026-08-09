@@ -26,7 +26,7 @@ done
 
 [ -n "$REPO" ] && [ -n "$REF" ] || { usage >&2; exit 2; }
 [ -d "$REPO/.git" ] || [ -f "$REPO/deploy/release-provenance.json" ] || { printf 'ERROR: --repo must be a Git checkout or packaged release\n' >&2; exit 2; }
-if [ -d "$REPO/.git" ]; then command -v git >/dev/null || { printf 'ERROR: git is required\n' >&2; exit 2; }; fi
+if [ -d "$REPO/.git" ] || [ -f "$REPO/.git" ]; then command -v git >/dev/null || { printf 'ERROR: git is required\n' >&2; exit 2; }; fi
 command -v python3 >/dev/null || { printf 'ERROR: python3 is required\n' >&2; exit 2; }
 GOS_HOST=''
 AOS_HOST=''
@@ -95,7 +95,7 @@ if [ "$APPLY" = true ]; then
   # GOS identity and conflict state are checked after immutable release manifest load.
 
 fi
-if [[ ! "$REF" =~ ^[0-9a-fA-F]{40}$ ]]; then
+if [[ ! "$REF" =~ ^[0-9a-f]{40}$ ]]; then
   printf 'ERROR: --ref must be a full 40-character hexadecimal commit SHA\n' >&2
   exit 2
 fi
@@ -107,7 +107,7 @@ case "$TARGET_ROOT" in
   *[!A-Za-z0-9._/-]*) printf 'ERROR: --target-root contains unsupported characters\n' >&2; exit 2 ;;
 esac
 
-if [ -d "$REPO/.git" ]; then
+if [ -d "$REPO/.git" ] || [ -f "$REPO/.git" ]; then
   git -C "$REPO" cat-file -e "$REF^{commit}" 2>/dev/null || { printf 'ERROR: commit does not exist in repository: %s\n' "$REF" >&2; exit 2; }
   COMMIT=$(git -C "$REPO" rev-parse "$REF^{commit}")
   [ "$COMMIT" = "$REF" ] || { printf 'ERROR: --ref is not the exact commit SHA\n' >&2; exit 2; }
@@ -118,6 +118,7 @@ print(json.load(open(sys.argv[1]))["commit"])
 PY
 )
   [ "$COMMIT" = "$REF" ] || { printf 'ERROR: packaged provenance does not match --ref\n' >&2; exit 2; }
+  (cd "$REPO" && sha256sum -c deploy/package.sha256) || { printf 'ERROR: packaged release checksum verification failed\n' >&2; exit 2; }
 fi
 RELEASE="$TARGET_ROOT/releases/$COMMIT"
 CURRENT="$TARGET_ROOT/current"
@@ -152,6 +153,14 @@ fi
 if [ -e "$RELEASE" ] || [ -L "$RELEASE" ]; then
   printf 'ERROR: release already exists: %s\n' "$RELEASE" >&2
   exit 2
+fi
+if [ "$APPLY" = true ]; then
+  ip -4 -o addr show | awk '{print $4}' | cut -d/ -f1 | grep -Fxq "$GOS_HOST" || { printf 'ERROR: GOS identity mismatch\n' >&2; exit 2; }
+  conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service state is unknown\n' >&2; exit 2; }
+  conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service enablement is unknown\n' >&2; exit 2; }
+  [ "$conflict_active" = inactive ] || { printf 'ERROR: conflicting realtime service state is not inactive: %s\n' "$conflict_active" >&2; exit 2; }
+  [ "$conflict_enabled" = disabled ] || { printf 'ERROR: conflicting realtime service is not disabled: %s\n' "$conflict_enabled" >&2; exit 2; }
+  if [ -d "$REPO/.git" ] || [ -f "$REPO/.git" ]; then [ -z "$(git -C "$REPO" status --porcelain)" ] || { printf 'ERROR: repository worktree must be clean for --apply\n' >&2; exit 2; }; fi
 fi
 RELEASE_CREATED=false
 cleanup() {

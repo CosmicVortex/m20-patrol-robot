@@ -57,15 +57,13 @@ unzip m20-patrol-robot-deploy.zip
 cd m20-patrol-robot
 ```
 
-如果 GOS 没有 `unzip`：
+如果 GOS 没有 `unzip`，请把 ZIP 和仓库中的 `deploy/python-unzip.py` 一起传到 GOS 的同一临时目录（不要覆盖已有目录）：
 
 ```bash
-python3 m20-patrol-robot/deploy/python-unzip.py m20-patrol-robot-deploy.zip
-```
-
-也可以先把 `deploy/python-unzip.py` 与 ZIP 放在同一目录，再执行：
-
-```bash
+ssh <gos-user>@10.21.31.104 'mkdir -p /tmp/m20-release'
+scp m20-patrol-robot-deploy.zip deploy/python-unzip.py <gos-user>@10.21.31.104:/tmp/m20-release/
+ssh <gos-user>@10.21.31.104
+cd /tmp/m20-release
 python3 python-unzip.py m20-patrol-robot-deploy.zip
 ```
 

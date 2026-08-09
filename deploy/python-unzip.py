@@ -11,6 +11,10 @@ def main() -> None:
     archive = Path(sys.argv[1]).resolve()
     with zipfile.ZipFile(archive) as zf:
         root = archive.parent.resolve()
+        top_levels = {Path(member.filename).parts[0] for member in zf.infolist() if Path(member.filename).parts}
+        for top_level in top_levels:
+            if (root / top_level).exists() or (root / top_level).is_symlink():
+                raise SystemExit(f"refusing to overwrite existing path: {top_level}")
         for member in zf.infolist():
             target = (root / member.filename).resolve()
             if root != target and root not in target.parents:

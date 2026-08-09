@@ -16,13 +16,9 @@ from app.config import ConfigLoader, WebServiceConfig
 class TestConfigLoader:
     """Tests for ConfigLoader."""
 
-    def test_load_defaults(self, tmp_path):
-        config = ConfigLoader.load(str(tmp_path / "missing.json"))
-        assert config.host == "127.0.0.1"
-        assert config.port == 8080
-        assert config.runtime_mode == "simulated"
-        assert config.read_only_mode is True
-        assert config.control_enabled is False
+    def test_missing_manifest_fails_closed(self, tmp_path):
+        with pytest.raises(FileNotFoundError, match="required manifest"):
+            ConfigLoader.load(str(tmp_path / "missing.json"))
 
     def test_load_from_file(self, tmp_path):
         manifest = tmp_path / "manifest.json"
