@@ -144,10 +144,10 @@ class RealTimeDashboard:
         rows.append(self._row("充电状态", self._charge_label(basic.get("Charge"))))
 
         # Motion metrics (handle None safely)
-        roll_val = motion.get('Roll', 0)
-        pitch_val = motion.get('Pitch', 0)
-        yaw_val = motion.get('Yaw', 0)
-        height_val = motion.get('Height', '—')
+        roll_val = motion.get('roll', 0)
+        pitch_val = motion.get('pitch', 0)
+        yaw_val = motion.get('yaw', 0)
+        height_val = motion.get('height', '—')
 
         # Battery
         battery = device.get("BatteryStatus", {}) or {}
@@ -163,7 +163,7 @@ class RealTimeDashboard:
             for e in errors[-5:]:
                 if e is None:
                     continue
-                code = e.get("errorCode", "?")
+                code = e.get("error_code", "?")
                 comp = e.get("component", e.get("message", "?"))
                 error_items.append(f'<span class="err"><span class="err-code">{html.escape(str(code))}</span> {html.escape(str(comp))}</span>')
             error_html = "<div class='errs'>" + "".join(error_items) + "</div>"
@@ -448,9 +448,9 @@ setInterval(() => {{
             ['数据源', v.source || '—'],
             ['连接状态', v.connected ? '已连接' : '未连接', v.connected],
             ['最后更新', v.received_at || '—'],
-            ['运动状态', _motion(b.MotionState)],
-            ['步态', _gait(b.Gait)],
-            ['充电状态', _charge(b.Charge)],
+            ['运动状态', _motion(b.motion_state)],
+            ['步态', _gait(b.gait)],
+            ['充电状态', _charge(b.charge)],
         ];
         if (v.age_ms != null) rows.push(['数据延迟', v.age_ms + 'ms']);
         document.getElementById('status-content').innerHTML = rows.map(r =>
@@ -459,10 +459,10 @@ setInterval(() => {{
 
         // Metrics
         const nums = document.querySelectorAll('.metric .num');
-        if (nums[0]) nums[0].textContent = (m.Roll || 0).toFixed(1);
-        if (nums[1]) nums[1].textContent = (m.Pitch || 0).toFixed(1);
-        if (nums[2]) nums[2].textContent = (m.Yaw || 0).toFixed(1);
-        if (nums[3]) nums[3].textContent = m.Height ?? '—';
+        if (nums[0]) nums[0].textContent = (m.roll || 0).toFixed(1);
+        if (nums[1]) nums[1].textContent = (m.pitch || 0).toFixed(1);
+        if (nums[2]) nums[2].textContent = (m.yaw || 0).toFixed(1);
+        if (nums[3]) nums[3].textContent = m.height ?? '—';
 
         // Battery
         const bat = (dev.BatteryStatus || {{}});
@@ -482,7 +482,7 @@ setInterval(() => {{
                 errEl.innerHTML = '<span class="ok">无异常</span>';
             }} else {{
                 errEl.innerHTML = errs.slice(-5).map(e =>
-                    '<div class="err"><span class="err-code">' + htmlEscape(String(e.errorCode || '?')) + '</span> ' + htmlEscape(String(e.component || e.message || '?')) + '</div>'
+                    '<div class="err"><span class="err-code">' + htmlEscape(String(e.error_code || '?')) + '</span> ' + htmlEscape(String(e.component || e.message || '?')) + '</div>'
                 ).join('');
             }}
         }}
@@ -518,7 +518,7 @@ function htmlEscape(s) {{ return String(s).replace(/&/g,'&amp;').replace(/</g,'&
         if not errors:
             return '<span style="color:var(--accent)">无异常</span>'
         return "\n".join(
-            f'<span class="err"><span class="err-code">{html.escape(str(e.get("errorCode", "?")))}</span> {html.escape(str(e.get("component", e.get("message", "?"))))}</span>'
+            f'<span class="err"><span class="err-code">{html.escape(str(e.get("error_code", "?")))}</span> {html.escape(str(e.get("component", e.get("message", "?"))))}</span>'
             for e in errors[-5:]
         )
 

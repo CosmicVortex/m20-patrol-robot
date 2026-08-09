@@ -5,11 +5,11 @@
 | 编号 | 需求 | 状态 | 验收证据 |
 |------|------|------|----------|
 | R-01 | APDU 帧编解码 | ✅ | `protocol/frame.py`、`test_frame.py` |
-| R-02 | PatrolDevice 信封 | ✅ | `protocol/messages.py`、`test_messages.py` |
-| R-03 | 状态监控页面 | ✅ | `dashboard_realtime.py`、`dashboard_simple.py` |
+| R-02 | PatrolMessage 信封 | ✅ | `protocol/messages.py`、`test_messages.py` |
+| R-03 | 状态监控页面 | ✅ | `dashboard_realtime.py` |
 | R-04 | GOS 现场核验 | 🟡 | `deploy/scripts/collect-readonly-info.sh` |
 | R-05 | 安装/回滚 | ✅ | `install-gos.sh`、`rollback-gos.sh` |
-| R-06 | 真实状态连接 | ✅ | `robot/telemetry.py`、`test_telemetry.py` |
+| R-06 | 真实状态订阅 | ✅ | `robot/telemetry.py`、`test_telemetry.py` |
 | R-07 | 视频接入 | 🟡 | `video/stream_manager.py` |
 | R-08 | 单点导航 | 🟡 | `navigation/service.py` |
 | R-09 | 多点巡逻 | 🔴 | 待 R-06/R-07/R-08 验收 |
@@ -17,7 +17,7 @@
 
 ## 阶段目标
 
-**阶段1**：完成测试场地建图、状态接入、视频切换、单点导航控制
+**阶段1**：完成测试场地建图、状态订阅、视频回传、单点导航控制
 
 **阶段2**：测试场地验收通过后，正式场地重新建图并单独验收
 
@@ -48,7 +48,7 @@ PYTHONPATH=. uv run --with pytest pytest -q
 
 AOS 地址：10.21.31.103，固件 V1.1.8
 
-支持的消息：
+订阅的消息类型：
 - `1002/6` 基础状态
 - `1002/4` 运控状态
 - `1002/5` 设备状态
