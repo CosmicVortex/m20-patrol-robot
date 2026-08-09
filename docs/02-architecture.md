@@ -27,7 +27,7 @@ GOS (10.21.31.104)
   │     ├── stream_manager.py    RTSP流管理（ffprobe探测、FFmpeg拉流）
   │     └── ws_handler.py        WebSocket视频流处理
   │
-  └─ backend.app.dashboard_realtime  唯一实时仪表盘入口（连接真实AOS；默认只读）
+  ├── backend.app.dashboard_realtime  唯一实时仪表盘入口（连接真实AOS）
        │
        ├─ TCP 30001 → AOS basic_server（状态订阅）
        ├─ RTSP 8554 → 本体前后相机（待实测）
@@ -46,7 +46,7 @@ GOS (10.21.31.104)
 | APDU/ASDU 编解码 | ✅ | 16字节帧头，JSON/XML 信封 |
 | 状态消息解析 | ✅ | 1002/3,4,5,6 + 1007/1,2,3 + 2002/1 |
 | TCP 客户端 + 门禁 | ✅ | control_enabled 默认 False |
-| 真实状态订阅 | ✅ | TelemetryAdapter 连接 AOS TCP 30001，read_only 模式 |
+| 实时状态订阅 | ✅ | `TelemetryAdapter` 连接 AOS TCP 30001 |
 | 实时仪表盘 | ✅ | `realtime_readonly`，绑定 manifest 指定的 GOS 地址 |
 | 历史仪表盘入口 | ⚠️ | 兼容保留，不得由 one-shot 或默认 systemd unit 调用 |
 | 导航报文构造 | ✅ | Gait=0x3002，安全门控 |
@@ -67,7 +67,7 @@ GOS (10.21.31.104)
    │ 仅连接 GOS
    ▼
 GOS
-  ├─ 只读状态服务（TCP → AOS basic_server）✅ 已实现
+  ├─ 状态订阅服务（TCP → AOS basic_server）✅ 已实现
   ├─ 视频网关（RTSP → HLS/WebRTC → 浏览器）🟡 基础框架
   ├─ 地图副本服务（NOS → GOS）🔴 未实现
   └─ 经放行的导航服务 ✅ 已实现（Web授权）
@@ -77,7 +77,7 @@ GOS
 ```
 
 控制边界：
-- 控制能力独立于只读服务，默认关闭
+- 控制能力独立于状态订阅服务，默认关闭
 - 导航发送需书面放行
 - 所有控制操作记录审计日志
 
@@ -96,10 +96,10 @@ AOS 不提供 SSH/VNC 访问，用户不应直接操作 AOS。
 ## 数据与控制边界
 
 - AOS/NOS 原厂服务、网络路由和原始地图不由项目程序修改
-- GOS 只读取经核验的地图副本
+- GOS 读取经核验的地图副本
 - 模拟状态必须标识 `SIMULATED`，不得显示为真实设备状态
 - 未经版本、权限、真实样本和安全放行确认，不建立 AOS 连接，不发送心跳或控制报文
-- 控制能力必须独立于只读服务，默认关闭并 fail-closed
+- 控制能力必须独立于状态订阅服务，默认关闭并 fail-closed
 - 现场测试优先使用官方 APP/遥控器，项目程序不介入运动控制
 
 ## 协议接口

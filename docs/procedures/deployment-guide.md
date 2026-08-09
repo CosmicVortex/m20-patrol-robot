@@ -2,7 +2,7 @@
 
 ## 1. 适用范围
 
-本指南仅用于山猫 M20 Pro，在 GOS `10.21.31.104` 本机执行真实只读状态观测。当前不执行建图、导航、巡逻、云台、拍照或任何控制报文。
+本指南用于山猫 M20 Pro 在 GOS `10.21.31.104` 本机执行真实状态订阅。当前不执行建图、导航、巡逻、云台、拍照或任何控制报文。
 
 ## 2. 固定目标
 
@@ -27,8 +27,7 @@ WEB=8080
 ```bash
 cd /opt/data/m20-patrol-robot
 git fetch origin --prune
-git checkout feat/m20-readonly-one-shot-20260808
-git pull --ff-only origin feat/m20-readonly-one-shot-20260808
+git pull --ff-only origin main
 git status --short
 ```
 
@@ -108,7 +107,7 @@ systemctl --user stop m20-patrol-readonly.service
 bash deploy/scripts/deploy-readonly.sh --rollback <INSTALLED_COMMIT_SHA>
 ```
 
-回滚目标必须通过只读 manifest、固定地址、服务模板、入口文件和 Python 版本校验。不得停止、删除或修改未知用户服务。
+回滚目标必须通过 manifest、固定地址、服务模板、入口文件和 Python 版本校验。不得停止、删除或修改未知用户服务。
 
 ## 9. 禁止操作
 

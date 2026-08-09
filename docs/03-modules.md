@@ -58,9 +58,9 @@ PatrolMessage(
 **职责**：与 AOS basic_server 建立 TCP 连接，发送/接收消息，提供安全门禁。
 
 **核心方法**：
-- `connect(*, read_only=False)` — 建立真实连接；`read_only=True` 允许只读连接（状态订阅）
+- `connect(*, read_only=False)` — 建立真实连接；`read_only=True` 允许状态订阅（不发送控制命令）
 - `connect_for_test()` — 测试用回环连接
-- `send_read_only(message)` — 仅在显式测试/授权 transport 配置下发送只读查询；生产只读入口禁用 TX
+- `send_read_only(message)` — 仅在显式测试/授权 transport 配置下发送查询；生产入口禁用 TX
 - `send_control(message)` — 发送控制命令（需 control_enabled 门禁）
 - `receive_messages()` — 接收主动上报消息
 - `close()` — 断开连接
@@ -74,7 +74,7 @@ firmware_evidence is approved
 permission_evidence is approved
 ```
 
-**生产只读策略**：`TELEMETRY_TX_ENABLED=false`，不自动发送心跳；客户端按 3 秒新鲜度阈值判定数据过期。
+**生产策略**：`TELEMETRY_TX_ENABLED=false`，不自动发送心跳；客户端按 3 秒新鲜度阈值判定数据过期。
 
 **对应官方文档**：`docs/official/山猫M20basic_server通信协议总览.md` §心跳机制
 
@@ -185,8 +185,8 @@ GAIT_PLATFORM_STANDARD = 0x1002 # 高台标准
 **职责**：连接真实 AOS basic_server，显示实时状态。
 
 **特点**：
-- 连接 AOS TCP 30001，read_only 模式
-- 生产只读入口不发送心跳，`TELEMETRY_TX_ENABLED=false`
+- 连接 AOS TCP 30001
+- 生产入口不发送心跳，`TELEMETRY_TX_ENABLED=false`
 - 绑定 manifest 指定的 `10.21.31.104:8080`
 - 返回 `source=REAL`；无真实消息时返回 `NO_DATA`/`STALE`/`ERROR`
 

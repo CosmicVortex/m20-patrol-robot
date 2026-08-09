@@ -85,7 +85,7 @@ PASS
 |---|---|---|---|
 | APDU/ASDU 编解码 | offline_verified | 协议/帧测试通过 | 无真实报文样本 |
 | 状态解析 | offline_verified | 1002/3、4、5、6、1007、2002 等测试 | 无真实软件版本和报文 |
-| AOS TCP 只读接收 | implemented / offline_verified | `BasicServerClient`、`TelemetryAdapter` | 未在 GOS/AOS 建立连接 |
+| AOS TCP 状态订阅 | implemented / offline_verified | `BasicServerClient`、`TelemetryAdapter` | 未在 GOS/AOS 建立连接 |
 | Web 服务入口 | implemented / offline_verified | `backend.app.server` + systemd 模板 | 未在 GOS 启动 |
 | Web 首页 | implemented / offline_verified | 首页 smoke test HTTP 200 | 尚未由 GOS 服务提供 |
 | 认证 | implemented / offline_verified | PBKDF2、Session、Cookie smoke test | 需现场管理员初始化与安全策略确认 |
@@ -188,7 +188,7 @@ journalctl --user -u m20-patrol-readonly.service -n 200 --no-pager
 
 ## 审计结论
 
-当前代码已经从"明显运行 wiring 断裂"推进到"云端离线验证通过、可交给 GOS 做只读联调前置"的状态，但仍是：
+当前代码已经完成协议解析、状态订阅、Web 服务骨架、认证基础模块、部署脚本和当前视频/地图占位界面，但仍然是：
 
 ```text
 BLOCKED_FOR_FIELD_DEPLOYMENT

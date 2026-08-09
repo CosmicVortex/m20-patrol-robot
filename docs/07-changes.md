@@ -14,7 +14,7 @@
 
 - 修复测试文件截断
 - 修复 trailing whitespace
-- 添加 read_only 参数
+- 更新 `connect()` 参数
 - 优化部署脚本
 
 ## 2026-08-06 — V0.4 功能增强

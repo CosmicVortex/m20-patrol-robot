@@ -45,7 +45,7 @@ TELEMETRY_TX_ENABLED=false
 WEB_REALTIME_ENABLED=true
 ```
 
-本周期只接收非控制类实时数据。不会发送心跳、运动、导航、巡逻、云台、拍照或建图报文。
+本周期接收非控制类实时状态数据。不发送心跳、运动、导航、巡逻、云台、拍照或建图报文。
 
 ## Preflight 检查
 
@@ -54,7 +54,7 @@ WEB_REALTIME_ENABLED=true
 - 主机身份包含 `10.21.31.104`
 - Python 为实际 3.8.x 运行时
 - user systemd 可用
-- 只读、RX/TX、控制开关一致
+- RX/TX、控制开关一致
 - Web 绑定正确地址和 `8080` 端口
 - 无旧地址或未解决凭据
 
