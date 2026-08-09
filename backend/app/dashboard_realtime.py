@@ -139,9 +139,9 @@ class RealTimeDashboard:
         if payload.get("age_ms") is not None:
             rows.append(self._row("数据延迟", f"{payload['age_ms']}ms"))
 
-        rows.append(self._row("运动状态", self._motion_label(basic.get("MotionState"))))
-        rows.append(self._row("步态", self._gait_label(basic.get("Gait"))))
-        rows.append(self._row("充电状态", self._charge_label(basic.get("Charge"))))
+        rows.append(self._row("运动状态", self._motion_label(basic.get("motion_state"))))
+        rows.append(self._row("步态", self._gait_label(basic.get("gait"))))
+        rows.append(self._row("充电状态", self._charge_label(basic.get("charge"))))
 
         # Motion metrics (handle None safely)
         roll_val = motion.get('roll', 0)
