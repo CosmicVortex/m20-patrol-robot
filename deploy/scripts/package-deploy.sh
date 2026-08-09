@@ -25,7 +25,12 @@ out = Path(sys.argv[2])
 with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as archive:
     for path in sorted(source.rglob("*")):
         if path.is_file():
-            archive.write(path, path.relative_to(Path(sys.argv[1])).as_posix())
+            name = path.relative_to(Path(sys.argv[1])).as_posix()
+            info = zipfile.ZipInfo(name)
+            info.date_time = (2026, 1, 1, 0, 0, 0)
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = (path.stat().st_mode & 0o777) << 16
+            archive.writestr(info, path.read_bytes())
 PY
 sha256sum "$OUT"
 printf 'PACKAGE=%s\nCOMMIT=%s\n' "$OUT" "$COMMIT"
