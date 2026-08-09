@@ -6,108 +6,83 @@
 
 | 组件 | IP 地址 | 职责 | 访问方式 |
 |------|---------|------|----------|
-| GOS | 10.21.31.104 | 用户开发机、Web 服务 | SSH/VNC 可访问 |
-| AOS | 10.21.31.103 | 运动控制、basic_server、rl_deploy | ❌ 不可直接访问 |
-| NOS | 10.21.31.106 | 建图、定位、导航、planner | SSH/VNC 可访问 |
+| GOS | 10.21.31.104 | 用户开发机、Web服务 | SSH/VNC 可访问 |
+| AOS | 10.21.31.103 | 运动控制、basic_server | ❌ 不可直接访问 |
+| NOS | 10.21.31.106 | 建图、定位、导航 | SSH/VNC 可访问 |
 
-## 端口配置
+## 网络接口
 
-| 服务 | 协议 | 端口 | 用途 |
-|------|------|------|------|
-| basic_server TCP | APDU/ASDU JSON | 30001 | 状态订阅、任务下发 |
-| basic_server UDP | APDU/ASDU JSON | 30000 | 高频速度指令（≥20Hz） |
-| RTSP | H.265/H.264 | 8554 | 本体前后相机视频流 |
-| Web HTTP | JSON | 8080 | 状态查询、控制请求 |
-| Web WebSocket | — | 8080 | 状态推送、视频流 |
-
-配置来源：`deploy/readonly-manifest.json`
-
-## 安全配置
-
-```
-M20_RUNTIME_MODE=realtime_readonly
-READ_ONLY_MODE=true
-CONTROL_ENABLED=false
-TELEMETRY_RX_ENABLED=true
-TELEMETRY_TX_ENABLED=false
-WEB_REALTIME_ENABLED=true
-```
-
-当前版本为只读模式，不发送控制命令。导航、运动、建图等功能需书面放行后启用。
-
-## 功能状态
-
-| 功能 | 状态 | 说明 |
+| 服务 | 端口 | 用途 |
 |------|------|------|
-| APDU/ASDU 帧编解码 | ✅ offline_verified | 16字节帧头，JSON/XML 信封 |
-| 状态消息解析 | ✅ offline_verified | 1002/3,4,5,6 + 1007/1,2,3 + 2002/1 |
-| TCP 客户端 + 门禁 | ✅ offline_verified | control_enabled 默认 False |
-| 真实状态订阅 | ✅ offline_verified | TelemetryAdapter → AOS TCP 30001 |
-| Web 服务入口 | ✅ offline_verified | systemd 部署模板 |
-| 认证模块 | ✅ offline_verified | PBKDF2 + Session + Cookie |
-| 导航报文构造 | ✅ offline_verified | 单点/取消/状态查询 |
-| 视频管理器 | 🟡 framework | RTSP 地址已配置，拉流待实测 |
-| 多点巡逻状态机 | 🔴 not_implemented | 待单点控制验收 |
-| 云台适配 | 🔴 not_implemented | 待实物确认 |
+| basic_server TCP | 30001 | 状态订阅、任务下发 |
+| basic_server UDP | 30000 | 高频速度指令（≥20Hz） |
+| RTSP | 8554 | 本体前后相机视频流 |
+| Web HTTP | 8080 | 状态查询、控制请求 |
+| Web WebSocket | 8080 | 状态推送、视频流 |
 
-## 验证命令
+## 快速开始
+
+### 1. 部署
 
 ```bash
-# 运行测试
-PYTHONPATH=. uv run --with pytest pytest -q
-
-# 编译检查
-python3 -m compileall -q backend
-
-# 部署（需在 GOS 本机执行）
+cd /opt/data/m20-patrol-robot
 bash deploy/scripts/deploy-readonly.sh --one-shot
 ```
 
-## 健康检查
+### 2. 验证
 
 ```bash
 curl http://10.21.31.104:8080/api/v1/health
 curl http://10.21.31.104:8080/api/v1/status/latest
 ```
 
-真实数据判定条件：
+### 3. 查看状态
 
-```json
-{
-  "source": "REAL",
-  "message_parsed": true,
-  "telemetry_fresh": true
-}
+访问 `http://10.21.31.104:8080/`
+
+## 当前状态
+
+| 能力 | 状态 |
+|------|------|
+| APDU/ASDU 编解码 | ✅ offline_verified |
+| 状态订阅 | ✅ offline_verified |
+| Web 服务 | ✅ offline_verified |
+| 导航控制 | 🟡 需现场授权 |
+| 运动控制 | 🔴 未实现 |
+| 视频播放 | 🟡 待实测 |
+| 多点巡逻 | 🔴 未实现 |
+| 云台适配 | 🔴 待实物确认 |
+
+## 测试
+
+```bash
+PYTHONPATH=. uv run --with pytest pytest -q
 ```
+
+结果：169 passed
 
 ## 分支策略
 
-- `main`：唯一稳定分支
-- 版本标签：`v0.1.0-draft`（云端基线）、`v0.1.0`（首个可用版本）
+- **main**：唯一工作分支
+- 功能测试通过后方可考虑新分支
+- 版本标签：`v0.1.0`（首个可用版本）
 
-## 文档结构
+## 文档
 
-```
-docs/
-├── 01-overview.md       项目概览
-├── 02-architecture.md   系统架构
-├── 03-modules.md        模块说明
-├── 04-requirements.md   需求清单
-├── 05-testing.md        测试流程
-├── 06-deployment.md     部署流程
-├── 07-changes.md        变更记录
-├── 08-branch-policy.md  分支策略
-├── 09-official-docs.md  官方文档索引
-├── 09-real-web-integration-contract.md  真实Web开发契约
-├── 10-real-web-progress.md  集成进度
-├── procedures/          操作手册
-├── reviews/             审查记录
-└── official/            官方文档（只读）
-```
+详见 [docs/index.md](./docs/index.md)
 
-## 注意事项
+## 协议依据
 
-- 仓库不得包含密码、Token、私钥
-- 地图资产需记录 SHA-256 哈希
-- 测试场地与正式场地地图不得混用
-- 所有控制操作需书面放行
+- 《山猫M20软件开发指南》V1.2.1（2026-05-18）— 协议优先依据
+- 《山猫M20系列软件开发手册》V0.1.0（2025-09-16）— 导航字典参考
+
+## 安全注意
+
+- 导航/运动控制需负责人书面放行
+- 不得后台自动下发控制指令
+- 所有控制操作记录审计日志
+- 模拟状态标识 `SIMULATED`，不得显示为真实
+
+## 联系
+
+项目协作通过 GitHub 私有仓库管理。

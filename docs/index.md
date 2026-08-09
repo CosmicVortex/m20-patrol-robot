@@ -25,14 +25,6 @@
 | [procedures/mapping-test.md](./procedures/mapping-test.md) | 建图测试 | 现场工程师 |
 | [procedures/real-web-integration-preflight.md](./procedures/real-web-integration-preflight.md) | 真实Web联调前置采集 | 运维工程师 |
 
-## 审查记录
-
-| 文件名 | 内容 |
-|--------|------|
-| [reviews/v121-alignment.md](./reviews/v121-alignment.md) | V1.2.1 协议对齐 |
-| [reviews/20260807-blockers-fixed.md](./reviews/20260807-blockers-fixed.md) | 阻塞项修复 |
-| [reviews/20260809-web-field-readiness-audit.md](./reviews/20260809-web-field-readiness-audit.md) | Web现场就绪审计 |
-
 ## 目录结构
 
 ```
@@ -55,11 +47,6 @@ docs/
 │   ├── deployment-guide.md
 │   ├── mapping-test.md
 │   └── real-web-integration-preflight.md
-│
-├── reviews/                 审查记录
-│   ├── v121-alignment.md
-│   ├── 20260807-blockers-fixed.md
-│   └── 20260809-web-field-readiness-audit.md
 │
 └── official/                官方文档（只读）
     ├── 3份 PDF

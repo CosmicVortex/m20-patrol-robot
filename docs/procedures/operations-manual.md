@@ -26,7 +26,6 @@ ssh user@10.21.31.104
 ## 2. 版本确认
 
 ```bash
-# 查询固件版本
 ssh user@10.21.31.106
 cat /var/opt/robot/release_note.json
 ```
@@ -36,11 +35,8 @@ cat /var/opt/robot/release_note.json
 ## 3. 网络测试
 
 ```bash
-# 连通性测试
 ping -c 3 10.21.31.103
 ping -c 3 10.21.31.106
-
-# 端口测试
 nc -zv 10.21.31.103 30001
 ```
 
@@ -109,7 +105,6 @@ systemctl --user status m20-patrol-readonly.service
 ## 7. 视频测试
 
 ```bash
-# 探测视频流
 ffprobe rtsp://10.21.31.103:8554/video1
 ```
 

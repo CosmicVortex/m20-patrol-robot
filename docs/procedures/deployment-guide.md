@@ -65,7 +65,7 @@ bash deploy/scripts/deploy-readonly.sh --one-shot
 安全开关必须保持：
 
 ```text
-M20_RUNTIME_MODE=realtime_readonly
+M20_RUNTIME_MODE=realtime_readonly（保留，为系统配置键）
 READ_ONLY_MODE=true
 CONTROL_ENABLED=false
 TELEMETRY_RX_ENABLED=true
