@@ -37,3 +37,13 @@ build/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Build artifacts
+dist/
+*.tar.gz
+*.tar.bz2
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
