@@ -64,11 +64,13 @@ class AuthMiddleware:
         # Check custom header first
         header_value = handler.headers.get(self.token_header)
         if header_value:
+            logger.debug("从 X-M20-Token 头提取令牌")
             return header_value.strip()
 
-        # Check Authorization: Bearer <token>
+        # Check Authorization: Bearer ***
         auth_header = handler.headers.get("Authorization", "")
         if auth_header.lower().startswith("bearer "):
+            logger.debug("从 Authorization: Bearer 提取令牌")
             return auth_header[7:].strip()
 
         # Check Authorization: Basic (username:password fallback)

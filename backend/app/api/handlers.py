@@ -149,6 +149,7 @@ class AuthLoginHandler(BaseHandler):
         try:
             user = self.user_store.authenticate(username, password)
             session = self.user_store.create_session(user)
+            logger.info("用户登录成功: %s, 角色: %s", user.username, user.role)
             body = {
                 "user_id": user.user_id,
                 "username": user.username,
@@ -169,6 +170,7 @@ class AuthLoginHandler(BaseHandler):
             self.wfile.write(encoded)
         except AuthenticationError:
             # Don't leak whether username exists
+            logger.warning("登录失败: 用户名或密码错误")
             self.send_error_response(401, "invalid credentials")
         except Exception as exc:
             logger.error("Login error: %s", exc)
@@ -444,37 +446,24 @@ class VideoStatusHandler(BaseHandler):
             return
 
         # No auth required for status viewing
+        allow_real_io = (self.config.allow_real_io if self.config else False)
         self.send_json_response(200, {
             "sources": {
-                "front": {
-                    "state": "blocked",
-                    "rtsp_url": "",
-                    "last_update": None,
-                    "label": "可见光主码流",
-                    "note": "设备标识待确认 · 现场 RTSP/WebRTC 探测",
-                },
-                "thermal": {
-                    "state": "blocked",
-                    "rtsp_url": "",
-                    "last_update": None,
-                    "label": "热成像",
-                    "note": "热成像设备未配置 · 需现场 ffprobe 确认",
-                },
                 "front_body": {
-                    "state": "blocked",
-                    "rtsp_url": "",
+                    "state": "blocked" if not allow_real_io else "unverified",
+                    "rtsp_url": "rtsp://10.21.31.103:8554/video1",
                     "last_update": None,
                     "label": "机身前视角",
-                    "note": "前广角通道 · 文档默认 video1，现场可达性未确认",
+                    "note": "默认地址，需现场 ffprobe 确认可达性",
                 },
                 "rear_body": {
-                    "state": "blocked",
-                    "rtsp_url": "",
+                    "state": "blocked" if not allow_real_io else "unverified",
+                    "rtsp_url": "rtsp://10.21.31.103:8554/video2",
                     "last_update": None,
                     "label": "机身后视角",
-                    "note": "后广角通道 · 文档默认 video2，现场可达性未确认",
+                    "note": "默认地址，需现场 ffprobe 确认可达性",
                 },
             },
-            "status": "VIDEO_IO_BLOCKED",
-            "message": "视频流默认禁用 (allow_real_io=false)。配置 RTSP 地址后启用。",
+            "status": "VIDEO_IO_BLOCKED" if not allow_real_io else "VIDEO_IO_ENABLED",
+            "message": "视频流默认禁用 (allow_real_io=false)。配置 RTSP 地址后启用。" if not allow_real_io else "视频流已启用，等待 ffprobe 探测",
         })

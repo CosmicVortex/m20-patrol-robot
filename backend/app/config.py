@@ -27,6 +27,7 @@ class WebServiceConfig:
     session_ttl_s: int = 1800
     auth_enabled: bool = True
     allow_anonymous: bool = False
+    allow_real_io: bool = False
     manifest_path: str = ""
     static_root: str = ""
     auth_db_path: str = ""
@@ -82,6 +83,7 @@ class ConfigLoader:
             session_ttl_s=data.get("session_ttl_s", 1800),
             auth_enabled=data.get("auth_enabled", True),
             allow_anonymous=data.get("allow_anonymous", False),
+            allow_real_io=data.get("allow_real_io", False),
             manifest_path=manifest_path,
             static_root=data.get("static_root", str(release_root / "docs" / "website")),
             auth_db_path=data.get("auth_db_path", str(release_root / "var" / "m20_auth.db")),

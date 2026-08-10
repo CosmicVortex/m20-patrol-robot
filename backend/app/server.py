@@ -62,6 +62,7 @@ class M20WebServer:
 
         # Always create the adapter. In simulated mode it provides an explicit
         # SIMULATED/NO_DATA API state instead of making the endpoint disappear.
+        logger.info("正在初始化遥测适配器...")
         telemetry_config = ConnectionConfig(
             host=self.config.aos_host,
             tcp_port=self.config.aos_port,
@@ -148,9 +149,14 @@ class M20WebServer:
             self.config.control_enabled, self.config.auth_enabled,
         )
 
+        logger.info("已启动 Web 服务: %s:%s", self.config.host, self.config.port)
+        logger.info("遥测目标: %s:%s (模式: %s)", self.config.aos_host, self.config.aos_port, self.config.runtime_mode)
+        logger.info("安全门控: 只读模式=%s, 控制命令=%s", self.config.read_only_mode, self.config.control_enabled)
+
         try:
             self.server.serve_forever()
         except KeyboardInterrupt:
+            logger.info("收到停止信号，正在关闭服务...")
             self.stop()
 
     def _create_handler(self) -> type[BaseHTTPRequestHandler]:

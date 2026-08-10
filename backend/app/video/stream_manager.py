@@ -47,8 +47,8 @@ class VideoStreamManager:
             raise ValueError("allow_real_io must be boolean")
         self.allow_real_io = allow_real_io
         self._streams: Dict[str, CameraConfig] = {
-            "front": CameraConfig("front", "前向本体相机", self.DEFAULT_FRONT_CAMERA),
-            "rear": CameraConfig("rear", "后向本体相机", self.DEFAULT_BACK_CAMERA),
+            "front": CameraConfig("front", "前向本体相机", "rtsp://10.21.31.103:8554/video1"),
+            "rear": CameraConfig("rear", "后向本体相机", "rtsp://10.21.31.103:8554/video2"),
         }
         self._stream_states: Dict[str, StreamState] = {
             source: StreamState.DISCONNECTED for source in self._streams
