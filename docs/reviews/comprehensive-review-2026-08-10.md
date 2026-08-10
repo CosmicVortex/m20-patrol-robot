@@ -157,6 +157,8 @@ docs/
 | P0-2 | 健康检查表达式优先级错误 | 拆分变量 | ✅ |
 | P0-3 | telemetry访问私有属性 | 添加公开属性 | ✅ |
 | P0-4 | v010.py语法错误 | 修复字段定义 | ✅ |
+| P0-5 | systemd端口配置错误(8888→30001) | 修正端口 | ✅ |
+| P0-6 | stale_after超时错误(300→3秒) | 修正超时 | ✅ |
 
 ### P1 - 重要问题（已修复）
 | ID | 问题 | 修复 | 状态 |
@@ -167,6 +169,7 @@ docs/
 | P1-4 | router依赖未注入 | 添加注入 | ✅ |
 | P1-5 | systemd使用.venv路径 | 改为python3 | ✅ |
 | P1-6 | 部署脚本引用死代码 | 改为server.py | ✅ |
+| P1-7 | gimbal handlers访问私有属性 | 添加公开属性 | ✅ |
 
 ### P2 - 改进建议
 | ID | 问题 | 建议 | 状态 |
@@ -180,11 +183,13 @@ docs/
 ## 修改文件清单
 
 ```
-backend/app/robot/basic_client.py    # 添加公开属性last_received_at
-backend/app/robot/telemetry.py       # 使用公开属性
-backend/app/api/router.py            # 添加依赖注入
-deploy/systemd/m20-patrol-readonly.service   # 修复ExecStart路径
-deploy/systemd/m20-patrol-realtime.service   # 修复ExecStart路径
+backend/app/robot/basic_client.py    # +5行（公开属性）
+backend/app/robot/telemetry.py       # +5行（使用公开属性）
+backend/app/api/router.py            # +2行（依赖注入）
+backend/app/gimbal/adapter.py        # +5行（公开属性）
+backend/app/gimbal/handlers.py       # 5处修改（使用公开属性）
+deploy/systemd/m20-patrol-readonly.service   # 端口+超时修正
+deploy/systemd/m20-patrol-realtime.service   # ExecStart修复
 deploy/scripts/install-gos.sh        # 移除死代码引用
 deploy/scripts/rollback-gos.sh       # 移除死代码引用
 docs/02-architecture.md              # 添加云端开发机
