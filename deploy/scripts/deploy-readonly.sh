@@ -147,11 +147,14 @@ install() {
   # 创建目标目录
   mkdir -p "$TARGET_ROOT"
   
-  # 复制文件
+  # 复制文件（如果已在目标目录，跳过复制）
   echo "复制文件到 $TARGET_ROOT..."
   
-  # 安全复制
-  (cd "$ROOT" && tar cf - --exclude='__pycache__' --exclude='.git' .) | (cd "$TARGET_ROOT" && tar xf -)
+  if [ "$ROOT" != "$TARGET_ROOT" ]; then
+    (cd "$ROOT" && tar cf - --exclude='__pycache__' --exclude='.git' .) | (cd "$TARGET_ROOT" && tar xf -)
+  else
+    echo "已在目标目录，跳过复制"
+  fi
   
   # 编译Python代码
   echo "编译Python代码..."
