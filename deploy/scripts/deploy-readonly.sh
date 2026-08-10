@@ -85,8 +85,8 @@ check_python() {
 
   # Check Python version - accept 3.8+ or 3.10+
   PY_VERSION="$("$PYTHON_BIN" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")')"
-  PY_MAJOR="$PYTHON_BIN" -c 'import sys; print(sys.version_info.major)' 2>/dev/null
-  PY_MINOR="$PYTHON_BIN" -c 'import sys; print(sys.version_info.minor)' 2>/dev/null
+  PY_MAJOR="$("$PYTHON_BIN" -c 'import sys; print(sys.version_info.major)' 2>/dev/null)"
+  PY_MINOR="$("$PYTHON_BIN" -c 'import sys; print(sys.version_info.minor)' 2>/dev/null)"
 
   if [ "$PY_MAJOR" = "3" ] && { [ "$PY_MINOR" -ge "10" ] || [ "$PY_MINOR" = "8" ]; }; then
     say "PYTHON_VERSION=$PY_VERSION"
