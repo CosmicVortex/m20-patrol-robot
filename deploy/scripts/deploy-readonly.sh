@@ -7,16 +7,10 @@ set -euo pipefail
 # 检测脚本所在目录
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# 尝试找到项目根目录
-if [ -d "$SCRIPT_DIR/../../.." ]; then
-  ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-elif [ -d "$SCRIPT_DIR/../.." ]; then
-  ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-elif [ -d "$SCRIPT_DIR/../backend" ]; then
-  ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-else
-  ROOT="$(pwd)"
-fi
+# 找到项目根目录
+# 结构: ROOT/deploy/scripts/deploy-readonly.sh
+# 所以 ROOT = SCRIPT_DIR 的上级目录的上级目录
+ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 MANIFEST="$ROOT/deploy/readonly-manifest.json"
 TARGET_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/m20-patrol-robot"
@@ -80,6 +74,7 @@ print('GOS_HOST=' + d['targets']['gos_host'])
 print('AOS_HOST=' + d['targets']['aos_host'])
 print('NOS_HOST=' + d['targets']['nos_host'])
 print('WEB_PORT=' + str(d['ports']['web']))
+print('AOS_TCP_PORT=' + str(d['ports']['aos_tcp']))
 print('CONTROL_ENABLED=' + str(d['control_enabled']).lower())
 print('TELEMETRY_TX_ENABLED=' + str(d['telemetry_tx_enabled']).lower())
 print('STALE_AFTER_SECONDS=' + str(d['stale_after_seconds']))
@@ -121,6 +116,7 @@ preflight() {
   echo "AOS_HOST=$AOS_HOST"
   echo "NOS_HOST=$NOS_HOST"
   echo "WEB_PORT=$WEB_PORT"
+  echo "AOS_TCP_PORT=$AOS_TCP_PORT"
   
   # 检查磁盘空间
   echo ""
@@ -159,7 +155,7 @@ install() {
   UNIT_PATH="$HOME/.config/systemd/user/$SERVICE_NAME"
   mkdir -p "$(dirname "$UNIT_PATH")"
   
-  # 生成服务文件（直接替换占位符）
+  # 生成服务文件（直接替换所有变量）
   cat > "$UNIT_PATH" <<EOF
 [Unit]
 Description=M20 Patrol Robot read-only dashboard
@@ -174,7 +170,7 @@ Environment=M20_READ_ONLY_MODE=true
 Environment=M20_CONTROL_ENABLED=false
 Environment=M20_TELEMETRY_TX_ENABLED=false
 Environment=M20_TARGET_HOST=${AOS_HOST}
-Environment=M20_TARGET_PORT=@AOS_TCP_PORT@
+Environment=M20_TARGET_PORT=${AOS_TCP_PORT}
 Environment=M20_TELEMETRY_RX_ENABLED=true
 Environment=M20_WEB_REALTIME_ENABLED=true
 Environment=M20_STALE_AFTER_SECONDS=${STALE_AFTER_SECONDS}
