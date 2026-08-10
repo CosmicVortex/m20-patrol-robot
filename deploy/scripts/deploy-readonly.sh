@@ -107,18 +107,83 @@ PY
 }
 
 check_host() {
+  say "=== 网络配置检查 ==="
   say "GOS_HOST=$GOS_HOST AOS_HOST=$AOS_HOST NOS_HOST=$NOS_HOST"
   say "AOS_TCP_PORT=$AOS_TCP_PORT AOS_UDP_PORT=$AOS_UDP_PORT RTSP_PORT=$RTSP_PORT WEB_PORT=$WEB_PORT"
   say "USER=$(id -un) UID=$(id -u) ARCH=$(uname -m)"
-  command -v systemctl >/dev/null || fail 'SYSTEMCTL_MISSING'
-  systemctl --user show-environment >/dev/null 2>&1 || fail 'SYSTEMD_USER_UNAVAILABLE'
-  [ "$(id -u)" != 0 ] || fail 'ROOT_USER_NOT_ALLOWED'
-  command -v ip >/dev/null || fail 'IP_COMMAND_MISSING'
-  # Check GOS identity - try multiple methods for robustness
-  _ip_addr=$(ip -4 -o addr show 2>/dev/null | awk '{print $4}' | cut -d/ -f1 || true)
-  _ip_addr="${_ip_addr:-$(hostname -I 2>/dev/null | awk '{print $1}' || true)}"
-  echo "$_ip_addr" | grep -Fxq "$GOS_HOST" || fail 'GOS_IDENTITY_MISMATCH'
-  df -Pk "$TARGET_ROOT" 2>/dev/null | tail -1 || true
+  say "TARGET_ROOT=$TARGET_ROOT"
+
+  # 检查systemd
+  if ! command -v systemctl >/dev/null 2>&1; then
+    fail 'SYSTEMCTL_MISSING'
+  fi
+  say "systemctl: $(command -v systemctl)"
+
+  if ! systemctl --user show-environment >/dev/null 2>&1; then
+    say "警告: systemd user session不可用，尝试systemd --user检查..."
+    # 尝试检查是否用户已loginctl
+    if ! loginctl show-user $(id -un) 2>/dev/null | grep -q "State:.*active"; then
+      fail 'SYSTEMD_USER_UNAVAILABLE'
+    fi
+  fi
+
+  # 检查root用户
+  if [ "$(id -u)" = "0" ]; then
+    fail 'ROOT_USER_NOT_ALLOWED'
+  fi
+
+  # 检查ip命令
+  if command -v ip >/dev/null 2>&1; then
+    say "ip命令: 可用 ($(command -v ip))"
+  else
+    say "ip命令: 不可用，使用hostname -I回退"
+  fi
+
+  # 检查GOS身份 - 尝试多种方法
+  _ip_addr=""
+  if command -v ip >/dev/null 2>&1; then
+    _ip_addr=$(ip -4 -o addr show 2>/dev/null | awk '{print $4}' | cut -d/ -f1 || true)
+    say "ip命令输出: $_ip_addr"
+  fi
+
+  if [ -z "$_ip_addr" ] && command -v hostname >/dev/null 2>&1; then
+    _ip_addr=$(hostname -I 2>/dev/null | awk '{print $1}' || true)
+    say "hostname -I输出: $_ip_addr"
+  fi
+
+  if [ -z "$_ip_addr" ] && command -v ifconfig >/dev/null 2>&1; then
+    _ip_addr=$(ifconfig 2>/dev/null | grep -oE 'inet [0-9.]+' | head -1 | awk '{print $2}' || true)
+    say "ifconfig输出: $_ip_addr"
+  fi
+
+  if [ -z "$_ip_addr" ]; then
+    say "错误: 无法获取本机IP地址"
+    say "可用的网络命令:"
+    command -v ip 2>/dev/null && say "  - ip" || say "  - ip: 不可用"
+    command -v hostname 2>/dev/null && say "  - hostname" || say "  - hostname: 不可用"
+    command -v ifconfig 2>/dev/null && say "  - ifconfig" || say "  - ifconfig: 不可用"
+    say "当前所有IP地址:"
+    hostname -I 2>/dev/null || echo "  (hostname -I失败)"
+    ip -4 -o addr show 2>/dev/null || echo "  (ip addr show失败)"
+    ifconfig -a 2>/dev/null || echo "  (ifconfig失败)"
+    fail 'IP_ADDRESS_UNAVAILABLE'
+  fi
+
+  # 验证IP匹配
+  if echo "$_ip_addr" | grep -Fxq "$GOS_HOST"; then
+    say "GOS身份验证通过: $_ip_addr == $GOS_HOST"
+  else
+    say "错误: GOS身份不匹配"
+    say "  期望IP: $GOS_HOST"
+    say "  实际IP: $_ip_addr"
+    say "所有网络接口:"
+    ip -4 -o addr show 2>/dev/null || hostname -I 2>/dev/null || ifconfig -a 2>/dev/null || true
+    fail 'GOS_IDENTITY_MISMATCH'
+  fi
+
+  # 检查磁盘空间
+  say "磁盘空间检查:"
+  df -h "$TARGET_ROOT" 2>/dev/null || df -h ~ 2>/dev/null || true
 }
 
 preflight() {

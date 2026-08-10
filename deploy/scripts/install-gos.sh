@@ -35,13 +35,14 @@ WEB_PORT=''
 STALE_AFTER_SECONDS=''
 load_manifest_values() {
   local manifest="$1"
-  IFS=$'\t' read -r GOS_HOST AOS_HOST AOS_TCP_PORT WEB_PORT STALE_AFTER_SECONDS < <(
+  IFS=$'\\t' read -r GOS_HOST AOS_HOST AOS_TCP_PORT WEB_PORT STALE_AFTER_SECONDS < <(
     python3 - "$manifest" <<'PY'
 import json, sys
 d=json.load(open(sys.argv[1]))
-print("\t".join([d["targets"]["gos_host"], d["targets"]["aos_host"], str(d["ports"]["aos_tcp"]), str(d["ports"]["web"]), str(d["stale_after_seconds"])]))
+print("\\t".join([d["targets"]["gos_host"], d["targets"]["aos_host"], str(d["ports"]["aos_tcp"]), str(d["ports"]["web"]), str(d["stale_after_seconds"])]))
 PY
   )
+  printf 'DEBUG: manifest loaded - GOS=%s AOS=%s PORT=%s\\n' "$GOS_HOST" "$AOS_HOST" "$AOS_TCP_PORT" >&2
 }
 validate_readonly_release() {
   local release="$1"
@@ -156,9 +157,45 @@ if [ -e "$RELEASE" ] || [ -L "$RELEASE" ]; then
 fi
 if [ "$APPLY" = true ]; then
   # Check GOS identity - try multiple methods for robustness
-  _ip_addr=$(ip -4 -o addr show 2>/dev/null | awk '{print $4}' | cut -d/ -f1 || true)
-  _ip_addr="${_ip_addr:-$(hostname -I 2>/dev/null | awk '{print $1}' || true)}"
-  echo "$_ip_addr" | grep -Fxq "$GOS_HOST" || { printf 'ERROR: GOS identity mismatch\n' >&2; exit 2; }
+  printf 'DEBUG: 开始GOS身份检查...\\n' >&2
+  _ip_addr=""
+  if command -v ip >/dev/null 2>&1; then
+    _ip_addr=$(ip -4 -o addr show 2>/dev/null | awk '{print $4}' | cut -d/ -f1 || true)
+    printf 'DEBUG: ip命令输出: %s\\n' "$_ip_addr" >&2
+  else
+    printf 'DEBUG: ip命令不可用\\n' >&2
+  fi
+
+  if [ -z "$_ip_addr" ] && command -v hostname >/dev/null 2>&1; then
+    _ip_addr=$(hostname -I 2>/dev/null | awk '{print $1}' || true)
+    printf 'DEBUG: hostname -I输出: %s\\n' "$_ip_addr" >&2
+  fi
+
+  if [ -z "$_ip_addr" ] && command -v ifconfig >/dev/null 2>&1; then
+    _ip_addr=$(ifconfig 2>/dev/null | grep -oE 'inet [0-9.]+' | head -1 | awk '{print $2}' || true)
+    printf 'DEBUG: ifconfig输出: %s\\n' "$_ip_addr" >&2
+  fi
+
+  if [ -z "$_ip_addr" ]; then
+    printf 'ERROR: 无法获取本机IP地址\\n' >&2
+    printf '  期望: %s\\n' "$GOS_HOST" >&2
+    printf '  hostname -I: ' >&2
+    hostname -I 2>/dev/null || echo "失败" >&2
+    printf '  ip addr: ' >&2
+    ip -4 -o addr show 2>/dev/null || echo "失败" >&2
+    exit 2
+  fi
+
+  if echo "$_ip_addr" | grep -Fxq "$GOS_HOST"; then
+    printf 'DEBUG: GOS身份验证通过: %s == %s\\n' "$_ip_addr" "$GOS_HOST" >&2
+  else
+    printf 'ERROR: GOS身份不匹配\\n' >&2
+    printf '  期望IP: %s\\n' "$GOS_HOST" >&2
+    printf '  实际IP: %s\\n' "$_ip_addr" >&2
+    printf '  所有网络接口:\\n' >&2
+    ip -4 -o addr show 2>/dev/null || hostname -I 2>/dev/null || ifconfig -a 2>/dev/null || true >&2
+    exit 2
+  fi
   conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service state is unknown\n' >&2; exit 2; }
   conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service enablement is unknown\n' >&2; exit 2; }
   [ "$conflict_active" = inactive ] || { printf 'ERROR: conflicting realtime service state is not inactive: %s\n' "$conflict_active" >&2; exit 2; }
@@ -251,6 +288,10 @@ PYTHON_BIN=""
 PYTHON_BIN="$(command -v python3.8 || true)"
 [ -n "$PYTHON_BIN" ] || PYTHON_BIN="$(command -v python3 || true)"
 [ -n "$PYTHON_BIN" ] || { printf 'ERROR: python3 is required on the target GOS\n' >&2; exit 1; }
+
+printf 'DEBUG: Python binary: %s\n' "$PYTHON_BIN" >&2
+printf 'DEBUG: Python version: ' >&2
+"$PYTHON_BIN" --version >&2
 
 # Check Python version - accept 3.8+ or 3.10+
 PY_MAJOR="$PYTHON_BIN" -c 'import sys; print(sys.version_info.major)' 2>/dev/null
