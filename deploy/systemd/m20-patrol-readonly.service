@@ -11,10 +11,10 @@ Environment=M20_READ_ONLY_MODE=true
 Environment=M20_CONTROL_ENABLED=false
 Environment=M20_TELEMETRY_TX_ENABLED=false
 Environment=M20_TARGET_HOST=10.21.31.103
-Environment=M20_TARGET_PORT=8888
+Environment=M20_TARGET_PORT=30001
 Environment=M20_TELEMETRY_RX_ENABLED=true
 Environment=M20_WEB_REALTIME_ENABLED=true
-Environment=M20_STALE_AFTER_SECONDS=300
+Environment=M20_STALE_AFTER_SECONDS=3
 ExecStart=%h/m20-patrol-robot/current/python3 -m backend.app.server --manifest %h/m20-patrol-robot/current/deploy/readonly-manifest.json
 Restart=on-failure
 RestartSec=5

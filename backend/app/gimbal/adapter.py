@@ -46,6 +46,11 @@ class DiscoveredGimbal:
 class SoarGimbalAdapter:
     """Adapter for Soar Security SR-UPA810T609 gimbal via WEB2.0 protocol."""
 
+    @property
+    def connected(self) -> bool:
+        """Public accessor for connection state."""
+        return self._connected
+
     # Common IP ranges to scan (priority order)
     # Only scan M20 robot network and common device networks
     SCAN_RANGES = [

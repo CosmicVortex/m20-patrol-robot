@@ -25,7 +25,7 @@ class GimbalStateHandler(BaseGimbalHandler):
 
     def do_GET(self) -> None:
         gimbal = self._get_gimbal()
-        if not gimbal or not gimbal._connected:
+        if not gimbal or not gimbal.connected:
             self.send_json_response(200, {"connected": False, "message": "云台未连接"})
             return
 
@@ -45,7 +45,7 @@ class GimbalMoveHandler(BaseGimbalHandler):
             return
 
         gimbal = self._get_gimbal()
-        if not gimbal or not gimbal._connected:
+        if not gimbal or not gimbal.connected:
             self.send_error_response(503, "云台未连接")
             return
 
@@ -71,7 +71,7 @@ class GimbalZoomHandler(BaseGimbalHandler):
             return
 
         gimbal = self._get_gimbal()
-        if not gimbal or not gimbal._connected:
+        if not gimbal or not gimbal.connected:
             self.send_error_response(503, "云台未连接")
             return
 
@@ -104,7 +104,7 @@ class GimbalAngleHandler(BaseGimbalHandler):
             return
 
         gimbal = self._get_gimbal()
-        if not gimbal or not gimbal._connected:
+        if not gimbal or not gimbal.connected:
             self.send_error_response(503, "云台未连接")
             return
 
@@ -161,7 +161,7 @@ class GimbalScanHandler(BaseGimbalHandler):
             gimbal.auto_connect()
             self.send_json_response(200, {
                 "discovered": discovered,
-                "connected": gimbal._connected,
+                "connected": gimbal.connected,
                 "host": gimbal.config.host,
             })
         else:
