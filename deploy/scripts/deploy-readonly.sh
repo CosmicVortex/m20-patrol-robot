@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # M20 Pro 巡逻机器人 - 简化部署脚本
-# 移除所有校验，直接部署
+# 移除所有校验，自动配置环境变量
 
 set -euo pipefail
 
@@ -8,6 +8,35 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MANIFEST="$ROOT/deploy/readonly-manifest.json"
 TARGET_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/m20-patrol-robot"
 SERVICE_NAME='m20-patrol-readonly.service'
+CONFIG_DIR="$HOME/.config/m20-patrol"
+
+# 生成随机密码
+generate_password() {
+  openssl rand -base64 12 2>/dev/null || cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1
+}
+
+# 确保配置目录存在
+ensure_config() {
+  mkdir -p "$CONFIG_DIR"
+  
+  # 如果密码文件不存在，生成并保存
+  if [ ! -f "$CONFIG_DIR/passwords.env" ]; then
+    echo "生成随机密码..."
+    cat > "$CONFIG_DIR/passwords.env" <<EOF
+export M20_GIMBAL_PASSWORD="$(generate_password)"
+export M20_ADMIN_PASSWORD="$(generate_password)"
+EOF
+    chmod 600 "$CONFIG_DIR/passwords.env"
+    echo "✅ 密码已生成并保存到: $CONFIG_DIR/passwords.env"
+  fi
+  
+  # 加载密码
+  source "$CONFIG_DIR/passwords.env"
+  
+  # 确保环境变量已设置
+  export M20_GIMBAL_PASSWORD="${M20_GIMBAL_PASSWORD:-$(generate_password)}"
+  export M20_ADMIN_PASSWORD="${M20_ADMIN_PASSWORD:-$(generate_password)}"
+}
 
 # 加载配置
 load_manifest() {
@@ -27,6 +56,13 @@ print('STALE_AFTER_SECONDS=' + str(d['stale_after_seconds']))
 # 预检（简化）
 preflight() {
   echo "=== 预检 ==="
+  
+  # 确保配置
+  ensure_config
+  
+  echo "GIMBAL_PASSWORD=$M20_GIMBAL_PASSWORD"
+  echo "ADMIN_PASSWORD=$M20_ADMIN_PASSWORD"
+  echo ""
   
   # 检查Python
   if ! command -v python3 >/dev/null 2>&1; then
@@ -59,20 +95,22 @@ preflight() {
   echo "AOS_HOST=$AOS_HOST"
   echo "NOS_HOST=$NOS_HOST"
   echo "WEB_PORT=$WEB_PORT"
-  echo "CONTROL_ENABLED=$CONTROL_ENABLED"
-  echo "TELEMETRY_TX_ENABLED=$TELEMETRY_TX_ENABLED"
   
   # 检查磁盘空间
   echo ""
   echo "磁盘空间:"
   df -h "$TARGET_ROOT" 2>/dev/null || df -h ~ 2>/dev/null || true
   
+  echo ""
   echo "预检完成 ✅"
 }
 
 # 安装服务
 install() {
   echo "=== 安装服务 ==="
+  
+  # 确保配置
+  ensure_config
   
   # 加载配置
   eval "$(load_manifest)"
@@ -109,7 +147,13 @@ install() {
   echo "重新加载systemd..."
   systemctl --user daemon-reload
   
+  echo ""
   echo "安装完成 ✅"
+  echo ""
+  echo "配置信息:"
+  echo "  服务: $SERVICE_NAME"
+  echo "  地址: http://$GOS_HOST:$WEB_PORT"
+  echo "  密码文件: $CONFIG_DIR/passwords.env"
 }
 
 # 启动服务
@@ -145,6 +189,18 @@ logs() {
   journalctl --user -u "$SERVICE_NAME" -f
 }
 
+# 显示密码
+show-passwords() {
+  if [ -f "$CONFIG_DIR/passwords.env" ]; then
+    echo "=== 已保存的密码 ==="
+    source "$CONFIG_DIR/passwords.env"
+    echo "M20_GIMBAL_PASSWORD=$M20_GIMBAL_PASSWORD"
+    echo "M20_ADMIN_PASSWORD=$M20_ADMIN_PASSWORD"
+  else
+    echo "密码未生成，请先运行部署"
+  fi
+}
+
 # 主入口
 case "${1:---one-shot}" in
   --preflight) preflight ;;
@@ -154,6 +210,7 @@ case "${1:---one-shot}" in
   --stop) stop ;;
   --restart) restart ;;
   --logs) logs ;;
+  --show-passwords) show-passwords ;;
   --one-shot) preflight; install; start; status ;;
-  *) echo "用法: $0 {--preflight|--install|--start|--status|--stop|--restart|--logs|--one-shot}" ;;
+  *) echo "用法: $0 {--preflight|--install|--start|--status|--stop|--restart|--logs|--show-passwords|--one-shot}" ;;
 esac
