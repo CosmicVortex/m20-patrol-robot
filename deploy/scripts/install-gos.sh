@@ -5,7 +5,7 @@ set -euo pipefail
 
 REPO=''
 REF=''
-TARGET_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/m20-patrol-robot"
+TARGET_ROOT="$HOME/m20-patrol-robot"
 SERVICE_NAME='m20-patrol-readonly.service'
 APPLY=false
 

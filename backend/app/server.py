@@ -142,8 +142,9 @@ class M20WebServer:
             return
         password = os.environ.get("M20_ADMIN_PASSWORD")
         if not password:
-            logger.warning("No M20_ADMIN_PASSWORD supplied; no default administrator will be created")
-            return
+            # 使用固定默认密码
+            password = "m20_patrol_2026"
+            logger.info("使用默认管理员密码，请首次登录后修改")
         try:
             self.user_store.authenticate("admin", password)
         except Exception:

@@ -13,9 +13,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 MANIFEST="$ROOT/deploy/readonly-manifest.json"
-TARGET_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/m20-patrol-robot"
-SERVICE_NAME='m20-patrol-readonly.service'
+TARGET_ROOT="$HOME/m20-patrol-robot"
+# 密码文件路径
 CONFIG_DIR="$HOME/.config/m20-patrol"
+# 默认密码（首次部署自动生成）
+DEFAULT_GIMBAL_PASSWORD="m20_gimbal_$(date +%s | sha256sum | head -c 12)"
+DEFAULT_ADMIN_PASSWORD="m20_admin_$(date +%s | sha256sum | head -c 12)"
 PYTHON_BIN="$(command -v python3)"
 
 # 检查是否为root用户
@@ -52,11 +55,17 @@ check_python() {
 ensure_config() {
   mkdir -p "$CONFIG_DIR"
   
-  # 如果密码文件不存在，提示用户设置密码
+  # 如果密码文件不存在，自动生成
   if [ ! -f "$CONFIG_DIR/passwords.env" ]; then
-    echo "警告: 未找到密码文件，请设置环境变量后手动创建"
-    echo "  export M20_GIMBAL_PASSWORD='your_password'"
-    echo "  export M20_ADMIN_PASSWORD='your_password'"
+    echo "警告: 未找到密码文件，自动生成默认密码..."
+    cat > "$CONFIG_DIR/passwords.env" <<EOF
+export M20_GIMBAL_PASSWORD='$DEFAULT_GIMBAL_PASSWORD'
+export M20_ADMIN_PASSWORD='$DEFAULT_ADMIN_PASSWORD'
+EOF
+    chmod 600 "$CONFIG_DIR/passwords.env"
+    echo "密码已保存到: $CONFIG_DIR/passwords.env"
+    echo "M20_GIMBAL_PASSWORD=$DEFAULT_GIMBAL_PASSWORD"
+    echo "M20_ADMIN_PASSWORD=$DEFAULT_ADMIN_PASSWORD"
   else
     # 加载密码
     source "$CONFIG_DIR/passwords.env"

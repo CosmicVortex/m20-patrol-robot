@@ -31,7 +31,7 @@ class WebServiceConfig:
     allow_real_io: bool = False
     gimbal_host: str = ""
     gimbal_username: str = "admin"
-    gimbal_password: str = ""  # 必填，通过环境变量 M20_GIMBAL_PASSWORD 设置
+    gimbal_password: str = ""  # 可选，通过环境变量 M20_GIMBAL_PASSWORD 设置
     nos_host: str = ""  # 导航操作员站地址，从 manifest 读取
     manifest_path: str = ""
     static_root: str = ""
@@ -48,8 +48,6 @@ class WebServiceConfig:
             raise ValueError("telemetry transmission is disabled in this release")
         if not self.read_only_mode or self.control_enabled:
             raise ValueError("service requires read_only_mode=true and control_enabled=false")
-        if not self.gimbal_password:
-            raise ValueError("gimbal_password is required, set via M20_GIMBAL_PASSWORD environment variable")
 
 
 class ConfigLoader:

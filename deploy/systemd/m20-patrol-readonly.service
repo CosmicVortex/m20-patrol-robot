@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/m20-patrol-robot/current
-Environment=PYTHONPATH=%h/m20-patrol-robot/current
+WorkingDirectory=%h/m20-patrol-robot
+Environment=PYTHONPATH=%h/m20-patrol-robot
 Environment=M20_RUNTIME_MODE=realtime_readonly
 Environment=M20_READ_ONLY_MODE=true
 Environment=M20_CONTROL_ENABLED=false
@@ -15,7 +15,7 @@ Environment=M20_TARGET_PORT=30001
 Environment=M20_TELEMETRY_RX_ENABLED=true
 Environment=M20_WEB_REALTIME_ENABLED=true
 Environment=M20_STALE_AFTER_SECONDS=3
-ExecStart=%h/m20-patrol-robot/current/python3 -m backend.app.server --manifest %h/m20-patrol-robot/current/deploy/readonly-manifest.json
+ExecStart=%h/m20-patrol-robot/python3 -m backend.app.server --manifest %h/m20-patrol-robot/deploy/readonly-manifest.json
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true
