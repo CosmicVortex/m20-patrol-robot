@@ -11,6 +11,7 @@ import logging
 import sys
 import threading
 import os
+from dataclasses import replace
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Optional
@@ -248,9 +249,9 @@ def main() -> None:
 
     # Override with command line args
     if args.host:
-        config = WebServiceConfig(**{**vars(config), "host": args.host})
+        config = replace(config, host=args.host)
     if args.port:
-        config = WebServiceConfig(**{**vars(config), "port": args.port})
+        config = replace(config, port=args.port)
 
     # Setup logging
     logging.basicConfig(
