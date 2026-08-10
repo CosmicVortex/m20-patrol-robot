@@ -71,7 +71,7 @@ class NavigationService:
             authorization_note=note,
         )
         self._log("authorize", f"Operator: {operator}, Note: {note}", True)
-        logger.info(f"Navigation authorized by {operator}")
+        logger.info("导航授权成功: %s", operator)
         return {
             "status": "authorized",
             "operator": operator,
@@ -115,7 +115,7 @@ class NavigationService:
             try:
                 response = self._client.send_control(msg)
                 self._log("send", f"Task {task_id}: navigate to ({pos_x}, {pos_y})", True)
-                logger.info(f"Navigation task {task_id} sent")
+                logger.info("导航任务 %s 已发送", task_id)
                 return {
                     "status": "sent",
                     "task_id": task_id,

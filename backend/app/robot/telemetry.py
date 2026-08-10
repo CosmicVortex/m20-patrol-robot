@@ -187,7 +187,7 @@ class TelemetryAdapter:
                         try:
                             client.send_read_only(heartbeat)
                         except ClientStateError:
-                            pass
+                            logger.warning("心跳发送失败，连接可能已断开")
                     
                     # Check staleness
                     now = datetime.now(UTC)

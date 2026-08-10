@@ -47,19 +47,28 @@
 
 ```
 docs/
-├── 01-overview.md           项目概览
-├── 02-architecture.md       系统架构
-├── 03-modules.md            模块说明
-├── 04-requirements.md       需求清单
-├── 05-testing.md            测试流程
-├── 06-deployment.md         部署流程
+├── 官方文档/
+│   ├── 机器狗本体/          山猫M20系列官方手册（19份）
+│   └── 上装设备/            数尔云台资料（3份+demo）
 │
-├── official/
-│   ├── 机器狗本体/          山猫M20系列官方手册（15份）
-│   └── 上装设备/            数尔云台资料（3份）
+├── 项目文档/
+│   ├── 01-overview.md       项目概览
+│   ├── 02-architecture.md   系统架构
+│   ├── 03-modules.md        模块说明
+│   ├── 04-requirements.md   需求清单
+│   ├── 05-testing.md        测试流程
+│   ├── 06-deployment.md     部署流程
+│   ├── index.md             文档导航
+│   ├── 功能核对报告_2026-08-11.md
+│   ├── 代码审查报告_第三轮_2026-08-11.md
+│   ├── 代码改进清单_2026-08-11.md
+│   ├── 文档整理报告_2026-08-11.md
+│   └── 任务执行总结_2026-08-11.md
 │
-└── reviews/                 审查报告
-    └── project-completeness-review-final-2026-08-10.md
+└── website/                 前端静态资源
+    ├── index.html
+    ├── robot-dog.jpg
+    └── robot-dog.png
 ```
 
 ## 文档状态图例

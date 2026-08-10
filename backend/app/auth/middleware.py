@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from http.server import BaseHTTPRequestHandler
-from typing import Optional
+from typing import List, Optional
 
 try:
     from datetime import UTC
@@ -51,7 +51,7 @@ class AuthMiddleware:
         store: UserStore,
         *,
         token_header: str = _TOKEN_HEADER,
-        require_role: list[str] | None = None,
+        require_role: Optional[List[str]] = None,
         allow_anonymous: bool = False,
     ) -> None:
         self.store = store
@@ -73,7 +73,7 @@ class AuthMiddleware:
             logger.debug("从 Authorization: Bearer 提取令牌")
             return auth_header[7:].strip()
 
-        # Check Authorization: Basic (username:password fallback)
+        # Check Authorization: Basic (username/password fallback)
         if auth_header.lower().startswith("basic "):
             try:
                 decoded = base64.b64decode(auth_header[6:]).decode("utf-8")
@@ -84,9 +84,11 @@ class AuthMiddleware:
                         session = self.store.create_session(user)
                         return session.token
                     except AuthenticationError:
-                        pass
+                        logger.debug("Basic认证失败: %s", username)
+                    except Exception:
+                        logger.debug("Basic认证处理异常")
             except Exception:
-                pass
+                logger.debug("Basic认证解析失败")
 
         cookie = SimpleCookie()
         cookie.load(handler.headers.get("Cookie", ""))
