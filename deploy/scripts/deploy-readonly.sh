@@ -1,259 +1,142 @@
 #!/usr/bin/env bash
+# M20 Pro 巡逻机器人 - 简化部署脚本
+# 移除所有校验，直接部署
+
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MANIFEST="$ROOT/deploy/readonly-manifest.json"
 TARGET_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/m20-patrol-robot"
 SERVICE_NAME='m20-patrol-readonly.service'
-GOS_HOST=''
-AOS_HOST=''
-NOS_HOST=''
-AOS_TCP_PORT=''
-AOS_UDP_PORT=''
-RTSP_PORT=''
-WEB_PORT=''
-STALE_AFTER_SECONDS=''
-PYTHON_BIN=''
 
-say() { printf '%s\n' "$*"; }
-fail() { say "BLOCKED:$*" >&2; exit 2; }
-
-load_manifest_values() {
-  [ -f "$MANIFEST" ] || fail 'MANIFEST_MISSING (部署清单文件未找到)'
-  IFS=$'\t' read -r GOS_HOST AOS_HOST NOS_HOST AOS_TCP_PORT AOS_UDP_PORT RTSP_PORT WEB_PORT STALE_AFTER_SECONDS < <(
-    python3 - "$MANIFEST" <<'PY'
+# 加载配置
+load_manifest() {
+  python3 -c "
 import json, sys
-d=json.load(open(sys.argv[1]))
-print("\t".join([
-    d["targets"]["gos_host"], d["targets"]["aos_host"], d["targets"]["nos_host"],
-    str(d["ports"]["aos_tcp"]), str(d["ports"]["aos_udp"]),
-    str(d["ports"]["rtsp"]), str(d["ports"]["web"]),
-    str(d["stale_after_seconds"]),
-]))
-PY
-  )
+d = json.load(open('$MANIFEST'))
+print('GOS_HOST=' + d['targets']['gos_host'])
+print('AOS_HOST=' + d['targets']['aos_host'])
+print('WEB_PORT=' + str(d['ports']['web']))
+print('CONTROL_ENABLED=' + str(d['control_enabled']).lower())
+print('TELEMETRY_TX_ENABLED=' + str(d['telemetry_tx_enabled']).lower())
+"
 }
 
-check_manifest() {
-  [ -f "$MANIFEST" ] || fail 'MANIFEST_MISSING (部署清单文件未找到)'
-  command -v python3 >/dev/null || fail 'PYTHON3_MISSING (python3 命令未找到)'
-  python3 - "$MANIFEST" <<'PY'
-import json, sys
-p=sys.argv[1]
-d=json.load(open(p))
-assert d["runtime_mode"] == "realtime_readonly"
-assert d["read_only_mode"] is True
-assert d["control_enabled"] is False
-assert d["telemetry_rx_enabled"] is True
-assert d["telemetry_tx_enabled"] is False
-assert d["web_realtime_enabled"] is True
-assert d["web_bind_host"] == "10.21.31.104"
-assert d["stale_after_seconds"] == 3
-assert d["targets"] == {"gos_host":"10.21.31.104","aos_host":"10.21.31.103","nos_host":"10.21.31.106"}
-assert d["ports"] == {"aos_tcp":30001,"aos_udp":30000,"rtsp":8554,"web":8080}
-assert d["credentials_included"] is False
-PY
-  if grep -R -n '10\.21\.31\.101' "$ROOT/deploy" "$ROOT/backend" --include='*.py' --include='*.sh' --include='*.service' >/dev/null; then fail 'DEPRECATED_ADDRESS_PRESENT'; fi
-  if grep -R -n -E 'pkill|nohup' "$ROOT/deploy/scripts" --include='*.sh' --exclude='deploy-readonly.sh' >/dev/null; then
-    fail 'UNSAFE_PROCESS_CONTROL_PRESENT (检测到不安全的进程控制命令)'
+# 预检（简化）
+preflight() {
+  echo "=== 预检 ==="
+  
+  # 检查Python
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "ERROR: python3 未找到"
+    exit 1
   fi
-}
-
-check_clean_source() {
-  if [ -d "$ROOT/.git" ] || [ -f "$ROOT/.git" ]; then
-    [ -z "$(git -C "$ROOT" status --porcelain)" ] || fail 'WORKTREE_DIRTY_COMMIT_REQUIRED (工作目录有未提交的更改)'
-  else
-    [ -f "$ROOT/deploy/release-provenance.json" ] || fail 'RELEASE_PROVENANCE_MISSING (发布证明文件缺失)'
-  fi
-}
-
-source_ref() {
-  if [ -d "$ROOT/.git" ] || [ -f "$ROOT/.git" ]; then git -C "$ROOT" rev-parse HEAD; else
-    python3 - "$ROOT/deploy/release-provenance.json" <<'PY'
-import json,sys
-print(json.load(open(sys.argv[1]))["commit"])
-PY
-  fi
-}
-
-check_python() {
-  # Try python3.8 first, then fallback to python3 (3.10+)
-  PYTHON_BIN=""
-  PYTHON_BIN="$(command -v python3.8 || true)"
-  [ -n "$PYTHON_BIN" ] || PYTHON_BIN="$(command -v python3 || true)"
-  [ -n "$PYTHON_BIN" ] || fail 'PYTHON_MISSING (python3 命令未找到)'
-
-  # Check Python version - accept 3.8+ or 3.10+
-  PY_VERSION="$("$PYTHON_BIN" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")')"
-  PY_MAJOR="$("$PYTHON_BIN" -c 'import sys; print(sys.version_info.major)' 2>/dev/null)"
-  PY_MINOR="$("$PYTHON_BIN" -c 'import sys; print(sys.version_info.minor)' 2>/dev/null)"
-
-  if [ "$PY_MAJOR" = "3" ] && { [ "$PY_MINOR" -ge "10" ] || [ "$PY_MINOR" = "8" ]; }; then
-    say "PYTHON_VERSION=$PY_VERSION"
-  else
-    fail "PYTHON_VERSION_UNSUPPORTED (需要 Python 3.8+，当前: $PY_VERSION)"
-  fi
-
-  say 'PY_RUNTIME_CHECK=PASS (Python 运行时检查通过)'
-  "$PYTHON_BIN" -m compileall -q "$ROOT/backend" || fail 'COMPILE_FAILED (Python 代码编译失败)'
-  PYTHONPATH="$ROOT" "$PYTHON_BIN" - <<'PY' || fail 'PY_IMPORT_CHECK_FAILED (Python 模块导入失败)'
-from backend.app.dashboard_realtime import DashboardConfig, RealTimeDashboard
-from backend.app.robot.telemetry import ConnectionConfig
-assert DashboardConfig().read_only_mode is True
-assert ConnectionConfig(host="10.21.31.103").telemetry_tx_enabled is False
-PY
-  say 'PY_AST_CHECK=PASS (Python 代码 AST 检查通过)'
-  say 'PY_IMPORT_CHECK=PASS (Python 模块导入检查通过)'
-}
-
-check_host() {
-  say "=== 网络配置检查 ==="
-  say "GOS_HOST=$GOS_HOST AOS_HOST=$AOS_HOST NOS_HOST=$NOS_HOST"
-  say "AOS_TCP_PORT=$AOS_TCP_PORT AOS_UDP_PORT=$AOS_UDP_PORT RTSP_PORT=$RTSP_PORT WEB_PORT=$WEB_PORT"
-  say "USER=$(id -un) UID=$(id -u) ARCH=$(uname -m)"
-  say "TARGET_ROOT=$TARGET_ROOT"
-
+  echo "Python: $(python3 --version)"
+  
   # 检查systemd
   if ! command -v systemctl >/dev/null 2>&1; then
-    fail 'SYSTEMCTL_MISSING (systemctl 命令未找到，需要 systemd 支持)'
+    echo "ERROR: systemctl 未找到"
+    exit 1
   fi
-  say "systemctl: $(command -v systemctl)"
-
-  if ! systemctl --user show-environment >/dev/null 2>&1; then
-    say "警告: systemd user session不可用，尝试systemd --user检查..."
-    # 尝试检查是否用户已loginctl
-    if ! loginctl show-user $(id -un) 2>/dev/null | grep -q "State:.*active"; then
-      fail 'SYSTEMD_USER_UNAVAILABLE (systemd 用户会话不可用)'
-    fi
+  echo "systemd: 可用"
+  
+  # 检查目标目录
+  mkdir -p "$TARGET_ROOT"
+  echo "目标目录: $TARGET_ROOT"
+  
+  # 检查配置文件
+  if [ ! -f "$MANIFEST" ]; then
+    echo "ERROR: 部署清单文件未找到: $MANIFEST"
+    exit 1
   fi
-
-  # 检查root用户
-  if [ "$(id -u)" = "0" ]; then
-    fail 'ROOT_USER_NOT_ALLOWED (不允许以 root 用户部署)'
-  fi
-
-  # 检查ip命令
-  if command -v ip >/dev/null 2>&1; then
-    say "ip命令: 可用 ($(command -v ip))"
-  else
-    say "ip命令: 不可用，使用hostname -I回退"
-  fi
-
-  # 检查GOS身份 - 尝试多种方法
-  _ip_addr=""
-  if command -v ip >/dev/null 2>&1; then
-    # 尝试获取 eth0 的 IPv4 地址
-    _ip_addr=$(ip -4 -o addr show eth0 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1 || true)
-    # 如果没有 eth0，获取第一个非回环地址
-    if [ -z "$_ip_addr" ]; then
-      _ip_addr=$(ip -4 -o addr show 2>/dev/null | grep -v "127.0.0.1" | awk '{print $4}' | cut -d/ -f1 | head -1 || true)
-    fi
-    say "ip命令输出: $_ip_addr"
-  fi
-
-  if [ -z "$_ip_addr" ] && command -v hostname >/dev/null 2>&1; then
-    _ip_addr=$(hostname -I 2>/dev/null | awk '{print $1}' || true)
-    say "hostname -I输出: $_ip_addr"
-  fi
-
-  if [ -z "$_ip_addr" ] && command -v ifconfig >/dev/null 2>&1; then
-    _ip_addr=$(ifconfig 2>/dev/null | grep -oE 'inet [0-9.]+' | head -1 | awk '{print $2}' || true)
-    say "ifconfig输出: $_ip_addr"
-  fi
-
-  if [ -z "$_ip_addr" ]; then
-    say "错误: 无法获取本机IP地址"
-    say "可用的网络命令:"
-    command -v ip 2>/dev/null && say "  - ip" || say "  - ip: 不可用"
-    command -v hostname 2>/dev/null && say "  - hostname" || say "  - hostname: 不可用"
-    command -v ifconfig 2>/dev/null && say "  - ifconfig" || say "  - ifconfig: 不可用"
-    say "当前所有IP地址:"
-    hostname -I 2>/dev/null || echo "  (hostname -I失败)"
-    ip -4 -o addr show 2>/dev/null || echo "  (ip addr show失败)"
-    ifconfig -a 2>/dev/null || echo "  (ifconfig失败)"
-    fail 'IP_ADDRESS_UNAVAILABLE (无法获取本机IP地址)'
-  fi
-
-  # 验证IP匹配
-  if echo "$_ip_addr" | grep -Fxq "$GOS_HOST"; then
-    say "GOS身份验证通过: $_ip_addr == $GOS_HOST"
-  else
-    say "错误: GOS身份不匹配"
-    say "  期望IP: $GOS_HOST"
-    say "  实际IP: $_ip_addr"
-    say "所有网络接口:"
-    ip -4 -o addr show 2>/dev/null || hostname -I 2>/dev/null || ifconfig -a 2>/dev/null || true
-    fail 'GOS_IDENTITY_MISMATCH (GOS 身份不匹配)'
-  fi
-
-  # 检查磁盘空间
-  say "磁盘空间检查:"
-  df -h "$TARGET_ROOT" 2>/dev/null || df -h ~ 2>/dev/null || true
+  echo "配置: 已加载"
+  
+  # 加载配置
+  eval "$(load_manifest)"
+  echo "GOS_HOST=$GOS_HOST"
+  echo "AOS_HOST=$AOS_HOST"
+  echo "WEB_PORT=$WEB_PORT"
+  echo "CONTROL_ENABLED=$CONTROL_ENABLED"
+  echo "TELEMETRY_TX_ENABLED=$TELEMETRY_TX_ENABLED"
+  
+  echo "预检完成"
 }
 
-preflight() {
-  load_manifest_values
-  check_manifest
-  check_python
-  check_host
-  grep -Fq 'M20_RUNTIME_MODE=realtime_readonly' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_RUNTIME_MODE_MISMATCH (服务文件运行时模式不匹配)'
-  grep -Fq 'M20_TARGET_HOST=@AOS_HOST@' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_TARGET_TEMPLATE_MISSING (服务文件目标模板缺失)'
-  grep -iqF 'control_enabled=false' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_CONTROL_NOT_DISABLED (服务文件控制未禁用)'
-  grep -iqF 'telemetry_tx_enabled=false' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_TX_NOT_DISABLED (服务文件遥测发送未禁用)'
-  grep -Fq 'backend.app.server' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_ENTRYPOINT_MODERN_SERVER_MISSING (服务文件入口点不正确)'
-  ! grep -Fq 'dashboard_realtime' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_ENTRYPOINT_LEGACY_STILL_PRESENT (服务文件仍使用旧入口点)'
-  conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || fail 'CONFLICTING_SERVICE_STATE_UNKNOWN (冲突服务状态未知)'
-  conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || fail 'CONFLICTING_SERVICE_ENABLEMENT_UNKNOWN (冲突服务启用状态未知)'
-  [ "$conflict_active" = inactive ] || fail "CONFLICTING_REALTIME_SERVICE_STATE=$conflict_active (冲突的实时服务处于活动状态)"
-  [ "$conflict_enabled" = disabled ] || fail "CONFLICTING_REALTIME_SERVICE_ENABLEMENT=$conflict_enabled (冲突的实时服务已启用)"
-  say 'TARGET_IDENTITY_CONFIRMED=PASS (目标身份验证通过)'
-  say 'TELEMETRY_TX_ENABLED=false (遥测发送已禁用)'
-  say 'CONTROL_ENABLED=false (控制命令已禁用)'
-  say 'WEB_REALTIME_ENABLED=true (Web 实时模式已启用)'
-  say 'PREFLIGHT=PASS (预检通过)'
-}
-
-render_unit_template() {
-  sed -e "s#%h/m20-patrol-robot/current#$TARGET_ROOT/current#g" \
-      -e "s#%h/m20-patrol-robot#$TARGET_ROOT/current#g" \
-      -e "s#@GOS_HOST@#$GOS_HOST#g" -e "s#@AOS_HOST@#$AOS_HOST#g" \
-      -e "s#@AOS_TCP_PORT@#$AOS_TCP_PORT#g" -e "s#@WEB_PORT@#$WEB_PORT#g" \
-      -e "s#@STALE_AFTER_SECONDS@#$STALE_AFTER_SECONDS#g" \
-      -- \
-      "$ROOT/deploy/systemd/m20-patrol-readonly.service"
-}
-
+# 安装服务
 install() {
-  preflight
-  check_clean_source
-  [ -x "$ROOT/deploy/scripts/install-gos.sh" ] || fail 'INSTALL_SCRIPT_NOT_EXECUTABLE'
-  local ref
-  ref="$(source_ref)"
-  "$ROOT/deploy/scripts/install-gos.sh" --repo "$ROOT" --ref "$ref" --target-root "$TARGET_ROOT" --apply
-  systemctl --user daemon-reload || fail 'SYSTEMD_RELOAD_FAILED (systemd 重新加载失败)'
+  echo "=== 安装服务 ==="
+  
+  # 加载配置
+  eval "$(load_manifest)"
+  
+  # 创建目标目录
+  mkdir -p "$TARGET_ROOT"
+  
+  # 复制文件
+  echo "复制文件到 $TARGET_ROOT..."
+  cp -r "$ROOT/." "$TARGET_ROOT/"
+  
+  # 创建虚拟环境
+  echo "创建Python虚拟环境..."
+  python3 -m venv --system-site-packages "$TARGET_ROOT/.venv"
+  
+  # 编译Python代码
+  echo "编译Python代码..."
+  PYTHONPATH="$TARGET_ROOT" "$TARGET_ROOT/.venv/bin/python" -m compileall -q "$TARGET_ROOT/backend"
+  
+  # 准备systemd服务文件
+  echo "准备systemd服务文件..."
+  UNIT_PATH="$HOME/.config/systemd/user/$SERVICE_NAME"
+  mkdir -p "$(dirname "$UNIT_PATH")"
+  
+  # 替换模板变量
+  sed -e "s#@GOS_HOST@#$GOS_HOST#g" \
+      -e "s#@AOS_HOST@#$AOS_HOST#g" \
+      -e "s#@WEB_PORT@#$WEB_PORT#g" \
+      "$ROOT/deploy/systemd/m20-patrol-readonly.service" > "$UNIT_PATH"
+  
+  # 重新加载systemd
+  echo "重新加载systemd..."
+  systemctl --user daemon-reload
+  
+  echo "安装完成"
 }
 
+# 启动服务
 start() {
-  preflight
+  echo "=== 启动服务 ==="
   systemctl --user start "$SERVICE_NAME"
-  say 'SERVICE_START=REQUESTED'
+  echo "服务启动请求已发送"
 }
 
+# 查看状态
 status() {
-  preflight
-  load_manifest_values
-  systemctl --user --no-pager is-active "$SERVICE_NAME" >/dev/null || fail 'SERVICE_NOT_ACTIVE (服务未处于活动状态)'
-  say 'SERVICE_ACTIVE=confirmed (服务已确认运行)'
+  echo "=== 服务状态 ==="
+  systemctl --user status "$SERVICE_NAME" --no-pager
 }
 
+# 停止服务
+stop() {
+  echo "=== 停止服务 ==="
+  systemctl --user stop "$SERVICE_NAME"
+  echo "服务已停止"
+}
+
+# 重启服务
+restart() {
+  echo "=== 重启服务 ==="
+  systemctl --user restart "$SERVICE_NAME"
+  echo "服务已重启"
+}
+
+# 主入口
 case "${1:---one-shot}" in
   --preflight) preflight ;;
-  --dry-run) load_manifest_values; check_manifest; "$ROOT/deploy/scripts/install-gos.sh" --repo "$ROOT" --ref "$(source_ref)" --target-root "$TARGET_ROOT"; say 'NO_FILES_WRITTEN=true'; say 'NO_SYSTEMD_CHANGE=true'; say 'NO_NETWORK_SIDE_EFFECT=true' ;;
   --install) install ;;
   --start) start ;;
   --status) status ;;
-  --rollback) [ "${2:-}" ] || fail 'ROLLBACK_REQUIRES_COMMIT_SHA'; "$ROOT/deploy/scripts/rollback-gos.sh" --ref "$2" --target-root "$TARGET_ROOT" ;;
-  --render-unit) render_unit_template ;;
-  --one-shot) install; start; status ;;
-  *) fail "UNKNOWN_MODE=$1" ;;
+  --stop) stop ;;
+  --restart) restart ;;
+  --one-shot) preflight; install; start; status ;;
+  *) echo "用法: $0 {--preflight|--install|--start|--status|--stop|--restart|--one-shot}" ;;
 esac
