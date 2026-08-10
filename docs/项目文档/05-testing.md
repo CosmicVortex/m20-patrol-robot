@@ -6,7 +6,7 @@
 PYTHONPATH=. uv run --with pytest pytest -q
 ```
 
-结果：180 passed
+结果：155 passed
 
 ## 真实数据判定
 
