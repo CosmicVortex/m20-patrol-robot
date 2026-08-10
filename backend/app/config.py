@@ -30,7 +30,7 @@ class WebServiceConfig:
     allow_real_io: bool = False
     gimbal_host: str = ""
     gimbal_username: str = "admin"
-    gimbal_password: str = "123456"
+    gimbal_password: str = "123456"  # WARNING: Change before production deployment!
     manifest_path: str = ""
     static_root: str = ""
     auth_db_path: str = ""
@@ -46,6 +46,8 @@ class WebServiceConfig:
             raise ValueError("telemetry transmission is disabled in this release")
         if not self.read_only_mode or self.control_enabled:
             raise ValueError("service requires read_only_mode=true and control_enabled=false")
+        if self.gimbal_password == "123456":
+            logger.warning("云台密码使用默认值，请在生产环境部署前修改 M20_GIMBAL_PASSWORD 环境变量")
 
 
 class ConfigLoader:

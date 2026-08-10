@@ -16,12 +16,16 @@ except ImportError:
     UTC = timezone.utc
 from collections import deque
 from ipaddress import IPv4Address
+import logging
 import socket
 from typing import Deque, Final, List, Optional, Tuple
 
 from backend.app.protocol.frame import FrameCodec, IncrementalDecoder, m20_v010_layout
 from backend.app.protocol.messages import ASDUFormat, decode_patrol_message, encode_patrol_message
 from backend.app.protocol.messages import PatrolMessage
+
+
+logger = logging.getLogger(__name__)
 
 
 _HEARTBEAT: Final[Tuple[int, int]] = (100, 100)
@@ -235,7 +239,10 @@ class BasicServerClient:
         try:
             frames = self._decoder.feed(data)
             messages = [decode_patrol_message(frame.payload, ASDUFormat(frame.flags)) for frame in frames]
-        except Exception:
+        except ClientStateError:
+            raise
+        except Exception as exc:
+            logger.error("消息解析失败: %s", exc)
             self.invalid_frames += 1
             raise
         self.valid_frames += len(messages)

@@ -131,9 +131,10 @@ class TelemetryAdapter:
         if self._client:
             try:
                 self._client.close()
-            except Exception:
-                pass
-            self._client = None
+            except Exception as exc:
+                logger.warning("关闭遥测客户端时出错: %s", exc)
+            finally:
+                self._client = None
         if self._thread:
             self._thread.join(timeout=2)
             self._thread = None

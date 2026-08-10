@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import signal
 import sys
 import threading
 import os
@@ -182,11 +183,25 @@ class M20WebServer:
         logger.info("遥测目标: %s:%s (模式: %s)", self.config.aos_host, self.config.aos_port, self.config.runtime_mode)
         logger.info("安全配置: 只读模式=%s, 控制命令=%s", self.config.read_only_mode, self.config.control_enabled)
 
+        # 设置信号处理器
+        self._setup_signal_handlers()
+
         try:
             self.server.serve_forever()
-        except KeyboardInterrupt:
-            logger.info("收到停止信号，正在关闭服务...")
+        except (KeyboardInterrupt, SystemExit):
+            logger.info("服务正在关闭...")
+        finally:
             self.stop()
+
+    def _setup_signal_handlers(self) -> None:
+        """设置信号处理器以确保优雅关闭。"""
+        def handle_signal(signum, frame) -> None:
+            signal_name = signal.Signals(signum).name
+            logger.info("收到信号 %s，正在关闭服务...", signal_name)
+            self.stop()
+
+        signal.signal(signal.SIGTERM, handle_signal)
+        signal.signal(signal.SIGINT, handle_signal)
 
     def _create_handler(self) -> type[BaseHTTPRequestHandler]:
         """Create request handler class with injected dependencies."""

@@ -7,6 +7,7 @@ Supports H.264/H.265 transcoding via FFmpeg.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import threading
@@ -72,7 +73,9 @@ class VideoStreamManager:
         self._selected_source: Optional[str] = None
         self._lock = threading.Lock()
 
-    def _get_process_lock(self, source: str) -> asyncio.Lock:
+    @contextlib.asynccontextmanager
+    async def _get_process_lock(self, source: str):
+        """异步上下文管理器，用于保护进程操作。"""
         loop = asyncio.get_running_loop()
         if self._owner_loop is None:
             self._owner_loop = loop
@@ -82,7 +85,8 @@ class VideoStreamManager:
         if lock is None:
             lock = asyncio.Lock()
             self._process_locks[source] = lock
-        return lock
+        async with lock:
+            yield
 
     def get_camera_config(self, source: str) -> Optional[CameraConfig]:
         return self._streams.get(source)

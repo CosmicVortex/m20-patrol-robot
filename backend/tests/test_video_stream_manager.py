@@ -133,7 +133,8 @@ def test_manager_rejects_use_from_a_second_event_loop():
     manager = VideoStreamManager(allow_real_io=True)
 
     async def get_lock():
-        return manager._get_process_lock("front")
+        async with manager._get_process_lock("front"):
+            return "acquired"
 
     first_loop = asyncio.new_event_loop()
     second_loop = asyncio.new_event_loop()
