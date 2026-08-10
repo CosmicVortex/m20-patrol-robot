@@ -1,32 +1,14 @@
 # 测试流程
 
-## 离线验证
+## 运行测试
 
 ```bash
-# 运行测试套件
 PYTHONPATH=. uv run --with pytest pytest -q
-
-# 编译检查
-python3 -m compileall -q backend
-
-# 部署脚本语法检查
-bash -n deploy/scripts/*.sh
 ```
 
-当前结果：180 passed
-
-## 部署验证
-
-`--dry-run` 输出：
-```
-NO_FILES_WRITTEN=true
-NO_SYSTEMD_CHANGE=true
-NO_NETWORK_SIDE_EFFECT=true
-```
+结果：180 passed
 
 ## 真实数据判定
-
-满足以下条件才判定为真实数据：
 
 ```
 source=REAL
