@@ -12,13 +12,15 @@ SERVICE_NAME='m20-patrol-readonly.service'
 # 加载配置
 load_manifest() {
   python3 -c "
-import json, sys
+import json
 d = json.load(open('$MANIFEST'))
 print('GOS_HOST=' + d['targets']['gos_host'])
 print('AOS_HOST=' + d['targets']['aos_host'])
+print('NOS_HOST=' + d['targets']['nos_host'])
 print('WEB_PORT=' + str(d['ports']['web']))
 print('CONTROL_ENABLED=' + str(d['control_enabled']).lower())
 print('TELEMETRY_TX_ENABLED=' + str(d['telemetry_tx_enabled']).lower())
+print('STALE_AFTER_SECONDS=' + str(d['stale_after_seconds']))
 "
 }
 
@@ -31,7 +33,7 @@ preflight() {
     echo "ERROR: python3 未找到"
     exit 1
   fi
-  echo "Python: $(python3 --version)"
+  echo "Python: $(python3 --version 2>&1)"
   
   # 检查systemd
   if ! command -v systemctl >/dev/null 2>&1; then
@@ -55,11 +57,17 @@ preflight() {
   eval "$(load_manifest)"
   echo "GOS_HOST=$GOS_HOST"
   echo "AOS_HOST=$AOS_HOST"
+  echo "NOS_HOST=$NOS_HOST"
   echo "WEB_PORT=$WEB_PORT"
   echo "CONTROL_ENABLED=$CONTROL_ENABLED"
   echo "TELEMETRY_TX_ENABLED=$TELEMETRY_TX_ENABLED"
   
-  echo "预检完成"
+  # 检查磁盘空间
+  echo ""
+  echo "磁盘空间:"
+  df -h "$TARGET_ROOT" 2>/dev/null || df -h ~ 2>/dev/null || true
+  
+  echo "预检完成 ✅"
 }
 
 # 安装服务
@@ -92,21 +100,23 @@ install() {
   # 替换模板变量
   sed -e "s#@GOS_HOST@#$GOS_HOST#g" \
       -e "s#@AOS_HOST@#$AOS_HOST#g" \
+      -e "s#@NOS_HOST@#$NOS_HOST#g" \
       -e "s#@WEB_PORT@#$WEB_PORT#g" \
+      -e "s#@STALE_AFTER_SECONDS@#$STALE_AFTER_SECONDS#g" \
       "$ROOT/deploy/systemd/m20-patrol-readonly.service" > "$UNIT_PATH"
   
   # 重新加载systemd
   echo "重新加载systemd..."
   systemctl --user daemon-reload
   
-  echo "安装完成"
+  echo "安装完成 ✅"
 }
 
 # 启动服务
 start() {
   echo "=== 启动服务 ==="
   systemctl --user start "$SERVICE_NAME"
-  echo "服务启动请求已发送"
+  echo "服务启动请求已发送 ✅"
 }
 
 # 查看状态
@@ -119,14 +129,20 @@ status() {
 stop() {
   echo "=== 停止服务 ==="
   systemctl --user stop "$SERVICE_NAME"
-  echo "服务已停止"
+  echo "服务已停止 ✅"
 }
 
 # 重启服务
 restart() {
   echo "=== 重启服务 ==="
   systemctl --user restart "$SERVICE_NAME"
-  echo "服务已重启"
+  echo "服务已重启 ✅"
+}
+
+# 查看日志
+logs() {
+  echo "=== 服务日志 ==="
+  journalctl --user -u "$SERVICE_NAME" -f
 }
 
 # 主入口
@@ -137,6 +153,7 @@ case "${1:---one-shot}" in
   --status) status ;;
   --stop) stop ;;
   --restart) restart ;;
+  --logs) logs ;;
   --one-shot) preflight; install; start; status ;;
-  *) echo "用法: $0 {--preflight|--install|--start|--status|--stop|--restart|--one-shot}" ;;
+  *) echo "用法: $0 {--preflight|--install|--start|--status|--stop|--restart|--logs|--one-shot}" ;;
 esac
