@@ -183,11 +183,13 @@ class TestGimbalAdapter:
         mock_info = DiscoveredGimbal(host="192.168.1.108", model="SR-UPA810T609", serial="SN123")
         adapter._discovered = [mock_info]
 
-        result = adapter.scan()
-        assert len(result) == 1
-        assert result[0]["host"] == "192.168.1.108"
-        assert result[0]["model"] == "SR-UPA810T609"
-        assert result[0]["serial"] == "SN123"
+        # Mock discover to avoid actual network scanning
+        with patch.object(adapter, 'discover', return_value=[mock_info]):
+            result = adapter.scan()
+            assert len(result) == 1
+            assert result[0]["host"] == "192.168.1.108"
+            assert result[0]["model"] == "SR-UPA810T609"
+            assert result[0]["serial"] == "SN123"
 
     def test_discover_empty_result(self):
         """Test discovery with no devices found."""
