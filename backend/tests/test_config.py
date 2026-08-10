@@ -31,6 +31,7 @@ class TestConfigLoader:
             "read_only_mode": True,
             "control_enabled": False,
             "session_ttl_s": 3600,
+            "gimbal_password": "test_password",
         }))
 
         config = ConfigLoader.load(str(manifest))
@@ -54,6 +55,7 @@ class TestConfigLoader:
             ConfigLoader.load(str(manifest))
 
     def test_control_disabled_by_default(self):
-        config = WebServiceConfig()
+        # 需要提供密码才能创建配置
+        config = WebServiceConfig(gimbal_password="test_password")
         assert config.control_enabled is False
         assert config.read_only_mode is True

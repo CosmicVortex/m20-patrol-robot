@@ -21,7 +21,7 @@ class TestGimbalConfig:
         assert config.host == ""
         assert config.port == 80
         assert config.username == "admin"
-        assert config.password == "123456"
+        assert config.password == ""  # 默认值为空，要求环境变量设置
         assert config.timeout == 5.0
 
     def test_custom_config(self):

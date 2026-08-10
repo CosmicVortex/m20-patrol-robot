@@ -22,7 +22,7 @@ class GimbalConfig:
     host: str = ""
     port: int = 80
     username: str = "admin"
-    password: str = "123456"
+    password: str = ""  # 必填，通过环境变量 M20_GIMBAL_PASSWORD 设置
     rtsp_url: str = ""
     thermal_rtsp_url: str = ""
     timeout: float = 5.0

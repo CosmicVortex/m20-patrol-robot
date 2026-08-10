@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Any, Optional
 from http.server import BaseHTTPRequestHandler
 
-from backend.app.api.response import ApiFormatter
+from backend.app.api.handlers import BaseHandler
 from backend.app.gimbal.adapter import SoarGimbalAdapter, GimbalConfig
 
 logger = logging.getLogger(__name__)
 
 
-class BaseGimbalHandler(ApiFormatter):
+class BaseGimbalHandler(BaseHandler):
     """Base handler for gimbal endpoints."""
 
     def _get_gimbal(self) -> Optional[SoarGimbalAdapter]:
@@ -37,12 +37,19 @@ class GimbalMoveHandler(BaseGimbalHandler):
     """POST /api/v1/gimbal/move"""
 
     def do_POST(self) -> None:
+        auth = self._authenticate()
+        if not auth:
+            return
+        if auth.role != "admin":
+            self.send_error_response(403, "需要管理员权限")
+            return
+
         gimbal = self._get_gimbal()
         if not gimbal or not gimbal._connected:
             self.send_error_response(503, "云台未连接")
             return
 
-        data = self.read_json_body()
+        data = self._parse_json_body()
         direction = data.get("direction", "stop")
         speed = data.get("speed", 5)
 
@@ -56,12 +63,19 @@ class GimbalZoomHandler(BaseGimbalHandler):
     """POST /api/v1/gimbal/zoom"""
 
     def do_POST(self) -> None:
+        auth = self._authenticate()
+        if not auth:
+            return
+        if auth.role != "admin":
+            self.send_error_response(403, "需要管理员权限")
+            return
+
         gimbal = self._get_gimbal()
         if not gimbal or not gimbal._connected:
             self.send_error_response(503, "云台未连接")
             return
 
-        data = self.read_json_body()
+        data = self._parse_json_body()
         action = data.get("action", "in")
         level = data.get("level", 5)
 
@@ -82,12 +96,19 @@ class GimbalAngleHandler(BaseGimbalHandler):
     """POST /api/v1/gimbal/angle"""
 
     def do_POST(self) -> None:
+        auth = self._authenticate()
+        if not auth:
+            return
+        if auth.role != "admin":
+            self.send_error_response(403, "需要管理员权限")
+            return
+
         gimbal = self._get_gimbal()
         if not gimbal or not gimbal._connected:
             self.send_error_response(503, "云台未连接")
             return
 
-        data = self.read_json_body()
+        data = self._parse_json_body()
         yaw = data.get("yaw", 0)
         pitch = data.get("pitch", 0)
 

@@ -52,17 +52,15 @@ check_python() {
 ensure_config() {
   mkdir -p "$CONFIG_DIR"
   
-  # 如果密码文件不存在，创建默认配置
+  # 如果密码文件不存在，提示用户设置密码
   if [ ! -f "$CONFIG_DIR/passwords.env" ]; then
-    cat > "$CONFIG_DIR/passwords.env" <<EOF
-export M20_GIMBAL_PASSWORD="123456"
-export M20_ADMIN_PASSWORD="123456"
-EOF
-    chmod 600 "$CONFIG_DIR/passwords.env"
+    echo "警告: 未找到密码文件，请设置环境变量后手动创建"
+    echo "  export M20_GIMBAL_PASSWORD='your_password'"
+    echo "  export M20_ADMIN_PASSWORD='your_password'"
+  else
+    # 加载密码
+    source "$CONFIG_DIR/passwords.env"
   fi
-  
-  # 加载密码
-  source "$CONFIG_DIR/passwords.env"
 }
 
 # 加载配置

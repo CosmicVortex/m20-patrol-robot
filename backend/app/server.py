@@ -49,7 +49,7 @@ class M20WebServer:
         self.nav_service: Optional[NavigationService] = None
         self.router: Optional[ApiRouter] = None
         self.server: Optional[ThreadingHTTPServer] = None
-        self.video_manager = None
+        self.video_manager: Optional[VideoStreamManager] = None
 
     def setup(self) -> None:
         """Initialize all components."""
@@ -89,14 +89,14 @@ class M20WebServer:
             stale_after_seconds=self.config.stale_after_s,
         )
         safety_snapshot = NavigationSafetySnapshot(
+            field_authorization="",  # 空字符串表示未授权，后续由遥测数据更新
             control_enabled=self.config.control_enabled,
-            field_authorization="pending_field_authorization",
             tcp_connected=False,
             location_normal=False,
             obstacle_avoidance_active=True,
             hard_estop_active=False,
             protective_fault_active=False,
-            battery_percent=100,
+            battery_percent=100,  # 初始值，后续由遥测数据更新
             active_task=False,
         )
         from backend.app.robot.basic_client import BasicServerClient
@@ -242,10 +242,8 @@ class M20WebServer:
                     return
                 if router:
                     # Inject dependencies for handlers
-                    if hasattr(router, 'gimbal_adapter'):
-                        self._gimbal = router.gimbal_adapter
-                    if hasattr(router, 'video_manager'):
-                        self._video_manager = router.video_manager
+                    self._gimbal = router.gimbal_adapter
+                    self._video_manager = router.video_manager
                     router.route(self)  # type: ignore[arg-type]
                 else:
                     self.send_error_response(503, "Service not ready")
@@ -255,9 +253,8 @@ class M20WebServer:
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.send_header("X-Content-Type-Options", "nosniff")
                 self.end_headers()
-                import json as json_mod
                 body = {"status": "error", "error": message, "code": code}
-                self.wfile.write(json_mod.dumps(body).encode("utf-8"))
+                self.wfile.write(json.dumps(body).encode("utf-8"))
 
         return M20RequestHandler
 

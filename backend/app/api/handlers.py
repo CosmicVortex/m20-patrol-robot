@@ -112,6 +112,7 @@ class HealthHandler(BaseHandler):
                 "age_ms": payload.get("age_ms"),
                 "timestamp": datetime.now(UTC).isoformat(),
             }
+            stale_limit = self.telemetry_adapter.config.stale_after_s * 1000 if self.telemetry_adapter else 0
             health["healthy"] = (
                 health["runtime_mode"] == "realtime_readonly"
                 and health["source"] == "REAL"
@@ -123,7 +124,7 @@ class HealthHandler(BaseHandler):
                 and health["status_accepted"] is True
                 and health["telemetry_fresh"] is True
                 and isinstance(health["age_ms"], (int, float))
-                and 0 <= health["age_ms"] < self.telemetry_adapter.config.stale_after_s * 1000 if self.telemetry_adapter else False
+                and 0 <= health["age_ms"] < stale_limit
             )
             self.send_raw_json_response(200 if health["healthy"] else 503, health)
         else:
@@ -254,7 +255,7 @@ class DevicesListHandler(BaseHandler):
             "devices": [
                 {"id": "aos", "type": "application_server", "host": (self.config.aos_host if self.config else "not_configured") or "not_configured", "status": "configured"},
                 {"id": "gos", "type": "guard_operator_station", "host": (self.config.host if self.config else "127.0.0.1"), "status": "configured"},
-                {"id": "nos", "type": "navigation_operator_station", "host": "10.21.31.106", "status": "configured"},
+                {"id": "nos", "type": "navigation_operator_station", "host": (self.config.nos_host if self.config and self.config.nos_host else "not_configured"), "status": "configured"},
             ]
         })
 

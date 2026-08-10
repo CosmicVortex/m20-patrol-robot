@@ -31,7 +31,8 @@ class WebServiceConfig:
     allow_real_io: bool = False
     gimbal_host: str = ""
     gimbal_username: str = "admin"
-    gimbal_password: str = "123456"  # WARNING: Change before production deployment!
+    gimbal_password: str = ""  # 必填，通过环境变量 M20_GIMBAL_PASSWORD 设置
+    nos_host: str = ""  # 导航操作员站地址，从 manifest 读取
     manifest_path: str = ""
     static_root: str = ""
     auth_db_path: str = ""
@@ -47,8 +48,8 @@ class WebServiceConfig:
             raise ValueError("telemetry transmission is disabled in this release")
         if not self.read_only_mode or self.control_enabled:
             raise ValueError("service requires read_only_mode=true and control_enabled=false")
-        if self.gimbal_password == "123456":
-            logger.warning("云台密码使用默认值，请在生产环境部署前修改 M20_GIMBAL_PASSWORD 环境变量")
+        if not self.gimbal_password:
+            raise ValueError("gimbal_password is required, set via M20_GIMBAL_PASSWORD environment variable")
 
 
 class ConfigLoader:
@@ -80,6 +81,7 @@ class ConfigLoader:
             port=data.get("port", ports.get("web", 8080)),
             aos_host=data.get("aos_host", targets.get("aos_host", "")),
             aos_port=data.get("aos_port", ports.get("aos_tcp", 30001)),
+            nos_host=data.get("nos_host", targets.get("nos_host", "")),
             runtime_mode=data.get("runtime_mode", "simulated"),
             read_only_mode=data.get("read_only_mode", True),
             control_enabled=data.get("control_enabled", False),
@@ -92,7 +94,7 @@ class ConfigLoader:
             allow_real_io=data.get("allow_real_io", False),
             gimbal_host=data.get("gimbal_host", ""),
             gimbal_username=data.get("gimbal_username", "admin"),
-            gimbal_password=os.environ.get("M20_GIMBAL_PASSWORD") or data.get("gimbal_password", "123456"),
+            gimbal_password=os.environ.get("M20_GIMBAL_PASSWORD") or data.get("gimbal_password", ""),
             manifest_path=manifest_path,
             static_root=data.get("static_root", str(release_root / "docs" / "website")),
             auth_db_path=data.get("auth_db_path", str(release_root / "var" / "m20_auth.db")),

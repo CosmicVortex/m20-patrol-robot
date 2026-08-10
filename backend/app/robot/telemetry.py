@@ -181,7 +181,7 @@ class TelemetryAdapter:
                         self._process_message(client, msg)
                     
                     # Send heartbeat every interval
-                    if self.config.telemetry_tx_enabled:
+                    if self.config.telemetry_tx_enabled:  # 已禁用，待协议样本确认后启用
                         time.sleep(self.config.heartbeat_interval_s / 2)
                         heartbeat = client.build_heartbeat()
                         try:
