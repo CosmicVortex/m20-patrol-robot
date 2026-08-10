@@ -359,10 +359,9 @@ class VideoStreamManager:
         self, source: str, exclude: Optional[asyncio.Task] = None
     ) -> None:
         watcher = self._watchers.pop(source, None)
-        if watcher is not None and watcher is not exclude:
-            watcher.cancel()
         tasks: List[asyncio.Task] = []
         if watcher is not None and watcher is not exclude:
+            watcher.cancel()
             tasks.append(watcher)
         for task in list(self._drainers[source]):
             if task is not exclude:

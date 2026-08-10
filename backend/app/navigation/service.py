@@ -82,7 +82,7 @@ class NavigationService:
         """Deauthorize navigation control."""
         self._auth = NavigationAuthorization()
         self._log("deauthorize", "Navigation control disabled", True)
-        logger.info("Navigation deauthorized")
+        logger.info("导航授权已撤销")
         return {"status": "deauthorized"}
 
     def send_navigation(self, pos_x: float, pos_y: float, pos_z: float = 0.0, 
@@ -146,7 +146,7 @@ class NavigationService:
             
             self._client.send_control(msg)
             self._log("cancel", "Navigation cancelled", True)
-            logger.info("Navigation cancelled")
+            logger.info("导航任务已取消")
             return {"status": "cancelled"}
 
         except Exception as e:
