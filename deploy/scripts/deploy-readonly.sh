@@ -4,7 +4,20 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# 检测脚本所在目录（可能是子目录内的deploy/scripts/或直接在home）
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# 尝试找到项目根目录
+if [ -d "$SCRIPT_DIR/../../.." ]; then
+  ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+elif [ -d "$SCRIPT_DIR/../.." ]; then
+  ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+elif [ -d "$SCRIPT_DIR/../backend" ]; then
+  ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+else
+  ROOT="$(pwd)"
+fi
+
 MANIFEST="$ROOT/deploy/readonly-manifest.json"
 TARGET_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/m20-patrol-robot"
 SERVICE_NAME='m20-patrol-readonly.service'
@@ -107,25 +120,19 @@ install() {
   # 创建目标目录
   mkdir -p "$TARGET_ROOT"
   
-  # 复制文件（安全复制，排除目标目录）
+  # 复制文件
   echo "复制文件到 $TARGET_ROOT..."
   
-  # 检查是否有重叠（源目录包含目标目录）
-  case "$ROOT/" in
-    "$TARGET_ROOT/"*)
-      echo "警告: 源目录 $ROOT 包含目标目录 $TARGET_ROOT"
-      echo "这可能导致递归复制。请解压到非目标目录的子目录中。"
-      echo ""
-      echo "正确做法:"
-      echo "  1. unzip m20-patrol-robot-deploy-final.zip -d ~/m20-deploy"
-      echo "  2. cd ~/m20-deploy/m20-patrol-robot"
-      echo "  3. bash deploy/scripts/deploy-readonly.sh --one-shot"
-      echo ""
-      ;;
-  esac
-  
-  # 安全复制：排除目标目录本身
-  (cd "$ROOT" && tar cf - --exclude='./.git' --exclude='./.venv' --exclude='./__pycache__' --exclude='./$TARGET_ROOT' --exclude='./.local' .) | (cd "$TARGET_ROOT" && tar xf -)
+  # 安全复制：使用rsync或tar，排除目标目录
+  if command -v rsync >/dev/null 2>&1; then
+    rsync -a --exclude='__pycache__' --exclude='.venv' --exclude='.local' \
+      "$ROOT/" "$TARGET_ROOT/"
+  else
+    # 使用tar复制，排除目标目录和.pyc文件
+    (cd "$ROOT" && tar cf - --exclude='__pycache__' --exclude='.venv' \
+      --exclude='.local/share/m20-patrol-robot' .) | \
+      (cd "$TARGET_ROOT" && tar xf -)
+  fi
   
   # 创建虚拟环境
   echo "创建Python虚拟环境..."
