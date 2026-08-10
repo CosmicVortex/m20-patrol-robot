@@ -21,6 +21,7 @@ from backend.app.auth.store import AuthUser, AuthenticationError, Session, UserS
 from backend.app.api.response import ApiFormatter, RequestContext
 from backend.app.robot.telemetry import TelemetryAdapter
 from backend.app.navigation.service import NavigationService
+from backend.app.config import WebServiceConfig
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class BaseHandler(BaseHTTPRequestHandler):
     telemetry_adapter: Optional[TelemetryAdapter] = None
     user_store: Optional[UserStore] = None
     nav_service: Optional[NavigationService] = None
+    config: Optional[WebServiceConfig] = None
 
     def log_message(self, format: str, *args: Any) -> None:
         """Override to use structured logging."""
@@ -249,8 +251,8 @@ class DevicesListHandler(BaseHandler):
 
         self.send_json_response(200, {
             "devices": [
-                {"id": "aos", "type": "application_server", "host": "10.21.31.103", "status": "configured"},
-                {"id": "gos", "type": "guard_operator_station", "host": "10.21.31.104", "status": "configured"},
+                {"id": "aos", "type": "application_server", "host": (self.config.aos_host if self.config else "not_configured") or "not_configured", "status": "configured"},
+                {"id": "gos", "type": "guard_operator_station", "host": (self.config.host if self.config else "127.0.0.1"), "status": "configured"},
                 {"id": "nos", "type": "navigation_operator_station", "host": "10.21.31.106", "status": "configured"},
             ]
         })

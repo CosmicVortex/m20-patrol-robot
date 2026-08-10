@@ -93,4 +93,4 @@ bash deploy/scripts/deploy-readonly.sh --one-shot
 | robot/status.py | test_status.py |
 | robot/basic_client.py | test_basic_client.py |
 | navigation/v010.py | test_navigation_v010.py |
-| dashboard_realtime.py | test_dashboard.py |
+| dashboard_realtime.py | 集成测试（server.py） |

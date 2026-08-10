@@ -100,6 +100,7 @@ class M20WebServer:
             auth_middleware=self.auth_middleware,
             telemetry_adapter=self.telemetry_adapter,
             nav_service=self.nav_service,
+            config=self.config,
         )
 
     def _ensure_admin_user(self) -> None:

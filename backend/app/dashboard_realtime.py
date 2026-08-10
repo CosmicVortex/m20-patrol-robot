@@ -624,10 +624,14 @@ def serve_dashboard(
     telemetry_tx_enabled: bool = False,
     telemetry_receive_enabled: bool = True,
     stale_after_s: float = 3.0,
+    allowed_hosts: tuple[str, ...] | None = None,
 ) -> None:
     """Serve the real-time dashboard."""
-    if host not in {"127.0.0.1", "10.21.31.104"}:
-        raise ValueError("dashboard may bind only to 127.0.0.1 or confirmed GOS address")
+    # Allow configurable binding hosts; default to localhost + GOS
+    if allowed_hosts is None:
+        allowed_hosts = ("127.0.0.1", "10.21.31.104")
+    if host not in allowed_hosts:
+        raise ValueError(f"dashboard may bind only to {allowed_hosts}")
     if type(port) is not int or not 1 <= port <= 65535:
         raise ValueError("port must be an integer from 1 to 65535")
 

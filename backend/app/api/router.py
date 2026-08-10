@@ -10,6 +10,7 @@ from typing import Optional
 
 from backend.app.auth.middleware import AuthMiddleware
 from backend.app.auth.store import UserStore
+from backend.app.config import WebServiceConfig
 from backend.app.robot.telemetry import TelemetryAdapter
 from backend.app.navigation.service import NavigationService
 from backend.app.api.handlers import (
@@ -55,11 +56,13 @@ class ApiRouter:
         auth_middleware: AuthMiddleware,
         telemetry_adapter: Optional[TelemetryAdapter] = None,
         nav_service: Optional[NavigationService] = None,
+        config: Optional[WebServiceConfig] = None,
     ) -> None:
         self.user_store = user_store
         self.auth_middleware = auth_middleware
         self.telemetry_adapter = telemetry_adapter
         self.nav_service = nav_service
+        self.config = config
 
     def route(self, handler: BaseHandler) -> None:
         """Route the request to the appropriate handler."""
@@ -80,6 +83,7 @@ class ApiRouter:
         handler.user_store = self.user_store
         handler.telemetry_adapter = self.telemetry_adapter
         handler.nav_service = self.nav_service
+        handler.config = self.config
 
         # Dispatch on the live request handler. Creating a detached
         # BaseHTTPRequestHandler bypasses the socket, headers and request body.
