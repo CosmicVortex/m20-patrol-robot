@@ -155,7 +155,10 @@ if [ -e "$RELEASE" ] || [ -L "$RELEASE" ]; then
   exit 2
 fi
 if [ "$APPLY" = true ]; then
-  ip -4 -o addr show | awk '{print $4}' | cut -d/ -f1 | grep -Fxq "$GOS_HOST" || { printf 'ERROR: GOS identity mismatch\n' >&2; exit 2; }
+  # Check GOS identity - try multiple methods for robustness
+  _ip_addr=$(ip -4 -o addr show 2>/dev/null | awk '{print $4}' | cut -d/ -f1 || true)
+  _ip_addr="${_ip_addr:-$(hostname -I 2>/dev/null | awk '{print $1}' || true)}"
+  echo "$_ip_addr" | grep -Fxq "$GOS_HOST" || { printf 'ERROR: GOS identity mismatch\n' >&2; exit 2; }
   conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service state is unknown\n' >&2; exit 2; }
   conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service enablement is unknown\n' >&2; exit 2; }
   [ "$conflict_active" = inactive ] || { printf 'ERROR: conflicting realtime service state is not inactive: %s\n' "$conflict_active" >&2; exit 2; }
@@ -185,7 +188,6 @@ printf '{"commit":"%s","manifest_sha256":"%s"}\n' "$COMMIT" "$MANIFEST_SHA256" >
 _ip_addr=$(ip -4 -o addr show 2>/dev/null | awk '{print $4}' | cut -d/ -f1 || true)
 _ip_addr="${_ip_addr:-$(hostname -I 2>/dev/null | awk '{print $1}' || true)}"
 echo "$_ip_addr" | grep -Fxq "$GOS_HOST" || { printf 'ERROR: GOS identity mismatch\n' >&2; exit 2; }
-  ip -4 -o addr show | awk '{print $4}' | cut -d/ -f1 | grep -Fxq "$GOS_HOST" || { printf 'ERROR: GOS identity mismatch\n' >&2; exit 2; }
   conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service state is unknown\n' >&2; exit 2; }
   conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service enablement is unknown\n' >&2; exit 2; }
   [ "$conflict_active" = inactive ] || { printf 'ERROR: conflicting realtime service state is not inactive: %s\n' "$conflict_active" >&2; exit 2; }
