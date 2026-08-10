@@ -180,7 +180,11 @@ fi
 load_manifest_values "$RELEASE/deploy/readonly-manifest.json"
 MANIFEST_SHA256="$(sha256sum "$RELEASE/deploy/readonly-manifest.json" | awk '{print $1}')"
 printf '{"commit":"%s","manifest_sha256":"%s"}\n' "$COMMIT" "$MANIFEST_SHA256" > "$RELEASE/.m20-release-provenance.json"
-if [ "$APPLY" = true ]; then
+
+# Check GOS identity - try multiple methods for robustness
+_ip_addr=$(ip -4 -o addr show 2>/dev/null | awk '{print $4}' | cut -d/ -f1 || true)
+_ip_addr="${_ip_addr:-$(hostname -I 2>/dev/null | awk '{print $1}' || true)}"
+echo "$_ip_addr" | grep -Fxq "$GOS_HOST" || { printf 'ERROR: GOS identity mismatch\n' >&2; exit 2; }
   ip -4 -o addr show | awk '{print $4}' | cut -d/ -f1 | grep -Fxq "$GOS_HOST" || { printf 'ERROR: GOS identity mismatch\n' >&2; exit 2; }
   conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service state is unknown\n' >&2; exit 2; }
   conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service enablement is unknown\n' >&2; exit 2; }
