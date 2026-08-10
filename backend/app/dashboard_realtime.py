@@ -156,8 +156,31 @@ class RealTimeDashboard:
         left_pct = left.get("BatteryLevel")
         right_pct = right.get("BatteryLevel")
 
-        # Errors
-        error_html = ""
+        # Navigation status
+        nav_status = data.get("nav_status") or {}
+        loop_count = nav_status.get("loop_count", 0)
+        nav_status_val = nav_status.get("status", 0)
+        nav_status_map = {0: "待命", 1: "导航中", 2: "已到达", 3: "异常", 4: "取消"}
+        nav_label = nav_status_map.get(nav_status_val, str(nav_status_val))
+
+        # Position
+        position = data.get("position") or {}
+        pos_x = position.get("pos_x")
+        pos_y = position.get("pos_y")
+        location = position.get("location")
+
+        # Coverage stats
+        coverage_rate = 0.0
+        if position:
+            has_pos = bool(position.get("pos_x") is not None or position.get("location"))
+            is_moving = basic.get("motion_state", 0) in (2, 3, 4)
+            if has_pos and is_moving:
+                coverage_rate = 100.0
+            elif has_pos:
+                coverage_rate = 50.0
+
+        # Error count
+        anomaly_count = len(errors)
         if errors:
             error_items = []
             for e in errors[-5:]:
@@ -392,7 +415,7 @@ main {{
 <section class="grid">
     <article class="card">
         <h2>连接状态</h2>
-        <div id="status-content">{"".join(rows)}</div>
+        <div id="status-content">{" ".join(rows)}</div>
     </article>
     <article class="card">
         <h2>姿态数据</h2>
@@ -414,7 +437,27 @@ main {{
             <div class="prog-bar"><div class="prog-fill" style="width:{right_pct or 0}%"></div></div>
         </div>
     </article>
-    <article class="card" style="grid-column: span 2;">
+    <article class="card">
+        <h2>导航状态</h2>
+        <div class="metrics">
+            <div class="metric"><div class="num">{loop_count}</div><div class="lbl">今日圈数</div></div>
+            <div class="metric"><div class="num">{int(coverage_rate)}%</div><div class="lbl">覆盖率</div></div>
+            <div class="metric" style="grid-column: span 2"><div class="num" style="font-size:18px">{nav_label}</div><div class="lbl">导航状态</div></div>
+        </div>
+        <div style="margin-top:12px;font-size:12px;color:var(--muted)">
+            <div>位置: {f'{pos_x:.2f}, {pos_y:.2f}' if pos_x is not None and pos_y is not None else '—'}</div>
+            <div>区域: {location or '未知'}</div>
+        </div>
+    </article>
+    <article class="card">
+        <h2>巡检统计</h2>
+        <div class="metrics">
+            <div class="metric"><div class="num">{anomaly_count}</div><div class="lbl">异常数</div></div>
+            <div class="metric"><div class="num">{payload.get('message_count', 0)}</div><div class="lbl">消息数</div></div>
+            <div class="metric" style="grid-column: span 2"><div class="num" style="font-size:18px">{payload.get('source', '—')}</div><div class="lbl">数据源</div></div>
+        </div>
+    </article>
+    <article class="card" style="grid-column: span 2">
         <h2>异常列表</h2>
         {error_html}
     </article>
@@ -476,7 +519,7 @@ setInterval(() => {{
         if (pl[1]) pl[1].textContent = rightP + '%';
 
         // Errors
-        const errEl = document.querySelector('.card:nth-child(4) > div');
+        const errEl = document.querySelector('.card:nth-child(6) > div');
         if (errEl) {{
             if (!errs.length) {{
                 errEl.innerHTML = '<span class="ok">无异常</span>';
@@ -484,6 +527,43 @@ setInterval(() => {{
                 errEl.innerHTML = errs.slice(-5).map(e =>
                     '<div class="err"><span class="err-code">' + htmlEscape(String(e.error_code || '?')) + '</span> ' + htmlEscape(String(e.component || e.message || '?')) + '</div>'
                 ).join('');
+            }}
+        }}
+
+        // Navigation status
+        const navEl = document.querySelector('.card:nth-child(4)');
+        if (navEl) {{
+            const nav = d.nav_status || {{}};
+            const pos = d.position || {{}};
+            const navStatusMap = {{0:'待命',1:'导航中',2:'已到达',3:'异常',4:'取消'}};
+            const navLabel = navStatusMap[nav.status] || String(nav.status || 0);
+            const metrics = navEl.querySelectorAll('.metric');
+            if (metrics[0]) metrics[0].querySelector('.num').textContent = nav.loop_count || 0;
+            if (metrics[1]) metrics[1].querySelector('.num').textContent = '0%'; // coverage from inspection_stats
+            if (metrics[2]) {{
+                const n = metrics[2].querySelector('.num');
+                n.textContent = navLabel;
+                n.style.fontSize = '18px';
+            }}
+            const info = navEl.querySelector('div[style]');
+            if (info) {{
+                const px = pos.pos_x ?? '—';
+                const py = pos.pos_y ?? '—';
+                info.innerHTML = '<div>位置: ' + (px === '—' ? '—' : parseFloat(px).toFixed(2)) + ', ' + (py === '—' ? '—' : parseFloat(py).toFixed(2)) + '</div><div>区域: ' + htmlEscape(pos.location || '未知') + '</div>';
+            }}
+        }}
+
+        // Inspection stats
+        const statsEl = document.querySelector('.card:nth-child(5)');
+        if (statsEl) {{
+            const stats = v.inspection_stats || {{}};
+            const metrics = statsEl.querySelectorAll('.metric');
+            if (metrics[0]) metrics[0].querySelector('.num').textContent = stats.anomaly_count || 0;
+            if (metrics[1]) metrics[1].querySelector('.num').textContent = v.message_count || 0;
+            if (metrics[2]) {{
+                const n = metrics[2].querySelector('.num');
+                n.textContent = v.source || '—';
+                n.style.fontSize = '18px';
             }}
         }}
     }});

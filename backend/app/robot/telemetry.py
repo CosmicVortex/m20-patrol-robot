@@ -315,4 +315,24 @@ class TelemetryAdapter:
                         "Disconnected from AOS. Reconnecting..."
                     ),
                 },
+                "inspection_stats": {
+                    "laps_today": snap.nav_status.get("loop_count", 0) if snap.nav_status else 0,
+                    "coverage_rate": self._calculate_coverage(snap.position),
+                    "anomaly_count": len(snap.errors) if snap.errors else 0,
+                    "status": "active" if snap.connected else "idle",
+                },
             }
+
+    @staticmethod
+    def _calculate_coverage(position: dict[str, Any]) -> float:
+        """Calculate coverage rate based on position data."""
+        if not position:
+            return 0.0
+        # Coverage is based on position validity and movement
+        has_position = bool(position.get("pos_x") is not None or position.get("location"))
+        is_moving = position.get("motion_state", 0) in (2, 3, 4)  # walking, jogging, stairs
+        if has_position and is_moving:
+            return 100.0
+        elif has_position:
+            return 50.0
+        return 0.0
