@@ -31,7 +31,6 @@ GOS (10.21.31.104)
 | 状态消息解析 | ✅ | `robot/status.py` |
 | TCP 客户端 + 门禁 | ✅ | `robot/basic_client.py` |
 | 实时状态订阅 | ✅ | `robot/telemetry.py` |
-| 实时仪表盘 | ✅ | `dashboard_realtime.py` |
 | 导航报文构造 | ✅ | `navigation/v010.py` |
 | Web 服务入口 | ✅ | `server.py` |
 | 认证模块 | ✅ | `auth/` |
