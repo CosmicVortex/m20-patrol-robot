@@ -46,13 +46,20 @@ class DiscoveredGimbal:
 class SoarGimbalAdapter:
     """Adapter for Soar Security SR-UPA810T609 gimbal via WEB2.0 protocol."""
 
-    # Common IP ranges to scan
+    # Common IP ranges to scan (priority order)
+    # Only scan M20 robot network and common device networks
     SCAN_RANGES = [
-        "192.168.1.0/24",
-        "192.168.0.0/24",
-        "10.0.0.0/24",
-        "10.21.31.0/24",
+        "10.21.31.0/24",  # M20 robot internal network (highest priority)
+        "192.168.1.0/28",  # Limited scan: only first 16 IPs (devices, not PCs)
+        "192.168.0.0/28",  # Limited scan
     ]
+
+    # Skip these common non-device IPs
+    SKIP_IPS = {
+        ".1",    # Gateway/router
+        ".254",  # Common gateway
+        "255",   # Broadcast
+    }
 
     # Soar Security default MAC OUI
     SOAR_OUI = ["00:1A:2B:3C", "00:0E:8B"]
@@ -177,6 +184,16 @@ class SoarGimbalAdapter:
                     break
 
                 host = str(ip)
+
+                # Skip common non-device IPs
+                skip = False
+                for suffix in self.SKIP_IPS:
+                    if host.endswith(suffix):
+                        skip = True
+                        break
+                if skip:
+                    continue
+
                 if host in seen:
                     continue
                 seen.add(host)
