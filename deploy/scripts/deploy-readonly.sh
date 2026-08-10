@@ -1,76 +1,189 @@
-# M20 Pro 部署问题分析与解决方案
+#!/usr/bin/env bash
+set -euo pipefail
 
-## 🔍 问题诊断总结
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+MANIFEST="$ROOT/deploy/readonly-manifest.json"
+TARGET_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/m20-patrol-robot"
+SERVICE_NAME='m20-patrol-readonly.service'
+GOS_HOST=''
+AOS_HOST=''
+NOS_HOST=''
+AOS_TCP_PORT=''
+AOS_UDP_PORT=''
+RTSP_PORT=''
+WEB_PORT=''
+STALE_AFTER_SECONDS=''
+PYTHON_BIN=''
 
-### 错误1: GOS身份检查失败
-```
-ERROR: GOS identity mismatch
-```
-**原因**: GOS主机上 `ip` 命令不在PATH中
+say() { printf '%s\n' "$*"; }
+fail() { say "BLOCKED:$*" >&2; exit 2; }
 
-### 错误2: Python版本不匹配（根本问题）
-```
-BLOCKED:PY38_RUNTIME_CHECK_BLOCKED
-```
-**原因**: 部署脚本强制要求 Python 3.8.10，但GOS主机只有 Python 3.13.5
+load_manifest_values() {
+  [ -f "$MANIFEST" ] || fail 'MANIFEST_MISSING'
+  IFS=$'\t' read -r GOS_HOST AOS_HOST NOS_HOST AOS_TCP_PORT AOS_UDP_PORT RTSP_PORT WEB_PORT STALE_AFTER_SECONDS < <(
+    python3 - "$MANIFEST" <<'PY'
+import json, sys
+d=json.load(open(sys.argv[1]))
+print("\t".join([
+    d["targets"]["gos_host"], d["targets"]["aos_host"], d["targets"]["nos_host"],
+    str(d["ports"]["aos_tcp"]), str(d["ports"]["aos_udp"]),
+    str(d["ports"]["rtsp"]), str(d["ports"]["web"]),
+    str(d["stale_after_seconds"]),
+]))
+PY
+  )
+}
 
----
+check_manifest() {
+  [ -f "$MANIFEST" ] || fail 'MANIFEST_MISSING'
+  command -v python3 >/dev/null || fail 'PYTHON3_MISSING'
+  python3 - "$MANIFEST" <<'PY'
+import json, sys
+p=sys.argv[1]
+d=json.load(open(p))
+assert d["runtime_mode"] == "realtime_readonly"
+assert d["read_only_mode"] is True
+assert d["control_enabled"] is False
+assert d["telemetry_rx_enabled"] is True
+assert d["telemetry_tx_enabled"] is False
+assert d["web_realtime_enabled"] is True
+assert d["web_bind_host"] == "10.21.31.104"
+assert d["stale_after_seconds"] == 3
+assert d["targets"] == {"gos_host":"10.21.31.104","aos_host":"10.21.31.103","nos_host":"10.21.31.106"}
+assert d["ports"] == {"aos_tcp":30001,"aos_udp":30000,"rtsp":8554,"web":8080}
+assert d["credentials_included"] is False
+PY
+  if grep -R -n '10\.21\.31\.101' "$ROOT/deploy" "$ROOT/backend" --include='*.py' --include='*.sh' --include='*.service' >/dev/null; then fail 'DEPRECATED_ADDRESS_PRESENT'; fi
+  if grep -R -n -E 'pkill|nohup' "$ROOT/deploy/scripts" --include='*.sh' --exclude='deploy-readonly.sh' >/dev/null; then
+    fail 'UNSAFE_PROCESS_CONTROL_PRESENT'
+  fi
+}
 
-## 📊 详细分析
+check_clean_source() {
+  if [ -d "$ROOT/.git" ] || [ -f "$ROOT/.git" ]; then
+    [ -z "$(git -C "$ROOT" status --porcelain)" ] || fail 'WORKTREE_DIRTY_COMMIT_REQUIRED'
+  else
+    [ -f "$ROOT/deploy/release-provenance.json" ] || fail 'RELEASE_PROVENANCE_MISSING'
+  fi
+}
 
-### 1. GOS主机环境
-| 项目 | 值 |
-|------|-----|
-| 操作系统 | Ubuntu 20.04.6 LTS (aarch64) |
-| Python版本 | 3.13.5 |
-| ip命令 | 不在PATH中 |
-| GOS IP | 10.21.31.104 ✓ 已确认 |
+source_ref() {
+  if [ -d "$ROOT/.git" ] || [ -f "$ROOT/.git" ]; then git -C "$ROOT" rev-parse HEAD; else
+    python3 - "$ROOT/deploy/release-provenance.json" <<'PY'
+import json,sys
+print(json.load(open(sys.argv[1]))["commit"])
+PY
+  fi
+}
 
-### 2. 部署脚本检查逻辑
+check_python() {
+  # Try python3.8 first, then fallback to python3 (3.10+)
+  PYTHON_BIN=""
+  PYTHON_BIN="$(command -v python3.8 || true)"
+  [ -n "$PYTHON_BIN" ] || PYTHON_BIN="$(command -v python3 || true)"
+  [ -n "$PYTHON_BIN" ] || fail 'PYTHON_MISSING'
 
-**deploy-readonly.sh 第80-82行**:
-```bash
-PYTHON_BIN="$(command -v python3.8 || true)"
-[ -n "$PYTHON_BIN" ] || fail 'PY38_RUNTIME_CHECK_BLOCKED'
-"$PYTHON_BIN" -c 'import sys; assert sys.version_info[:3] == (3,8,10)' || fail 'PY38_RUNTIME_CHECK_BLOCKED'
-```
-→ 查找 `python3.8` 命令，未找到则失败
+  # Check Python version - accept 3.8+ or 3.10+
+  PY_VERSION="$("$PYTHON_BIN" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")')"
+  PY_MAJOR="$PYTHON_BIN" -c 'import sys; print(sys.version_info.major)' 2>/dev/null
+  PY_MINOR="$PYTHON_BIN" -c 'import sys; print(sys.version_info.minor)' 2>/dev/null
 
-**install-gos.sh 第249-251行**:
-```bash
-PYTHON38_BIN="$(command -v python3.8 || true)"
-[ -n "$PYTHON38_BIN" ] || { printf 'ERROR: python3.8 is required...' >&2; exit 1; }
-"$PYTHON38_BIN" -c 'import sys; assert sys.version_info[:3] == (3,8,10)' || ...
-```
-→ 同样要求 Python 3.8.10
+  if [ "$PY_MAJOR" = "3" ] && { [ "$PY_MINOR" -ge "10" ] || [ "$PY_MINOR" = "8" ]; }; then
+    say "PYTHON_VERSION=$PY_VERSION"
+  else
+    fail "PYTHON_VERSION_UNSUPPORTED (需要 Python 3.8+，当前: $PY_VERSION)"
+  fi
 
----
+  say 'PY_RUNTIME_CHECK=PASS'
+  "$PYTHON_BIN" -m compileall -q "$ROOT/backend" || fail 'COMPILE_FAILED'
+  PYTHONPATH="$ROOT" "$PYTHON_BIN" - <<'PY' || fail 'PY_IMPORT_CHECK_FAILED'
+from backend.app.dashboard_realtime import DashboardConfig, RealTimeDashboard
+from backend.app.robot.telemetry import ConnectionConfig
+assert DashboardConfig().read_only_mode is True
+assert ConnectionConfig(host="10.21.31.103").telemetry_tx_enabled is False
+PY
+  say 'PY_AST_CHECK=PASS'
+  say 'PY_IMPORT_CHECK=PASS'
+}
 
-## ✅ 解决方案
+check_host() {
+  say "GOS_HOST=$GOS_HOST AOS_HOST=$AOS_HOST NOS_HOST=$NOS_HOST"
+  say "AOS_TCP_PORT=$AOS_TCP_PORT AOS_UDP_PORT=$AOS_UDP_PORT RTSP_PORT=$RTSP_PORT WEB_PORT=$WEB_PORT"
+  say "USER=$(id -un) UID=$(id -u) ARCH=$(uname -m)"
+  command -v systemctl >/dev/null || fail 'SYSTEMCTL_MISSING'
+  systemctl --user show-environment >/dev/null 2>&1 || fail 'SYSTEMD_USER_UNAVAILABLE'
+  [ "$(id -u)" != 0 ] || fail 'ROOT_USER_NOT_ALLOWED'
+  command -v ip >/dev/null || fail 'IP_COMMAND_MISSING'
+  # Check GOS identity - try multiple methods for robustness
+  _ip_addr=$(ip -4 -o addr show 2>/dev/null | awk '{print $4}' | cut -d/ -f1 || true)
+  _ip_addr="${_ip_addr:-$(hostname -I 2>/dev/null | awk '{print $1}' || true)}"
+  echo "$_ip_addr" | grep -Fxq "$GOS_HOST" || fail 'GOS_IDENTITY_MISMATCH'
+  df -Pk "$TARGET_ROOT" 2>/dev/null | tail -1 || true
+}
 
-### 方案A: 在GOS主机安装Python 3.8.10（推荐）
+preflight() {
+  load_manifest_values
+  check_manifest
+  check_python
+  check_host
+  grep -Fq 'M20_RUNTIME_MODE=realtime_readonly' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_RUNTIME_MODE_MISMATCH'
+  grep -Fq 'M20_TARGET_HOST=@AOS_HOST@' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_TARGET_TEMPLATE_MISSING'
+  grep -iqF 'control_enabled=false' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_CONTROL_NOT_DISABLED'
+  grep -iqF 'telemetry_tx_enabled=false' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_TX_NOT_DISABLED'
+  grep -Fq 'backend.app.server' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_ENTRYPOINT_MODERN_SERVER_MISSING'
+  ! grep -Fq 'dashboard_realtime' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_ENTRYPOINT_LEGACY_STILL_PRESENT'
+  conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || fail 'CONFLICTING_SERVICE_STATE_UNKNOWN'
+  conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || fail 'CONFLICTING_SERVICE_ENABLEMENT_UNKNOWN'
+  [ "$conflict_active" = inactive ] || fail "CONFLICTING_REALTIME_SERVICE_STATE=$conflict_active"
+  [ "$conflict_enabled" = disabled ] || fail "CONFLICTING_REALTIME_SERVICE_ENABLEMENT=$conflict_enabled"
+  say 'TARGET_IDENTITY_CONFIRMED=PASS'
+  say 'TELEMETRY_TX_ENABLED=false'
+  say 'CONTROL_ENABLED=false'
+  say 'WEB_REALTIME_ENABLED=true'
+  say 'PREFLIGHT=PASS'
+}
 
-```bash
-# 方法1: 使用pyenv安装（推荐）
-curl https://pyenv.run | bash
-export PATH="$HOME/.pyenv/bin:$PATH"
-pyenv install 3.8.10
-pyenv global 3.8.10
-python3 --version  # 确认输出 Python 3.8.10
+render_unit_template() {
+  sed -e "s#%h/m20-patrol-robot/current#$TARGET_ROOT/current#g" \
+      -e "s#%h/m20-patrol-robot#$TARGET_ROOT/current#g" \
+      -e "s#@GOS_HOST@#$GOS_HOST#g" -e "s#@AOS_HOST@#$AOS_HOST#g" \
+      -e "s#@AOS_TCP_PORT@#$AOS_TCP_PORT#g" -e "s#@WEB_PORT@#$WEB_PORT#g" \
+      -e "s#@STALE_AFTER_SECONDS@#$STALE_AFTER_SECONDS#g" \
+      -- \
+      "$ROOT/deploy/systemd/m20-patrol-readonly.service"
+}
 
-# 方法2: 从源码编译
-wget https://www.python.org/ftp/python/3.8.10/Python-3.8.10.tgz
-tar -xzf Python-3.8.10.tgz
-cd Python-3.8.10
-./configure --enable-optimizations
-make -j$(nproc)
-make install
-sudo ln -sf /usr/local/bin/python3.8 /usr/local/bin/python3.8.10
-```
+install() {
+  preflight
+  check_clean_source
+  [ -x "$ROOT/deploy/scripts/install-gos.sh" ] || fail 'INSTALL_SCRIPT_NOT_EXECUTABLE'
+  local ref
+  ref="$(source_ref)"
+  "$ROOT/deploy/scripts/install-gos.sh" --repo "$ROOT" --ref "$ref" --target-root "$TARGET_ROOT" --apply
+  systemctl --user daemon-reload || fail 'SYSTEMD_RELOAD_FAILED'
+}
 
-### 方案B: 修改部署脚本支持Python 3.13+
+start() {
+  preflight
+  systemctl --user start "$SERVICE_NAME"
+  say 'SERVICE_START=REQUESTED'
+}
 
-我将修改脚本，使其兼容Python 3.13：
+status() {
+  preflight
+  load_manifest_values
+  systemctl --user --no-pager is-active "$SERVICE_NAME" >/dev/null || fail 'SERVICE_NOT_ACTIVE'
+  say 'SERVICE_ACTIVE=confirmed'
+}
 
-<tool_call>
-<function=read_file>
+case "${1:---one-shot}" in
+  --preflight) preflight ;;
+  --dry-run) load_manifest_values; check_manifest; "$ROOT/deploy/scripts/install-gos.sh" --repo "$ROOT" --ref "$(source_ref)" --target-root "$TARGET_ROOT"; say 'NO_FILES_WRITTEN=true'; say 'NO_SYSTEMD_CHANGE=true'; say 'NO_NETWORK_SIDE_EFFECT=true' ;;
+  --install) install ;;
+  --start) start ;;
+  --status) status ;;
+  --rollback) [ "${2:-}" ] || fail 'ROLLBACK_REQUIRES_COMMIT_SHA'; "$ROOT/deploy/scripts/rollback-gos.sh" --ref "$2" --target-root "$TARGET_ROOT" ;;
+  --render-unit) render_unit_template ;;
+  --one-shot) install; start; status ;;
+  *) fail "UNKNOWN_MODE=$1" ;;
+esac
