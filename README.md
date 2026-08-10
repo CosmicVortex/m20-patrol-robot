@@ -7,22 +7,42 @@ M20 Pro 巡逻安防系统二次开发，部署于 GOS 主机，通过 basic_ser
 ### 部署（GOS 本机）
 
 ```bash
-cd /opt/data/m20-patrol-robot
+# 1. 解压部署包
+tar xzf m20-patrol-robot-deploy.tar.gz -C ~/
+
+# 2. 进入项目目录
+cd ~/m20-patrol-robot
+
+# 3. 执行部署
 bash deploy/scripts/deploy-readonly.sh --one-shot
 ```
 
 ### 验证
 
 ```bash
-curl http://10.21.31.104:8080/api/v1/health
-curl http://10.21.31.104:8080/api/v1/status/latest
+# 检查服务状态
+systemctl --user status m20-patrol-readonly
+
+# 查看启动日志
+journalctl --user -u m20-patrol-readonly -n 50 --no-pager
+
+# 健康检查
+curl http://127.0.0.1:8080/api/v1/health
 ```
 
-### 测试
+### 访问 Web 界面
 
 ```bash
-cd /opt/data/m20-patrol-robot
-PYTHONPATH=. uv run --with pytest pytest -q
+# 方式1：SSH 端口转发（本地笔记本）
+ssh -L 8080:localhost:8080 user@10.21.31.104
+# 浏览器访问: http://localhost:8080/
+
+# 方式2：内网直接访问
+# http://10.21.31.104:8080/
+
+# 登录凭证
+# 用户名: admin
+# 密码: 123456（首次部署自动生成，见 ~/.config/m20-patrol/passwords.env）
 ```
 
 ## 系统架构
@@ -49,12 +69,14 @@ PYTHONPATH=. uv run --with pytest pytest -q
 
 ## 文档
 
-- [部署流程](docs/06-deployment.md)
-- [测试流程](docs/05-testing.md)
-- [操作手册](docs/procedures/operations-manual.md)
+- [项目概览](docs/项目文档/01-overview.md)
+- [系统架构](docs/项目文档/02-architecture.md)
+- [部署流程](docs/项目文档/06-deployment.md)
+- [测试流程](docs/项目文档/05-testing.md)
 
 ## 状态
 
-- 162 测试通过
+- 155 测试通过
 - 云端离线基线完成
-- 等待现场部署验证
+- GOS现场部署成功（2026-08-11）
+- 等待书面放行后启用控制功能
