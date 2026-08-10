@@ -170,7 +170,6 @@ class M20WebServer:
                 (self.config.host, self.config.port),
                 handler,
             )
-            self.server.server_close = lambda: None  # 避免关闭时清理
         except OSError as e:
             logger.error("无法绑定到 %s:%s - %s", self.config.host, self.config.port, e)
             logger.info("尝试使用其他端口...")
@@ -188,8 +187,6 @@ class M20WebServer:
                     continue
             else:
                 raise RuntimeError("无法绑定到任何端口")
-        finally:
-            self.server.server_close = lambda: None  # 避免关闭时清理
 
         logger.info(
             "M20 Web Service starting on %s:%s\n"

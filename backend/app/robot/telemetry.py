@@ -136,7 +136,9 @@ class TelemetryAdapter:
             finally:
                 self._client = None
         if self._thread:
-            self._thread.join(timeout=2)
+            self._thread.join(timeout=5)
+            if self._thread.is_alive():
+                logger.warning("遥测线程未能正常终止，强制清理")
             self._thread = None
 
     def _run_loop(self) -> None:

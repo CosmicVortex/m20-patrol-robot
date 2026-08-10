@@ -158,15 +158,16 @@ class AuthLoginHandler(BaseHandler):
                 "session_expires": session.expires_at,
             }
             encoded = json.dumps(ApiFormatter.success(body), ensure_ascii=False).encode("utf-8")
+            # 先设置cookie，再发送响应头
+            if self.auth_middleware is None:
+                self.send_error_response(500, "authentication middleware unavailable")
+                return
+            self.auth_middleware.set_session_cookie(self, session)
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(encoded)))
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
-            if self.auth_middleware is None:
-                self.send_error_response(500, "authentication middleware unavailable")
-                return
-            self.auth_middleware.set_session_cookie(self, session)
             self.end_headers()
             self.wfile.write(encoded)
         except AuthenticationError:
@@ -426,6 +427,14 @@ class EmergencyStopHandler(BaseHandler):
             self.send_json_response(200, {
                 "authorized": True,
                 "message": "Emergency stop blocked: control_enabled=false (read-only mode)",
+            })
+            return
+
+        # 强制检查只读模式配置
+        if self.config and self.config.read_only_mode:
+            self.send_json_response(200, {
+                "authorized": True,
+                "message": "Emergency stop blocked: read_only_mode=true",
             })
             return
 
