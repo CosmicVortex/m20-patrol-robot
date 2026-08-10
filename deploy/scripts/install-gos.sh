@@ -68,7 +68,7 @@ if "@GOS_HOST@" in unit:
 else:
     for item in ("M20_RUNTIME_MODE=realtime_readonly","M20_READ_ONLY_MODE=true","M20_CONTROL_ENABLED=false","M20_TELEMETRY_TX_ENABLED=false","M20_TARGET_HOST=@AOS_HOST@","M20_TARGET_PORT=@AOS_TCP_PORT@","backend.app.server"):
         assert item in unit, item
-assert (r / "backend/app/dashboard_realtime.py").is_file()
+assert (r / "backend/app/server.py").is_file()
 PY
 }
 validate_current_link() {
@@ -280,7 +280,7 @@ cleanup() {
   exit "$status"
 }
 [ -f "$RELEASE/deploy/systemd/$SERVICE_NAME" ] || { printf 'ERROR: release is missing systemd template\n' >&2; exit 1; }
-[ -f "$RELEASE/backend/app/dashboard_realtime.py" ] || { printf 'ERROR: release is missing realtime dashboard\n' >&2; exit 1; }
+[ -f "$RELEASE/backend/app/server.py" ] || { printf 'ERROR: release is missing server.py\\n' >&2; exit 1; }
 
 # Reuse only the target's pre-approved system packages; do not download dependencies.
 PYTHON_BIN=""

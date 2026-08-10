@@ -195,7 +195,7 @@ class TelemetryAdapter:
                     # waiting so slow or quiet read-only endpoints do not
                     # churn through reconnects. Once a frame was received,
                     # the normal freshness threshold applies.
-                    if client._last_received_at is not None and client.is_stale(now):
+                    if client.last_received_at is not None and client.is_stale(now):
                         logger.warning("遥测数据超时，重新连接...")
                         self._update_snapshot(client, connected=True, stale=True)
                         client.close()
@@ -255,8 +255,8 @@ class TelemetryAdapter:
             )
             self._snapshot.received_at = datetime.now(UTC).isoformat() if self._snapshot.connected else None
             self._snapshot.error_message = error
-            if connected and client._last_received_at:
-                age = (datetime.now(UTC) - client._last_received_at).total_seconds() * 1000
+            if connected and client.last_received_at:
+                age = (datetime.now(UTC) - client.last_received_at).total_seconds() * 1000
                 self._snapshot.age_ms = int(age)
 
     def _update_snapshot_inner(self, client: BasicServerClient, result: StatusResult) -> None:
@@ -283,8 +283,8 @@ class TelemetryAdapter:
             self._snapshot.perception = data
         
         # Calculate age
-        if client._last_received_at:
-            age = (datetime.now(UTC) - client._last_received_at).total_seconds() * 1000
+        if client.last_received_at:
+            age = (datetime.now(UTC) - client.last_received_at).total_seconds() * 1000
             self._snapshot.age_ms = int(age)
 
     def get_status_payload(self) -> dict[str, Any]:

@@ -88,7 +88,7 @@ if [ -L "$UNIT_PATH" ] || { [ -e "$UNIT_PATH" ] && [ ! -f "$UNIT_PATH" ]; }; the
   exit 2
 fi
 [ -x "$RELEASE/.venv/bin/python" ] || { printf 'ERROR: release Python is missing\n' >&2; exit 2; }
-[ -f "$RELEASE/backend/app/dashboard_realtime.py" ] || { printf 'ERROR: release realtime dashboard is missing\n' >&2; exit 2; }
+[ -f "$RELEASE/backend/app/server.py" ] || { printf 'ERROR: release is missing server.py\\n' >&2; exit 2; }
 [ -f "$RELEASE/deploy/systemd/$SERVICE_NAME" ] || { printf 'ERROR: release systemd template is missing\n' >&2; exit 2; }
 python3 - "$RELEASE/deploy/readonly-manifest.json" "$RELEASE" <<'PY'
 import json, pathlib, sys
@@ -104,7 +104,7 @@ assert m["credentials_included"] is False
 unit=(r / "deploy/systemd/m20-patrol-readonly.service").read_text()
 for item in ("M20_RUNTIME_MODE=realtime_readonly","M20_READ_ONLY_MODE=true","M20_CONTROL_ENABLED=false","M20_TELEMETRY_TX_ENABLED=false","M20_TARGET_HOST=@AOS_HOST@","M20_TARGET_PORT=@AOS_TCP_PORT@","backend.app.server"):
     assert item in unit, item
-assert (r / "backend/app/dashboard_realtime.py").is_file()
+assert (r / "backend/app/server.py").is_file()
 PY
 VENV_VERSION="$($RELEASE/.venv/bin/python -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
 # Accept Python 3.8+ or 3.10+

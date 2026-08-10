@@ -95,6 +95,11 @@ class BasicServerClient:
         self.valid_frames = 0
         self.invalid_frames = 0
 
+    @property
+    def last_received_at(self) -> Optional[datetime]:
+        """Public accessor for last received timestamp."""
+        return self._last_received_at
+
     @staticmethod
     def _now_text() -> str:
         return datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S")

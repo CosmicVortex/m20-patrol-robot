@@ -106,6 +106,8 @@ class ApiRouter:
         handler.telemetry_adapter = self.telemetry_adapter
         handler.nav_service = self.nav_service
         handler.config = self.config
+        handler.gimbal_adapter = self.gimbal_adapter
+        handler.video_manager = self.video_manager
 
         # Dispatch on the live request handler. Creating a detached
         # BaseHTTPRequestHandler bypasses the socket, headers and request body.
