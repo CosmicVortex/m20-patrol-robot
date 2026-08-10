@@ -188,8 +188,6 @@ class M20WebServer:
 
         try:
             self.server.serve_forever()
-        except (KeyboardInterrupt, SystemExit):
-            logger.info("服务正在关闭...")
         finally:
             self.stop()
 

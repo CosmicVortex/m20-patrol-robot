@@ -133,8 +133,74 @@ class VideoStreamManager:
         """Probe RTSP accessibility and codec metadata without leaking ffprobe."""
         if source not in self._streams:
             return {"error": f"未知摄像头源: {source}"}
-        self._get_process_lock(source)
-        if not self.allow_real_io:
+        async with self._get_process_lock(source):
+            if not self.allow_real_io:
+                return {"error": "视频 I/O 默认禁用，需配置 allow_real_io=true", "status": "BLOCKED"}
+            config = self._streams[source]
+            result: Dict[str, Any] = {
+                "source": source,
+                "rtsp_url": config.rtsp_url,
+                "accessible": False,
+                "codec": None,
+                "resolution": None,
+                "fps": None,
+                "error": None,
+            }
+            proc: Optional[asyncio.subprocess.Process] = None
+            try:
+                proc = await asyncio.create_subprocess_exec(
+                    "ffprobe",
+                    "-v", "error",
+                    "-show_entries", "stream=codec_name,width,height,r_frame_rate",
+                    "-of", "json",
+                    config.rtsp_url,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+                try:
+                    stdout, stderr = await asyncio.wait_for(
+                        proc.communicate(), timeout=self.PROBE_TIMEOUT_S
+                    )
+                    if proc.returncode == 0:
+                        data = json.loads(stdout)
+                        streams = data.get("streams", [])
+                        if streams:
+                            stream = streams[0]
+                            result["accessible"] = True
+                            result["codec"] = stream.get("codec_name")
+                            result["resolution"] = f"{stream.get('width')}x{stream.get('height')}"
+                            fps = stream.get("r_frame_rate", "0/1")
+                            if "/" in fps:
+                                numerator, denominator = fps.split("/", 1)
+                                result["fps"] = (
+                                    float(numerator) / float(denominator)
+                                    if float(denominator) > 0
+                                    else 0
+                                )
+                            else:
+                                result["fps"] = float(fps) if fps else 0
+                        else:
+                            result["error"] = "No video stream found"
+                    else:
+                        result["error"] = f"ffprobe failed: {stderr.decode(errors='replace')[:200]}"
+                except asyncio.TimeoutError:
+                    result["error"] = f"ffprobe timeout ({self.PROBE_TIMEOUT_S}s)"
+                except Exception as error:
+                    result["error"] = f"Probe error: {error}"
+            except FileNotFoundError:
+                result["error"] = "ffprobe not installed"
+            except Exception as error:
+                result["error"] = f"Unexpected error: {error}"
+            finally:
+                if proc is not None and proc.returncode is None:
+                    await self._terminate_process(proc, "ffprobe")
+
+            with self._lock:
+                self._stream_states[source] = (
+                    StreamState.CONNECTED if result["accessible"] else StreamState.ERROR
+                )
+                self._last_update[source] = datetime.now(UTC)
+            return result
             return {"error": "视频 I/O 默认禁用，需配置 allow_real_io=true", "status": "BLOCKED"}
         config = self._streams[source]
         result: Dict[str, Any] = {
