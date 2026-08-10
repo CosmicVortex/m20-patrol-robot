@@ -112,7 +112,7 @@ preflight() {
   grep -Fq 'M20_RUNTIME_MODE=realtime_readonly' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_RUNTIME_MODE_MISMATCH'
   grep -Fq 'M20_TARGET_HOST=@AOS_HOST@' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_TARGET_TEMPLATE_MISSING'
   grep -iqF 'control_enabled=false' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_CONTROL_NOT_DISABLED'
-  grep -Fq 'telemetry_tx_enabled=False' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_TX_NOT_DISABLED'
+  grep -iqF 'telemetry_tx_enabled=false' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_TX_NOT_DISABLED'
   grep -Fq 'backend.app.server' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_ENTRYPOINT_MODERN_SERVER_MISSING'
   ! grep -Fq 'dashboard_realtime' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_ENTRYPOINT_LEGACY_STILL_PRESENT'
   conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || fail 'CONFLICTING_SERVICE_STATE_UNKNOWN'
