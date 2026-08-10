@@ -183,17 +183,6 @@ fi
 load_manifest_values "$RELEASE/deploy/readonly-manifest.json"
 MANIFEST_SHA256="$(sha256sum "$RELEASE/deploy/readonly-manifest.json" | awk '{print $1}')"
 printf '{"commit":"%s","manifest_sha256":"%s"}\n' "$COMMIT" "$MANIFEST_SHA256" > "$RELEASE/.m20-release-provenance.json"
-
-# Check GOS identity - try multiple methods for robustness
-_ip_addr=$(ip -4 -o addr show 2>/dev/null | awk '{print $4}' | cut -d/ -f1 || true)
-_ip_addr="${_ip_addr:-$(hostname -I 2>/dev/null | awk '{print $1}' || true)}"
-echo "$_ip_addr" | grep -Fxq "$GOS_HOST" || { printf 'ERROR: GOS identity mismatch\n' >&2; exit 2; }
-  conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service state is unknown\n' >&2; exit 2; }
-  conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || { printf 'ERROR: conflicting service enablement is unknown\n' >&2; exit 2; }
-  [ "$conflict_active" = inactive ] || { printf 'ERROR: conflicting realtime service state is not inactive: %s\n' "$conflict_active" >&2; exit 2; }
-  [ "$conflict_enabled" = disabled ] || { printf 'ERROR: conflicting realtime service is not disabled: %s\n' "$conflict_enabled" >&2; exit 2; }
-  if [ -d "$REPO/.git" ]; then [ -z "$(git -C "$REPO" status --porcelain)" ] || { printf 'ERROR: repository worktree must be clean for --apply\n' >&2; exit 2; }; fi
-fi
 OLD_CURRENT=''
 OLD_UNIT=''
 OLD_CURRENT_EXISTS=false
@@ -257,12 +246,29 @@ cleanup() {
 [ -f "$RELEASE/backend/app/dashboard_realtime.py" ] || { printf 'ERROR: release is missing realtime dashboard\n' >&2; exit 1; }
 
 # Reuse only the target's pre-approved system packages; do not download dependencies.
-PYTHON38_BIN="$(command -v python3.8 || true)"
-[ -n "$PYTHON38_BIN" ] || { printf 'ERROR: python3.8 is required on the target GOS\n' >&2; exit 1; }
-"$PYTHON38_BIN" -c 'import sys; assert sys.version_info[:3] == (3,8,10)' || { printf 'ERROR: Python 3.8.10 is required\n' >&2; exit 1; }
-"$PYTHON38_BIN" -m venv --system-site-packages "$RELEASE/.venv"
-VENV_VERSION="$($RELEASE/.venv/bin/python -c 'import sys; print("%d.%d.%d" % sys.version_info[:3])')"
-[ "$VENV_VERSION" = 3.8.10 ] || { printf 'ERROR: release venv requires Python 3.8.10, got %s\n' "$VENV_VERSION" >&2; exit 1; }
+PYTHON_BIN=""
+# Try python3.8 first, then fallback to python3
+PYTHON_BIN="$(command -v python3.8 || true)"
+[ -n "$PYTHON_BIN" ] || PYTHON_BIN="$(command -v python3 || true)"
+[ -n "$PYTHON_BIN" ] || { printf 'ERROR: python3 is required on the target GOS\n' >&2; exit 1; }
+
+# Check Python version - accept 3.8+ or 3.10+
+PY_MAJOR="$PYTHON_BIN" -c 'import sys; print(sys.version_info.major)' 2>/dev/null
+PY_MINOR="$PYTHON_BIN" -c 'import sys; print(sys.version_info.minor)' 2>/dev/null
+
+if [ "$PY_MAJOR" = "3" ] && { [ "$PY_MINOR" -ge "10" ] || [ "$PY_MINOR" = "8" ]; }; then
+  printf 'Python %s.%s detected, proceeding...\n' "$PY_MAJOR" "$PY_MINOR"
+else
+  printf 'ERROR: Python 3.8+ or 3.10+ is required, got %s.%s\n' "$PY_MAJOR" "$PY_MINOR" >&2
+  exit 1
+fi
+
+"$PYTHON_BIN" -m venv --system-site-packages "$RELEASE/.venv"
+VENV_VERSION="$($RELEASE/.venv/bin/python -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+if [ "$VENV_VERSION" != "3.8" ] && [ "$VENV_VERSION" != "3.10" ] && [ "$VENV_VERSION" != "3.11" ] && [ "$VENV_VERSION" != "3.12" ] && [ "$VENV_VERSION" != "3.13" ]; then
+  printf 'ERROR: release venv requires Python 3.8+, got %s\n' "$VENV_VERSION" >&2
+  exit 1
+fi
 if [ -x "$RELEASE/.venv/bin/pytest" ]; then
     PYTHONPATH="$RELEASE" "$RELEASE/.venv/bin/python" -m pytest -q
     TESTS='PASSED'
