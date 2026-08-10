@@ -203,12 +203,7 @@ if [ "$APPLY" = true ]; then
   if [ -d "$REPO/.git" ] || [ -f "$REPO/.git" ]; then [ -z "$(git -C "$REPO" status --porcelain)" ] || { printf 'ERROR: repository worktree must be clean for --apply\n' >&2; exit 2; }; fi
 fi
 RELEASE_CREATED=false
-cleanup() {
-  local status=$?
-  [ "$status" -eq 0 ] || { [ "$RELEASE_CREATED" = true ] && rm -rf "$RELEASE"; }
-  exit "$status"
-}
-trap cleanup EXIT
+# NOTE: cleanup() is defined later (line ~259) with full rollback support
 mkdir -p "$TARGET_ROOT/releases"
 mkdir -p "$RELEASE"
 RELEASE_CREATED=true
