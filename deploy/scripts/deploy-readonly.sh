@@ -100,7 +100,10 @@ check_host() {
   systemctl --user show-environment >/dev/null 2>&1 || fail 'SYSTEMD_USER_UNAVAILABLE'
   [ "$(id -u)" != 0 ] || fail 'ROOT_USER_NOT_ALLOWED'
   command -v ip >/dev/null || fail 'IP_COMMAND_MISSING'
-  ip -4 -o addr show | awk '{print $4}' | cut -d/ -f1 | grep -Fxq "$GOS_HOST" || fail 'GOS_IDENTITY_MISMATCH'
+  # Check GOS identity - try multiple methods for robustness
+  _ip_addr=$(ip -4 -o addr show 2>/dev/null | awk '{print $4}' | cut -d/ -f1 || true)
+  _ip_addr="${_ip_addr:-$(hostname -I 2>/dev/null | awk '{print $1}' || true)}"
+  echo "$_ip_addr" | grep -Fxq "$GOS_HOST" || fail 'GOS_IDENTITY_MISMATCH'
   df -Pk "$TARGET_ROOT" 2>/dev/null | tail -1 || true
 }
 
