@@ -107,9 +107,18 @@ install() {
   # 创建目标目录
   mkdir -p "$TARGET_ROOT"
   
-  # 复制文件
+  # 复制文件（排除目标目录本身，避免递归复制）
   echo "复制文件到 $TARGET_ROOT..."
-  cp -r "$ROOT/." "$TARGET_ROOT/"
+  
+  # 使用rsync或直接复制文件
+  if command -v rsync >/dev/null 2>&1; then
+    rsync -a --exclude='.local' "$ROOT/" "$TARGET_ROOT/"
+  else
+    # 复制所有文件，但排除目标目录
+    find "$ROOT" -mindepth 1 -maxdepth 1 -exec cp -r {} "$TARGET_ROOT/" \;
+    # 确保不复制目标目录本身
+    rm -rf "$TARGET_ROOT/.local/share/m20-patrol-robot" 2>/dev/null || true
+  fi
   
   # 创建虚拟环境
   echo "创建Python虚拟环境..."
