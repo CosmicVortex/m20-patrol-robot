@@ -13,7 +13,7 @@ python3 -m compileall -q backend
 bash deploy/scripts/deploy-readonly.sh --dry-run
 ```
 
-结果：162 passed（当前版本）
+结果：180 passed（当前版本）
 
 ## 部署验证
 

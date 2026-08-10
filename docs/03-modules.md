@@ -73,8 +73,28 @@ msg = nav.to_message(safety_snapshot)  # → PatrolMessage (1003/1)
 RTSP地址（候选）：
 - 前：`rtsp://10.21.31.103:8554/video1`
 - 后：`rtsp://10.21.31.103:8554/video2`
+- 热成像：`rtsp://10.21.31.103:8554/thermal`（待确认）
 
 需现场确认可达性、鉴权、编码格式。
+
+## gimbal/ — 云台控制
+
+Soar Security SR-UPA810T609 热成像云台适配。
+
+协议：WEB 2.0 (Merlin)
+连接优先级：
+1. 配置的 `gimbal_host`
+2. 默认IP `192.168.1.108`
+3. 网络扫描（仅M20网段）
+
+API端点：
+- `/api/v1/gimbal/scan` - 扫描并连接云台
+- `/api/v1/gimbal/state` - 获取云台状态
+- `/api/v1/gimbal/move` - 方向控制
+- `/api/v1/gimbal/zoom` - 变倍控制
+- `/api/v1/gimbal/angle` - 角度设置
+- `/api/v1/gimbal/device/info` - 设备信息
+- `/api/v1/gimbal/video` - 视频流地址
 
 ## dashboard_realtime.py — 入口
 
