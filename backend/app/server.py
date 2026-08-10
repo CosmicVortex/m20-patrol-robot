@@ -165,10 +165,18 @@ class M20WebServer:
         handler = self._create_handler()
 
         # Start HTTP server
-        self.server = ThreadingHTTPServer(
-            (self.config.host, self.config.port),
-            handler,
-        )
+        try:
+            self.server = ThreadingHTTPServer(
+                (self.config.host, self.config.port),
+                handler,
+            )
+        except OSError as e:
+            logger.error("无法绑定到 %s:%s - %s", self.config.host, self.config.port, e)
+            logger.info("尝试绑定到 0.0.0.0:%s", self.config.port)
+            self.server = ThreadingHTTPServer(
+                ("0.0.0.0", self.config.port),
+                handler,
+            )
 
         logger.info(
             "M20 Web Service starting on %s:%s\n"
@@ -192,6 +200,12 @@ class M20WebServer:
 
         try:
             self.server.serve_forever()
+        except KeyboardInterrupt:
+            logger.info("收到中断信号，正在关闭...")
+        except Exception as e:
+            logger.error("服务运行异常: %s", e)
+            import traceback
+            traceback.print_exc()
         finally:
             self.stop()
 

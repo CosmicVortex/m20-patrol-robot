@@ -7,7 +7,7 @@
   "telemetry_rx_enabled": true,
   "telemetry_tx_enabled": false,
   "web_realtime_enabled": true,
-  "web_bind_host": "10.21.31.104",
+  "web_bind_host": "0.0.0.0",
   "stale_after_seconds": 3,
   "targets": {
     "gos_host": "10.21.31.104",
