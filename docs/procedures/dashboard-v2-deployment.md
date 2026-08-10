@@ -88,7 +88,7 @@ cat deploy/readonly-manifest.json
 PYTHONPATH=. uv run --with pytest pytest -q
 ```
 
-预期输出：`162 passed`
+预期输出：`180 passed`
 
 ### 3. 启动服务
 ```bash
@@ -152,4 +152,4 @@ sudo systemctl restart m20-patrol-realtime
 ---
 版本：v2.0.0
 日期：2026-08-10
-测试：162 passed
+测试：180 passed
