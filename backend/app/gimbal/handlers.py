@@ -7,157 +7,145 @@ from typing import Optional
 from http.server import BaseHTTPRequestHandler
 
 from backend.app.api.response import ApiFormatter
-from backend.app.api.handlers import BaseHandler
 from backend.app.gimbal.adapter import SoarGimbalAdapter, GimbalConfig
 
 logger = logging.getLogger(__name__)
 
 
-class GimbalStateHandler(BaseHandler):
-    """GET /api/v1/gimbal/state - Get current gimbal state."""
+class BaseGimbalHandler(ApiFormatter):
+    """Base handler for gimbal endpoints."""
+
+    def _get_gimbal(self) -> Optional[SoarGimbalAdapter]:
+        """Get gimbal adapter from request."""
+        return getattr(self, '_gimbal', None)
+
+
+class GimbalStateHandler(BaseGimbalHandler):
+    """GET /api/v1/gimbal/state"""
 
     def do_GET(self) -> None:
-        if self.path != "/api/v1/gimbal/state":
-            self.send_error_response(404, "Not found")
-            return
-
-        gimbal: Optional[SoarGimbalAdapter] = getattr(self, '_gimbal', None)
-        if gimbal is None:
-            self.send_error_response(503, "Gimbal adapter not initialized")
+        gimbal = self._get_gimbal()
+        if not gimbal or not gimbal._connected:
+            self.send_json_response(200, {"connected": False, "message": "云台未连接"})
             return
 
         state = gimbal.get_state()
-        self.send_json_response(200, {
-            "connected": gimbal._connected if hasattr(gimbal, '_connected') else False,
-            "yaw": state.get("yaw", 0),
-            "pitch": state.get("pitch", 0),
-            "roll": state.get("roll", 0),
-            "zoom": state.get("zoom", 1),
-        })
+        self.send_json_response(200, state)
 
 
-class GimbalMoveHandler(BaseHandler):
-    """POST /api/v1/gimbal/move - Move gimbal direction."""
+class GimbalMoveHandler(BaseGimbalHandler):
+    """POST /api/v1/gimbal/move"""
 
     def do_POST(self) -> None:
-        if self.path != "/api/v1/gimbal/move":
-            self.send_error_response(404, "Not found")
+        gimbal = self._get_gimbal()
+        if not gimbal or not gimbal._connected:
+            self.send_error_response(503, "云台未连接")
             return
 
-        gimbal: Optional[SoarGimbalAdapter] = getattr(self, '_gimbal', None)
-        if gimbal is None:
-            self.send_error_response(503, "Gimbal adapter not initialized")
-            return
+        data = self.read_json_body()
+        direction = data.get("direction", "stop")
+        speed = data.get("speed", 5)
 
-        body = self._parse_json_body()
-        direction = body.get("direction", "stop")
-        speed = body.get("speed", 5)
-
-        if direction not in ("up", "down", "left", "right", "stop"):
-            self.send_error_response(400, "Invalid direction. Use: up/down/left/right/stop")
-            return
-
-        success = gimbal.move_direction(direction, speed)
-        if success:
-            logger.info("Gimbal moved: %s (speed=%d)", direction, speed)
-            self.send_json_response(200, {"success": True, "direction": direction})
+        if gimbal.move_direction(direction, speed):
+            self.send_json_response(200, {"status": "ok", "direction": direction, "speed": speed})
         else:
-            self.send_error_response(500, "Failed to move gimbal")
+            self.send_error_response(500, "云台控制失败")
 
 
-class GimbalZoomHandler(BaseHandler):
-    """POST /api/v1/gimbal/zoom - Zoom control."""
+class GimbalZoomHandler(BaseGimbalHandler):
+    """POST /api/v1/gimbal/zoom"""
 
     def do_POST(self) -> None:
-        if self.path != "/api/v1/gimbal/zoom":
-            self.send_error_response(404, "Not found")
+        gimbal = self._get_gimbal()
+        if not gimbal or not gimbal._connected:
+            self.send_error_response(503, "云台未连接")
             return
 
-        gimbal: Optional[SoarGimbalAdapter] = getattr(self, '_gimbal', None)
-        if gimbal is None:
-            self.send_error_response(503, "Gimbal adapter not initialized")
-            return
-
-        body = self._parse_json_body()
-        action = body.get("action", "in")  # in/out
+        data = self.read_json_body()
+        action = data.get("action", "in")
+        level = data.get("level", 5)
 
         if action == "in":
-            success = gimbal.zoom(9, speed=body.get("speed", 5))
+            ok = gimbal.zoom(9)
         elif action == "out":
-            success = gimbal.zoom(10, speed=body.get("speed", 5))
-        elif action == "set":
-            level = body.get("level", 5)
-            success = gimbal.zoom_to(level)
+            ok = gimbal.zoom(10)
         else:
-            self.send_error_response(400, "Invalid action. Use: in/out/set")
-            return
+            ok = gimbal.zoom_to(level)
 
-        if success:
-            logger.info("Gimbal zoom: %s", action)
-            self.send_json_response(200, {"success": True, "action": action})
+        if ok:
+            self.send_json_response(200, {"status": "ok", "action": action})
         else:
-            self.send_error_response(500, "Failed to zoom")
+            self.send_error_response(500, "变倍控制失败")
 
 
-class GimbalAngleHandler(BaseHandler):
-    """POST /api/v1/gimbal/angle - Set absolute angle."""
+class GimbalAngleHandler(BaseGimbalHandler):
+    """POST /api/v1/gimbal/angle"""
 
     def do_POST(self) -> None:
-        if self.path != "/api/v1/gimbal/angle":
-            self.send_error_response(404, "Not found")
+        gimbal = self._get_gimbal()
+        if not gimbal or not gimbal._connected:
+            self.send_error_response(503, "云台未连接")
             return
 
-        gimbal: Optional[SoarGimbalAdapter] = getattr(self, '_gimbal', None)
-        if gimbal is None:
-            self.send_error_response(503, "Gimbal adapter not initialized")
-            return
+        data = self.read_json_body()
+        yaw = data.get("yaw", 0)
+        pitch = data.get("pitch", 0)
 
-        body = self._parse_json_body()
-        yaw = body.get("yaw", 0)
-        pitch = body.get("pitch", 0)
-
-        success = gimbal.set_angle(yaw=yaw, pitch=pitch)
-        if success:
-            logger.info("Gimbal angle set: yaw=%s, pitch=%s", yaw, pitch)
-            self.send_json_response(200, {"success": True, "yaw": yaw, "pitch": pitch})
+        if gimbal.set_angle(yaw, pitch):
+            self.send_json_response(200, {"status": "ok", "yaw": yaw, "pitch": pitch})
         else:
-            self.send_error_response(500, "Failed to set angle")
+            self.send_error_response(500, "角度设置失败")
 
 
-class GimbalDeviceInfoHandler(BaseHandler):
-    """GET /api/v1/gimbal/device/info - Get gimbal device info."""
+class GimbalDeviceInfoHandler(BaseGimbalHandler):
+    """GET /api/v1/gimbal/device/info"""
 
     def do_GET(self) -> None:
-        if self.path != "/api/v1/gimbal/device/info":
-            self.send_error_response(404, "Not found")
-            return
-
-        gimbal: Optional[SoarGimbalAdapter] = getattr(self, '_gimbal', None)
-        if gimbal is None:
-            self.send_error_response(503, "Gimbal adapter not initialized")
+        gimbal = self._get_gimbal()
+        if not gimbal:
+            self.send_json_response(200, {"connected": False, "message": "云台未配置"})
             return
 
         info = gimbal.get_device_info()
         self.send_json_response(200, info)
 
 
-class GimbalVideoHandler(BaseHandler):
-    """GET /api/v1/gimbal/video - Get gimbal video stream URLs."""
+class GimbalVideoHandler(BaseGimbalHandler):
+    """GET /api/v1/gimbal/video"""
 
     def do_GET(self) -> None:
-        if self.path != "/api/v1/gimbal/video":
-            self.send_error_response(404, "Not found")
+        gimbal = self._get_gimbal()
+        if not gimbal:
+            self.send_json_response(200, {"urls": {}, "message": "云台未配置"})
             return
 
-        gimbal: Optional[SoarGimbalAdapter] = getattr(self, '_gimbal', None)
-        if gimbal is None:
-            self.send_error_response(503, "Gimbal adapter not initialized")
+        urls = gimbal.get_video_urls()
+        self.send_json_response(200, {"urls": urls})
+
+
+class GimbalScanHandler(BaseGimbalHandler):
+    """GET /api/v1/gimbal/scan - Discover gimbal devices"""
+
+    def do_GET(self) -> None:
+        gimbal = self._get_gimbal()
+        if not gimbal:
+            self.send_error_response(500, "云台适配器未初始化")
             return
 
-        config = gimbal.config
-        self.send_json_response(200, {
-            "visible_light": config.rtsp_url,
-            "thermal": config.thermal_rtsp_url,
-            "gimbal_host": config.host,
-            "gimbal_port": config.port,
-        })
+        # Trigger scan
+        discovered = gimbal.scan()
+
+        if discovered:
+            # Auto-connect to first discovered device
+            gimbal.auto_connect()
+            self.send_json_response(200, {
+                "discovered": discovered,
+                "connected": gimbal._connected,
+                "host": gimbal.config.host,
+            })
+        else:
+            self.send_json_response(200, {
+                "discovered": [],
+                "connected": False,
+                "message": "未发现云台设备",
+            })

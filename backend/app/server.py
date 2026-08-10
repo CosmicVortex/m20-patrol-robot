@@ -113,20 +113,24 @@ class M20WebServer:
             video_manager=self.video_manager,
         )
 
-        # Setup gimbal adapter
+        # Setup gimbal adapter with auto-discovery support
         self.gimbal_adapter: Optional[SoarGimbalAdapter] = None
         if self.config.gimbal_host:
-            logger.info("初始化云台适配器: %s", self.config.gimbal_host)
+            logger.info("配置云台地址: %s", self.config.gimbal_host)
             gimbal_config = GimbalConfig(
                 host=self.config.gimbal_host,
                 username=self.config.gimbal_username,
                 password=self.config.gimbal_password,
             )
             self.gimbal_adapter = SoarGimbalAdapter(gimbal_config)
-            if self.gimbal_adapter.login():
-                logger.info("云台连接成功: %s", self.config.gimbal_host)
+            if self.gimbal_adapter.auto_connect():
+                logger.info("云台已连接: %s", self.config.gimbal_host)
             else:
-                logger.warning("云台连接失败: %s", self.config.gimbal_host)
+                logger.warning("云台连接失败，可使用 /api/v1/gimbal/scan 扫描")
+        else:
+            # No host configured, enable auto-discovery mode
+            logger.info("云台地址未配置，支持自动发现 (/api/v1/gimbal/scan)")
+            self.gimbal_adapter = SoarGimbalAdapter()
 
     def _ensure_admin_user(self) -> None:
         """Create default admin user if not exists."""

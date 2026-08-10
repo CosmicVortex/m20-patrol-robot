@@ -35,6 +35,7 @@ from backend.app.gimbal.handlers import (
     GimbalAngleHandler,
     GimbalDeviceInfoHandler,
     GimbalVideoHandler,
+    GimbalScanHandler,
 )
 from backend.app.gimbal.adapter import SoarGimbalAdapter
 from backend.app.video.stream_manager import VideoStreamManager
@@ -64,6 +65,7 @@ class ApiRouter:
         "/api/v1/gimbal/angle": GimbalAngleHandler,
         "/api/v1/gimbal/device/info": GimbalDeviceInfoHandler,
         "/api/v1/gimbal/video": GimbalVideoHandler,
+        "/api/v1/gimbal/scan": GimbalScanHandler,
     }
 
     def __init__(
