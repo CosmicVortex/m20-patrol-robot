@@ -106,8 +106,14 @@ for item in ("M20_RUNTIME_MODE=realtime_readonly","M20_READ_ONLY_MODE=true","M20
     assert item in unit, item
 assert (r / "backend/app/dashboard_realtime.py").is_file()
 PY
-VENV_VERSION="$($RELEASE/.venv/bin/python -c 'import sys; print("%d.%d.%d" % sys.version_info[:3])')"
-[ "$VENV_VERSION" = 3.8.10 ] || { printf 'ERROR: rollback release requires Python 3.8.10, got %s\n' "$VENV_VERSION" >&2; exit 2; }
+VENV_VERSION="$($RELEASE/.venv/bin/python -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+# Accept Python 3.8+ or 3.10+
+if [[ "$VENV_VERSION" =~ ^3\.(8|1[0-9])$ ]]; then
+    printf 'Rollback release Python version: %s (OK)\n' "$VENV_VERSION"
+else
+    printf 'ERROR: rollback release requires Python 3.8+ or 3.10+, got %s\n' "$VENV_VERSION" >&2
+    exit 2
+fi
 
 # Save current state before any changes for transaction rollback
 SAVED_UNIT="$TARGET_ROOT/.rollback.saved-unit.$$"

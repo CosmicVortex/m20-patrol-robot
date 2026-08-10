@@ -1,15 +1,30 @@
 #!/bin/bash
 # M20 Patrol Robot - 快速启动脚本
-# 适配 GOS Python 3.8.10 环境
+# 支持 Python 3.8+ 或 3.10+
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 MANIFEST="${ROOT}/deploy/readonly-manifest.json"
+
+# 查找Python - 优先python3.8，回退到python3
+PYTHON_BIN=""
 PYTHON_BIN="$(command -v python3.8 || true)"
-[ -n "$PYTHON_BIN" ] || { echo "需要 python3.8" >&2; exit 1; }
-"$PYTHON_BIN" -c 'import sys; assert sys.version_info[:3] == (3,8,10)' || { echo "需要 Python 3.8.10" >&2; exit 1; }
+[ -n "$PYTHON_BIN" ] || PYTHON_BIN="$(command -v python3 || true)"
+[ -n "$PYTHON_BIN" ] || { echo "错误: 需要 Python 3.8+ 或 3.10+" >&2; exit 1; }
+
+# 检查Python版本
+PY_VERSION="$("$PYTHON_BIN" --version 2>&1 | cut -d' ' -f2)"
+PY_MAJOR="$("$PYTHON_BIN" -c 'import sys; print(sys.version_info.major)')"
+PY_MINOR="$("$PYTHON_BIN" -c 'import sys; print(sys.version_info.minor)')"
+
+if [ "$PY_MAJOR" = "3" ] && { [ "$PY_MINOR" -ge "10" ] || [ "$PY_MINOR" = "8" ]; }; then
+    echo "Python版本: $PY_VERSION (OK)"
+else
+    echo "错误: 需要 Python 3.8+ 或 3.10+，当前: $PY_VERSION" >&2
+    exit 1
+fi
 WEB_BIND_HOST="$($PYTHON_BIN - "$MANIFEST" <<'PY'
 import json,sys
 d=json.load(open(sys.argv[1])); print(d.get("web_bind_host", d["targets"]["gos_host"]))
@@ -30,14 +45,9 @@ echo "=== M20 巡逻机器人启动脚本 ==="
 echo "脚本目录：${SCRIPT_DIR}"
 echo ""
 
-# Python 3.8 兼容性检查
+# Python 版本检查
 echo "[1/4] 检查 Python 环境..."
-PYTHON_VERSION=$($PYTHON_BIN --version 2>&1 | cut -d' ' -f2)
-echo "    Python 版本：${PYTHON_VERSION}"
-case "${PYTHON_VERSION}" in
-    3.8.10) ;;
-    *) echo "    ✗ 需要真实 Python 3.8.10 运行时"; exit 1 ;;
-esac
+echo "    Python 版本：${PY_VERSION}"
 
 # 验证编译
 echo "[2/4] 验证代码编译..."
