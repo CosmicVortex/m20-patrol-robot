@@ -170,13 +170,26 @@ class M20WebServer:
                 (self.config.host, self.config.port),
                 handler,
             )
+            self.server.server_close = lambda: None  # 避免关闭时清理
         except OSError as e:
             logger.error("无法绑定到 %s:%s - %s", self.config.host, self.config.port, e)
-            logger.info("尝试绑定到 0.0.0.0:%s", self.config.port)
-            self.server = ThreadingHTTPServer(
-                ("0.0.0.0", self.config.port),
-                handler,
-            )
+            logger.info("尝试使用其他端口...")
+            # 尝试其他端口
+            for alt_port in range(self.config.port + 1, self.config.port + 11):
+                try:
+                    self.server = ThreadingHTTPServer(
+                        (self.config.host, alt_port),
+                        handler,
+                    )
+                    self.config = replace(self.config, port=alt_port)
+                    logger.info("使用备用端口: %s", alt_port)
+                    break
+                except OSError:
+                    continue
+            else:
+                raise RuntimeError("无法绑定到任何端口")
+        finally:
+            self.server.server_close = lambda: None  # 避免关闭时清理
 
         logger.info(
             "M20 Web Service starting on %s:%s\n"
@@ -332,3 +345,6 @@ def main() -> None:
     # Start server
     server = M20WebServer(config)
     server.start()
+
+if __name__ == '__main__':
+    main()
