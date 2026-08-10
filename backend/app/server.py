@@ -102,18 +102,7 @@ class M20WebServer:
         # Setup video stream manager
         self.video_manager = VideoStreamManager(allow_real_io=self.config.allow_real_io)
 
-        # Setup API router
-        self.router = ApiRouter(
-            user_store=self.user_store,
-            auth_middleware=self.auth_middleware,
-            telemetry_adapter=self.telemetry_adapter,
-            nav_service=self.nav_service,
-            config=self.config,
-            gimbal_adapter=self.gimbal_adapter,
-            video_manager=self.video_manager,
-        )
-
-        # Setup gimbal adapter with auto-discovery support
+        # Setup gimbal adapter with auto-discovery support (MUST be before router)
         self.gimbal_adapter: Optional[SoarGimbalAdapter] = None
         if self.config.gimbal_host:
             logger.info("配置云台地址: %s", self.config.gimbal_host)
@@ -131,6 +120,17 @@ class M20WebServer:
             # No host configured, enable auto-discovery mode
             logger.info("云台地址未配置，支持自动发现 (/api/v1/gimbal/scan)")
             self.gimbal_adapter = SoarGimbalAdapter()
+
+        # Setup API router
+        self.router = ApiRouter(
+            user_store=self.user_store,
+            auth_middleware=self.auth_middleware,
+            telemetry_adapter=self.telemetry_adapter,
+            nav_service=self.nav_service,
+            config=self.config,
+            gimbal_adapter=self.gimbal_adapter,
+            video_manager=self.video_manager,
+        )
 
     def _ensure_admin_user(self) -> None:
         """Create default admin user if not exists."""
