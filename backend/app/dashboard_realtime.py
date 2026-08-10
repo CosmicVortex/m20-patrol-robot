@@ -462,6 +462,17 @@ main {{
         {error_html}
     </article>
 </section>
+<div style="margin-top:20px;display:flex;align-items:center;gap:16px;padding:16px;background:var(--panel);border-radius:8px;border:1px solid var(--line)">
+    <img src="robot-dog.jpg" alt="M20 Pro" style="width:80px;height:60px;object-fit:contain;background:#fff;border-radius:4px">
+    <div>
+        <div style="font-size:14px;font-weight:500;margin-bottom:4px">M20 Pro 巡逻机器狗</div>
+        <div style="font-size:12px;color:var(--muted)">轮足复合结构 · 工业巡检级 · 实时状态订阅中</div>
+    </div>
+    <div style="margin-left:auto;text-align:right">
+        <div style="font-size:12px;color:var(--muted)">当前任务</div>
+        <div style="font-size:16px;font-weight:500;color:var(--accent)">{nav_label}</div>
+    </div>
+</div>
 {note}
 </main>
 <script>
