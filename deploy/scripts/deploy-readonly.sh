@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# M20 Pro 巡逻机器人 - 简化部署脚本
-# 自动配置默认密码，检测并安装依赖
+# M20 Pro 巡逻机器人 - 简化部署脚本（离线版）
+# 直接使用系统Python，无需虚拟环境
 
 set -euo pipefail
 
@@ -32,56 +32,25 @@ check_root() {
   fi
 }
 
-# 检查并安装依赖
-check_dependencies() {
-  echo "检查系统依赖..."
+# 检查Python环境
+check_python() {
+  echo "检查Python环境..."
   
-  # 检查python3
   if ! command -v python3 >/dev/null 2>&1; then
     echo "ERROR: python3 未找到"
-    echo "请先安装: sudo apt install python3"
     exit 1
   fi
-  echo "Python: $(python3 --version 2>&1)"
   
-  # 检查python3-venv和ensurepip（必须同时存在）
-  if ! python3 -c "
-import sys
-try:
-    import venv
-    import ensurepip
-except ImportError as e:
-    print(f'缺少模块: {e}', file=sys.stderr)
-    sys.exit(1)
-" 2>/dev/null; then
-    echo "警告: python3-venv 或 ensurepip 未完全安装"
-    echo "正在尝试自动安装依赖..."
-    
-    if command -v sudo >/dev/null 2>&1; then
-      sudo apt update
-      sudo apt install -y python3-venv python3-dev
-    else
-      echo "ERROR: 无法自动安装依赖，请手动执行:"
-      echo "  sudo apt update && sudo apt install -y python3-venv python3-dev"
-      exit 1
-    fi
-    
-    # 再次验证
-    if ! python3 -c "import venv; import ensurepip" 2>/dev/null; then
-      echo "ERROR: 依赖安装后仍然不可用"
-      exit 1
-    fi
-    echo "依赖安装成功 ✅"
-  else
-    echo "Python依赖检查通过 ✅"
-  fi
+  PYTHON_VERSION=$(python3 --version 2>&1)
+  echo "Python: $PYTHON_VERSION"
   
-  # 检查systemd
-  if ! command -v systemctl >/dev/null 2>&1; then
-    echo "ERROR: systemctl 未找到，需要systemd支持"
+  # 检查关键模块
+  python3 -c "import asyncio, json, ssl, urllib, email, logging" 2>/dev/null || {
+    echo "ERROR: Python缺少必要模块"
     exit 1
-  fi
-  echo "systemd: 可用 ✅"
+  }
+  
+  echo "Python环境检查通过 ✅"
 }
 
 # 确保配置目录存在
@@ -123,8 +92,8 @@ preflight() {
   # 检查root
   check_root
   
-  # 检查依赖
-  check_dependencies
+  # 检查Python
+  check_python
   
   # 确保配置
   ensure_config
@@ -178,34 +147,13 @@ install() {
   echo "复制文件到 $TARGET_ROOT..."
   
   # 安全复制
-  (cd "$ROOT" && tar cf - --exclude='__pycache__' --exclude='.venv' \
-    --exclude='.local' .) | (cd "$TARGET_ROOT" && tar xf -)
-  
-  # 创建虚拟环境
-  echo "创建Python虚拟环境..."
-  if ! python3 -m venv --system-site-packages "$TARGET_ROOT/.venv" 2>&1; then
-    echo ""
-    echo "ERROR: 虚拟环境创建失败"
-    echo ""
-    echo "请执行以下命令安装依赖后重试:"
-    echo "  sudo apt update"
-    echo "  sudo apt install -y python3-venv python3-dev"
-    echo ""
-    echo "然后删除已创建的目录并重新部署:"
-    echo "  rm -rf $TARGET_ROOT"
-    echo "  bash deploy/scripts/deploy-readonly.sh --one-shot"
-    exit 1
-  fi
-  echo "虚拟环境创建成功 ✅"
+  (cd "$ROOT" && tar cf - --exclude='__pycache__' --exclude='.git' .) | (cd "$TARGET_ROOT" && tar xf -)
   
   # 编译Python代码
   echo "编译Python代码..."
-  if ! PYTHONPATH="$TARGET_ROOT" "$TARGET_ROOT/.venv/bin/python" -m compileall -q "$TARGET_ROOT/backend" 2>&1; then
-    echo "警告: Python代码编译有错误，但不影响部署"
-  fi
-  echo "编译完成 ✅"
+  PYTHONPATH="$TARGET_ROOT" python3 -m compileall -q "$TARGET_ROOT/backend"
   
-  # 准备systemd服务文件
+  # 准备systemd服务文件（使用系统Python）
   echo "准备systemd服务文件..."
   UNIT_PATH="$HOME/.config/systemd/user/$SERVICE_NAME"
   mkdir -p "$(dirname "$UNIT_PATH")"
@@ -216,6 +164,7 @@ install() {
       -e "s#@NOS_HOST@#$NOS_HOST#g" \
       -e "s#@WEB_PORT@#$WEB_PORT#g" \
       -e "s#@STALE_AFTER_SECONDS@#$STALE_AFTER_SECONDS#g" \
+      -e "s#@PYTHON@#$(command -v python3 | sed 's#^/##')#g" \
       "$ROOT/deploy/systemd/m20-patrol-readonly.service" > "$UNIT_PATH"
   
   # 重新加载systemd

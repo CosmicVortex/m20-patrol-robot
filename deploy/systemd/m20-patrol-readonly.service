@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/m20-patrol-robot/current
-Environment=PYTHONPATH=%h/m20-patrol-robot/current
+WorkingDirectory=@TARGET_ROOT@
+Environment=PYTHONPATH=@TARGET_ROOT@
 Environment=M20_RUNTIME_MODE=realtime_readonly
 Environment=M20_READ_ONLY_MODE=true
 Environment=M20_CONTROL_ENABLED=false
@@ -15,14 +15,14 @@ Environment=M20_TARGET_PORT=@AOS_TCP_PORT@
 Environment=M20_TELEMETRY_RX_ENABLED=true
 Environment=M20_WEB_REALTIME_ENABLED=true
 Environment=M20_STALE_AFTER_SECONDS=@STALE_AFTER_SECONDS@
-ExecStart=%h/m20-patrol-robot/current/.venv/bin/python -m backend.app.server --manifest %h/m20-patrol-robot/current/deploy/readonly-manifest.json
+ExecStart=@PYTHON@ -m backend.app.server --manifest @TARGET_ROOT@/deploy/readonly-manifest.json
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=%h/m20-patrol-robot
+ReadWritePaths=@TARGET_ROOT@
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 
 [Install]
