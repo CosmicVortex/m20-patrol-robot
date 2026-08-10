@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # M20 Pro 巡逻机器人 - 简化部署脚本
-# 移除所有校验，自动配置环境变量
+# 自动配置默认密码
 
 set -euo pipefail
 
@@ -10,32 +10,21 @@ TARGET_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/m20-patrol-robot"
 SERVICE_NAME='m20-patrol-readonly.service'
 CONFIG_DIR="$HOME/.config/m20-patrol"
 
-# 生成随机密码
-generate_password() {
-  openssl rand -base64 12 2>/dev/null || cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1
-}
-
 # 确保配置目录存在
 ensure_config() {
   mkdir -p "$CONFIG_DIR"
   
-  # 如果密码文件不存在，生成并保存
+  # 如果密码文件不存在，创建默认配置
   if [ ! -f "$CONFIG_DIR/passwords.env" ]; then
-    echo "生成随机密码..."
     cat > "$CONFIG_DIR/passwords.env" <<EOF
-export M20_GIMBAL_PASSWORD="$(generate_password)"
-export M20_ADMIN_PASSWORD="$(generate_password)"
+export M20_GIMBAL_PASSWORD="123456"
+export M20_ADMIN_PASSWORD="123456"
 EOF
     chmod 600 "$CONFIG_DIR/passwords.env"
-    echo "✅ 密码已生成并保存到: $CONFIG_DIR/passwords.env"
   fi
   
   # 加载密码
   source "$CONFIG_DIR/passwords.env"
-  
-  # 确保环境变量已设置
-  export M20_GIMBAL_PASSWORD="${M20_GIMBAL_PASSWORD:-$(generate_password)}"
-  export M20_ADMIN_PASSWORD="${M20_ADMIN_PASSWORD:-$(generate_password)}"
 }
 
 # 加载配置
@@ -153,6 +142,8 @@ install() {
   echo "配置信息:"
   echo "  服务: $SERVICE_NAME"
   echo "  地址: http://$GOS_HOST:$WEB_PORT"
+  echo "  用户名: admin"
+  echo "  密码: $M20_ADMIN_PASSWORD"
   echo "  密码文件: $CONFIG_DIR/passwords.env"
 }
 
@@ -191,14 +182,10 @@ logs() {
 
 # 显示密码
 show-passwords() {
-  if [ -f "$CONFIG_DIR/passwords.env" ]; then
-    echo "=== 已保存的密码 ==="
-    source "$CONFIG_DIR/passwords.env"
-    echo "M20_GIMBAL_PASSWORD=$M20_GIMBAL_PASSWORD"
-    echo "M20_ADMIN_PASSWORD=$M20_ADMIN_PASSWORD"
-  else
-    echo "密码未生成，请先运行部署"
-  fi
+  ensure_config
+  echo "=== 已保存的密码 ==="
+  echo "M20_GIMBAL_PASSWORD=$M20_GIMBAL_PASSWORD"
+  echo "M20_ADMIN_PASSWORD=$M20_ADMIN_PASSWORD"
 }
 
 # 主入口
