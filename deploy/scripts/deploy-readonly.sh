@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # M20 Pro 巡逻机器人 - 简化部署脚本
-# 自动配置默认密码
+# 自动配置默认密码，检测并安装依赖
 
 set -euo pipefail
 
-# 检测脚本所在目录（可能是子目录内的deploy/scripts/或直接在home）
+# 检测脚本所在目录
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # 尝试找到项目根目录
@@ -22,6 +22,47 @@ MANIFEST="$ROOT/deploy/readonly-manifest.json"
 TARGET_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/m20-patrol-robot"
 SERVICE_NAME='m20-patrol-readonly.service'
 CONFIG_DIR="$HOME/.config/m20-patrol"
+
+# 检查是否为root用户
+check_root() {
+  if [ "$(id -u)" -eq 0 ]; then
+    echo "ERROR: 不允许使用root用户部署"
+    echo "请使用普通用户运行: bash deploy/scripts/deploy-readonly.sh --one-shot"
+    exit 1
+  fi
+}
+
+# 检查并安装依赖
+check_dependencies() {
+  echo "检查系统依赖..."
+  
+  # 检查python3
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "ERROR: python3 未找到"
+    echo "请先安装: sudo apt install python3"
+    exit 1
+  fi
+  
+  # 检查python3-venv
+  if ! python3 -m venv --help >/dev/null 2>&1; then
+    echo "警告: python3-venv 未安装，尝试自动安装..."
+    if command -v sudo >/dev/null 2>&1; then
+      sudo apt install -y python3-venv python3-dev
+    else
+      echo "ERROR: 无法自动安装python3-venv，请手动安装:"
+      echo "  sudo apt install python3-venv python3-dev"
+      exit 1
+    fi
+  fi
+  
+  # 检查systemd
+  if ! command -v systemctl >/dev/null 2>&1; then
+    echo "ERROR: systemctl 未找到，需要systemd支持"
+    exit 1
+  fi
+  
+  echo "依赖检查完成 ✅"
+}
 
 # 确保配置目录存在
 ensure_config() {
@@ -55,9 +96,15 @@ print('STALE_AFTER_SECONDS=' + str(d['stale_after_seconds']))
 "
 }
 
-# 预检（简化）
+# 预检
 preflight() {
   echo "=== 预检 ==="
+  
+  # 检查root
+  check_root
+  
+  # 检查依赖
+  check_dependencies
   
   # 确保配置
   ensure_config
@@ -65,20 +112,6 @@ preflight() {
   echo "GIMBAL_PASSWORD=$M20_GIMBAL_PASSWORD"
   echo "ADMIN_PASSWORD=$M20_ADMIN_PASSWORD"
   echo ""
-  
-  # 检查Python
-  if ! command -v python3 >/dev/null 2>&1; then
-    echo "ERROR: python3 未找到"
-    exit 1
-  fi
-  echo "Python: $(python3 --version 2>&1)"
-  
-  # 检查systemd
-  if ! command -v systemctl >/dev/null 2>&1; then
-    echo "ERROR: systemctl 未找到"
-    exit 1
-  fi
-  echo "systemd: 可用"
   
   # 检查目标目录
   mkdir -p "$TARGET_ROOT"
@@ -123,16 +156,9 @@ install() {
   # 复制文件
   echo "复制文件到 $TARGET_ROOT..."
   
-  # 安全复制：使用rsync或tar，排除目标目录
-  if command -v rsync >/dev/null 2>&1; then
-    rsync -a --exclude='__pycache__' --exclude='.venv' --exclude='.local' \
-      "$ROOT/" "$TARGET_ROOT/"
-  else
-    # 使用tar复制，排除目标目录和.pyc文件
-    (cd "$ROOT" && tar cf - --exclude='__pycache__' --exclude='.venv' \
-      --exclude='.local/share/m20-patrol-robot' .) | \
-      (cd "$TARGET_ROOT" && tar xf -)
-  fi
+  # 安全复制
+  (cd "$ROOT" && tar cf - --exclude='__pycache__' --exclude='.venv' \
+    --exclude='.local' .) | (cd "$TARGET_ROOT" && tar xf -)
   
   # 创建虚拟环境
   echo "创建Python虚拟环境..."
