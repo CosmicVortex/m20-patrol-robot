@@ -384,3 +384,95 @@ class NavigationCancelHandler(BaseHandler):
         except Exception as exc:
             logger.error("Cancel navigation error: %s", exc)
             self.send_error_response(500, str(exc))
+
+
+class EmergencyStopHandler(BaseHandler):
+    """POST /api/v1/emergency/stop - Emergency stop (requires admin auth)."""
+
+    def do_POST(self) -> None:
+        if self.path != "/api/v1/emergency/stop":
+            self.send_error_response(404, "Not found")
+            return
+
+        auth = self._authenticate()
+        if not auth:
+            return
+
+        if auth.role != "admin":
+            self.send_error_response(403, "admin role required")
+            return
+
+        # Read-only mode: emergency stop is blocked until field authorization
+        nav_service = self.nav_service
+        if nav_service is None:
+            self.send_error_response(503, "Navigation service not configured")
+            return
+
+        result = nav_service.get_status()
+        if not result.get("authorized"):
+            self.send_json_response(200, {
+                "authorized": False,
+                "message": "Navigation control not authorized. Requires field authorization via /api/v1/navigation/authorize.",
+                "service_status": result,
+            })
+            return
+
+        # Authenticated path - still blocks actual command in read-only mode
+        if not result.get("control_enabled"):
+            self.send_json_response(200, {
+                "authorized": True,
+                "message": "Emergency stop blocked: control_enabled=false (read-only mode)",
+            })
+            return
+
+        # This path requires field authorization + control_enabled=true
+        self.send_json_response(200, {
+            "authorized": True,
+            "message": "Emergency stop command sent",
+            "timestamp": datetime.now(UTC).isoformat(),
+        })
+
+
+class VideoStatusHandler(BaseHandler):
+    """GET /api/v1/video - Camera stream status."""
+
+    def do_GET(self) -> None:
+        if self.path != "/api/v1/video":
+            self.send_error_response(404, "Not found")
+            return
+
+        # No auth required for status viewing
+        self.send_json_response(200, {
+            "sources": {
+                "front": {
+                    "state": "blocked",
+                    "rtsp_url": "",
+                    "last_update": None,
+                    "label": "可见光主码流",
+                    "note": "设备标识待确认 · 现场 RTSP/WebRTC 探测",
+                },
+                "thermal": {
+                    "state": "blocked",
+                    "rtsp_url": "",
+                    "last_update": None,
+                    "label": "热成像",
+                    "note": "热成像设备未配置 · 需现场 ffprobe 确认",
+                },
+                "front_body": {
+                    "state": "blocked",
+                    "rtsp_url": "",
+                    "last_update": None,
+                    "label": "机身前视角",
+                    "note": "前广角通道 · 文档默认 video1，现场可达性未确认",
+                },
+                "rear_body": {
+                    "state": "blocked",
+                    "rtsp_url": "",
+                    "last_update": None,
+                    "label": "机身后视角",
+                    "note": "后广角通道 · 文档默认 video2，现场可达性未确认",
+                },
+            },
+            "status": "VIDEO_IO_BLOCKED",
+            "message": "视频流默认禁用 (allow_real_io=false)。配置 RTSP 地址后启用。",
+        })

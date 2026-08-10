@@ -18,12 +18,14 @@ from backend.app.api.handlers import (
     AuthMeHandler,
     BaseHandler,
     DevicesListHandler,
+    EmergencyStopHandler,
     HealthHandler,
     NavigationAuthorizeHandler,
     NavigationCancelHandler,
     NavigationStatusHandler,
     NavigationTaskHandler,
     StatusLatestHandler,
+    VideoStatusHandler,
 )
 
 logger = logging.getLogger(__name__)
@@ -43,6 +45,8 @@ class ApiRouter:
         "/api/v1/navigation/authorize": NavigationAuthorizeHandler,
         "/api/v1/navigation/tasks": NavigationTaskHandler,
         "/api/v1/navigation/cancel": NavigationCancelHandler,
+        "/api/v1/emergency/stop": EmergencyStopHandler,
+        "/api/v1/video": VideoStatusHandler,
     }
 
     def __init__(
