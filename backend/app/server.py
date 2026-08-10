@@ -18,7 +18,10 @@ from pathlib import Path
 from typing import Optional
 
 # Ensure backend is importable
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# __file__ = backend/app/server.py
+# parent.parent = backend/
+# parent.parent.parent = project root
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from backend.app.auth.middleware import AuthMiddleware
 from backend.app.auth.store import UserStore
