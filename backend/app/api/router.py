@@ -37,6 +37,7 @@ from backend.app.gimbal.handlers import (
     GimbalVideoHandler,
 )
 from backend.app.gimbal.adapter import SoarGimbalAdapter
+from backend.app.video.stream_manager import VideoStreamManager
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,7 @@ class ApiRouter:
         nav_service: Optional[NavigationService] = None,
         config: Optional[WebServiceConfig] = None,
         gimbal_adapter: Optional[SoarGimbalAdapter] = None,
+        video_manager: Optional[VideoStreamManager] = None,
     ) -> None:
         self.user_store = user_store
         self.auth_middleware = auth_middleware
@@ -80,6 +82,7 @@ class ApiRouter:
         self.nav_service = nav_service
         self.config = config
         self.gimbal_adapter = gimbal_adapter
+        self.video_manager = video_manager
 
     def route(self, handler: BaseHandler) -> None:
         """Route the request to the appropriate handler."""

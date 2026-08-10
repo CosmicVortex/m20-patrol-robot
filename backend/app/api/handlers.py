@@ -446,23 +446,43 @@ class VideoStatusHandler(BaseHandler):
 
         # No auth required for status viewing
         allow_real_io = (self.config.allow_real_io if self.config else False)
-        self.send_json_response(200, {
-            "sources": {
-                "front_body": {
+
+        # Build status from VideoStreamManager if available
+        video_mgr = getattr(self, '_video_manager', None)
+        if video_mgr:
+            states = video_mgr.get_all_states()
+            sources = {}
+            for source, state_info in states.items():
+                sources[source] = {
+                    "state": state_info.get("state", "blocked"),
+                    "rtsp_url": state_info.get("rtsp_url", ""),
+                    "last_update": state_info.get("last_update"),
+                    "label": state_info.get("label", source),
+                }
+        else:
+            sources = {
+                "front": {
                     "state": "blocked" if not allow_real_io else "unverified",
                     "rtsp_url": "rtsp://10.21.31.103:8554/video1",
-                    "last_update": None,
-                    "label": "机身前视角",
-                    "note": "默认地址，需现场 ffprobe 确认可达性",
+                    "label": "前向本体相机",
+                    "note": "需现场ffprobe确认可达性",
                 },
-                "rear_body": {
+                "rear": {
                     "state": "blocked" if not allow_real_io else "unverified",
                     "rtsp_url": "rtsp://10.21.31.103:8554/video2",
-                    "last_update": None,
-                    "label": "机身后视角",
-                    "note": "默认地址，需现场 ffprobe 确认可达性",
+                    "label": "后向本体相机",
+                    "note": "需现场ffprobe确认可达性",
                 },
-            },
+                "thermal": {
+                    "state": "blocked" if not allow_real_io else "unverified",
+                    "rtsp_url": "rtsp://10.21.31.103:8554/thermal",
+                    "label": "热成像相机",
+                    "note": "云台IP待确认",
+                },
+            }
+
+        self.send_json_response(200, {
+            "sources": sources,
             "status": "VIDEO_IO_BLOCKED" if not allow_real_io else "VIDEO_IO_ENABLED",
-            "message": "视频流默认禁用 (allow_real_io=false)。配置 RTSP 地址后启用。" if not allow_real_io else "视频流已启用，等待 ffprobe 探测",
+            "message": "视频流默认禁用，配置 RTSP 地址后启用。" if not allow_real_io else "视频流已启用，等待 ffprobe 探测",
         })

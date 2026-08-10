@@ -29,6 +29,7 @@ from backend.app.navigation.service import NavigationService
 from backend.app.navigation.v010 import NavigationSafetySnapshot
 from backend.app.robot.basic_client import BasicServerConfig
 from backend.app.gimbal.adapter import SoarGimbalAdapter, GimbalConfig
+from backend.app.video.stream_manager import VideoStreamManager
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ class M20WebServer:
         self.nav_service: Optional[NavigationService] = None
         self.router: Optional[ApiRouter] = None
         self.server: Optional[ThreadingHTTPServer] = None
+        self.video_manager = None
 
     def setup(self) -> None:
         """Initialize all components."""
@@ -97,6 +99,9 @@ class M20WebServer:
         basic_client = BasicServerClient(basic_config)
         self.nav_service = NavigationService(basic_client, safety_snapshot)
 
+        # Setup video stream manager
+        self.video_manager = VideoStreamManager(allow_real_io=self.config.allow_real_io)
+
         # Setup API router
         self.router = ApiRouter(
             user_store=self.user_store,
@@ -105,6 +110,7 @@ class M20WebServer:
             nav_service=self.nav_service,
             config=self.config,
             gimbal_adapter=self.gimbal_adapter,
+            video_manager=self.video_manager,
         )
 
         # Setup gimbal adapter
@@ -215,9 +221,11 @@ class M20WebServer:
                     self.wfile.write(body)
                     return
                 if router:
-                    # Inject gimbal adapter for handlers that need it
+                    # Inject dependencies for handlers
                     if hasattr(router, 'gimbal_adapter'):
                         self._gimbal = router.gimbal_adapter
+                    if hasattr(router, 'video_manager'):
+                        self._video_manager = router.video_manager
                     router.route(self)  # type: ignore[arg-type]
                 else:
                     self.send_error_response(503, "Service not ready")
