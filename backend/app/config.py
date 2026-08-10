@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
@@ -84,14 +85,14 @@ class ConfigLoader:
             control_enabled=data.get("control_enabled", False),
             telemetry_tx_enabled=data.get("telemetry_tx_enabled", False),
             telemetry_receive_enabled=data.get("telemetry_receive_enabled", data.get("telemetry_rx_enabled", True)),
-            stale_after_s=data.get("stale_after_s", data.get("stale_after_seconds", 3.0)),
+            stale_after_s=float(os.environ.get("M20_STALE_AFTER_SECONDS") or data.get("stale_after_s", data.get("stale_after_seconds", 3.0))),
             session_ttl_s=data.get("session_ttl_s", 1800),
             auth_enabled=data.get("auth_enabled", True),
             allow_anonymous=data.get("allow_anonymous", False),
             allow_real_io=data.get("allow_real_io", False),
             gimbal_host=data.get("gimbal_host", ""),
             gimbal_username=data.get("gimbal_username", "admin"),
-            gimbal_password=data.get("gimbal_password", "123456"),
+            gimbal_password=os.environ.get("M20_GIMBAL_PASSWORD") or data.get("gimbal_password", "123456"),
             manifest_path=manifest_path,
             static_root=data.get("static_root", str(release_root / "docs" / "website")),
             auth_db_path=data.get("auth_db_path", str(release_root / "var" / "m20_auth.db")),
