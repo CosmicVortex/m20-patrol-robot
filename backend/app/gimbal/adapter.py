@@ -225,16 +225,37 @@ class SoarGimbalAdapter:
         return discovered
 
     def auto_connect(self) -> bool:
-        """Auto-discover and connect to gimbal."""
-        # If host already configured, try direct connection
+        """Auto-discover and connect to gimbal.
+
+        Priority:
+        1. Use configured host if set
+        2. Try default Soar IP (192.168.1.108)
+        3. Fall back to network scan
+        """
+        # Priority 1: Use configured host
         if self.config.host:
             logger.info("尝试直连云台: %s", self.config.host)
             if self.login():
                 self.config.discovered = True
                 return True
-            logger.warning("直连失败，尝试自动发现...")
+            logger.warning("直连失败: %s，尝试默认IP...", self.config.host)
 
-        # Auto-discover
+        # Priority 2: Try default Soar IP
+        default_ip = "192.168.1.108"
+        logger.info("尝试默认IP: %s", default_ip)
+        self.config.host = default_ip
+        self._base_url = f"http://{default_ip}:{self.config.port}"
+        if self.login():
+            self.config.discovered = True
+            logger.info("云台已连接: %s", default_ip)
+            return True
+        logger.warning("默认IP连接失败，尝试网络扫描...")
+
+        # Priority 3: Network scan fallback
+        return self._fallback_scan()
+
+    def _fallback_scan(self) -> bool:
+        """Fallback to network scan if default IP fails."""
         found = self.discover()
         if not found:
             return False
@@ -246,6 +267,10 @@ class SoarGimbalAdapter:
         self.config.thermal_rtsp_url = found[0].thermal_rtsp_url
         self.config.discovered = True
 
+        logger.info("云台自动发现: %s (型号: %s)", self.config.host, found[0].model)
+
+        # Connect
+        return self.login()
         logger.info("云台自动发现: %s (型号: %s)", self.config.host, found[0].model)
 
         # Connect
