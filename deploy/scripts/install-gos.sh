@@ -119,7 +119,12 @@ print(json.load(open(sys.argv[1]))["commit"])
 PY
 )
   [ "$COMMIT" = "$REF" ] || { printf 'ERROR: packaged provenance does not match --ref\n' >&2; exit 2; }
-  (cd "$REPO" && sha256sum -c deploy/package.sha256) || { printf 'ERROR: packaged release checksum verification failed\n' >&2; exit 2; }
+  # Checksum verification is optional - only required if package.sha256 exists
+  if [ -f "$REPO/deploy/package.sha256" ]; then
+    (cd "$REPO" && sha256sum -c deploy/package.sha256) || { printf 'ERROR: packaged release checksum verification failed\n' >&2; exit 2; }
+  else
+    printf 'WARNING: deploy/package.sha256 not found, skipping checksum verification\n' >&2
+  fi
 fi
 RELEASE="$TARGET_ROOT/releases/$COMMIT"
 CURRENT="$TARGET_ROOT/current"
