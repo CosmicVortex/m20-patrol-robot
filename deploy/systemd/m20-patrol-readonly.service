@@ -4,25 +4,25 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=@TARGET_ROOT@
-Environment=PYTHONPATH=@TARGET_ROOT@
+WorkingDirectory=/home/user/.local/share/m20-patrol-robot
+Environment=PYTHONPATH=/home/user/.local/share/m20-patrol-robot
 Environment=M20_RUNTIME_MODE=realtime_readonly
 Environment=M20_READ_ONLY_MODE=true
 Environment=M20_CONTROL_ENABLED=false
 Environment=M20_TELEMETRY_TX_ENABLED=false
-Environment=M20_TARGET_HOST=@AOS_HOST@
-Environment=M20_TARGET_PORT=@AOS_TCP_PORT@
+Environment=M20_TARGET_HOST=10.21.31.103
+Environment=M20_TARGET_PORT=8888
 Environment=M20_TELEMETRY_RX_ENABLED=true
 Environment=M20_WEB_REALTIME_ENABLED=true
-Environment=M20_STALE_AFTER_SECONDS=@STALE_AFTER_SECONDS@
-ExecStart=@PYTHON@ -m backend.app.server --manifest @TARGET_ROOT@/deploy/readonly-manifest.json
+Environment=M20_STALE_AFTER_SECONDS=300
+ExecStart=/usr/bin/python3 -m backend.app.server --manifest /home/user/.local/share/m20-patrol-robot/deploy/readonly-manifest.json
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=@TARGET_ROOT@
+ReadWritePaths=/home/user/.local/share/m20-patrol-robot
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 
 [Install]

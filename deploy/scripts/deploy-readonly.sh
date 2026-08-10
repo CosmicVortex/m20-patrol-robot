@@ -22,6 +22,7 @@ MANIFEST="$ROOT/deploy/readonly-manifest.json"
 TARGET_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/m20-patrol-robot"
 SERVICE_NAME='m20-patrol-readonly.service'
 CONFIG_DIR="$HOME/.config/m20-patrol"
+PYTHON_BIN="$(command -v python3)"
 
 # 检查是否为root用户
 check_root() {
@@ -153,19 +154,43 @@ install() {
   echo "编译Python代码..."
   PYTHONPATH="$TARGET_ROOT" python3 -m compileall -q "$TARGET_ROOT/backend"
   
-  # 准备systemd服务文件（使用系统Python）
+  # 准备systemd服务文件
   echo "准备systemd服务文件..."
   UNIT_PATH="$HOME/.config/systemd/user/$SERVICE_NAME"
   mkdir -p "$(dirname "$UNIT_PATH")"
   
-  # 替换模板变量
-  sed -e "s#@GOS_HOST@#$GOS_HOST#g" \
-      -e "s#@AOS_HOST@#$AOS_HOST#g" \
-      -e "s#@NOS_HOST@#$NOS_HOST#g" \
-      -e "s#@WEB_PORT@#$WEB_PORT#g" \
-      -e "s#@STALE_AFTER_SECONDS@#$STALE_AFTER_SECONDS#g" \
-      -e "s#@PYTHON@#$(command -v python3 | sed 's#^/##')#g" \
-      "$ROOT/deploy/systemd/m20-patrol-readonly.service" > "$UNIT_PATH"
+  # 生成服务文件（直接替换占位符）
+  cat > "$UNIT_PATH" <<EOF
+[Unit]
+Description=M20 Patrol Robot read-only dashboard
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=${TARGET_ROOT}
+Environment=PYTHONPATH=${TARGET_ROOT}
+Environment=M20_RUNTIME_MODE=realtime_readonly
+Environment=M20_READ_ONLY_MODE=true
+Environment=M20_CONTROL_ENABLED=false
+Environment=M20_TELEMETRY_TX_ENABLED=false
+Environment=M20_TARGET_HOST=${AOS_HOST}
+Environment=M20_TARGET_PORT=@AOS_TCP_PORT@
+Environment=M20_TELEMETRY_RX_ENABLED=true
+Environment=M20_WEB_REALTIME_ENABLED=true
+Environment=M20_STALE_AFTER_SECONDS=${STALE_AFTER_SECONDS}
+ExecStart=${PYTHON_BIN} -m backend.app.server --manifest ${TARGET_ROOT}/deploy/readonly-manifest.json
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=${TARGET_ROOT}
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=default.target
+EOF
   
   # 重新加载systemd
   echo "重新加载systemd..."
@@ -176,7 +201,7 @@ install() {
   echo ""
   echo "配置信息:"
   echo "  服务: $SERVICE_NAME"
-  echo "  地址: http://$GOS_HOST:$WEB_PORT"
+  echo "  地址: http://${GOS_HOST}:${WEB_PORT}"
   echo "  用户名: admin"
   echo "  密码: $M20_ADMIN_PASSWORD"
   echo "  密码文件: $CONFIG_DIR/passwords.env"
