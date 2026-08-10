@@ -28,6 +28,15 @@ from backend.app.api.handlers import (
     StatusLatestHandler,
     VideoStatusHandler,
 )
+from backend.app.gimbal.handlers import (
+    GimbalStateHandler,
+    GimbalMoveHandler,
+    GimbalZoomHandler,
+    GimbalAngleHandler,
+    GimbalDeviceInfoHandler,
+    GimbalVideoHandler,
+)
+from backend.app.gimbal.adapter import SoarGimbalAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +57,12 @@ class ApiRouter:
         "/api/v1/navigation/cancel": NavigationCancelHandler,
         "/api/v1/emergency/stop": EmergencyStopHandler,
         "/api/v1/video": VideoStatusHandler,
+        "/api/v1/gimbal/state": GimbalStateHandler,
+        "/api/v1/gimbal/move": GimbalMoveHandler,
+        "/api/v1/gimbal/zoom": GimbalZoomHandler,
+        "/api/v1/gimbal/angle": GimbalAngleHandler,
+        "/api/v1/gimbal/device/info": GimbalDeviceInfoHandler,
+        "/api/v1/gimbal/video": GimbalVideoHandler,
     }
 
     def __init__(
@@ -57,12 +72,14 @@ class ApiRouter:
         telemetry_adapter: Optional[TelemetryAdapter] = None,
         nav_service: Optional[NavigationService] = None,
         config: Optional[WebServiceConfig] = None,
+        gimbal_adapter: Optional[SoarGimbalAdapter] = None,
     ) -> None:
         self.user_store = user_store
         self.auth_middleware = auth_middleware
         self.telemetry_adapter = telemetry_adapter
         self.nav_service = nav_service
         self.config = config
+        self.gimbal_adapter = gimbal_adapter
 
     def route(self, handler: BaseHandler) -> None:
         """Route the request to the appropriate handler."""

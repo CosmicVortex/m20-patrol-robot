@@ -119,8 +119,8 @@ class TelemetryAdapter:
         """Start real-time status streaming."""
         if self._running:
             return
-        logger.info("正在启动遥测连接: %s:%s", self.config.host, self.config.tcp_port)
-        logger.info("运行模式: %s, 只读模式: %s", self.config.runtime_mode, self.config.read_only)
+        logger.info("启动遥测连接: %s:%s", self.config.host, self.config.tcp_port)
+        logger.info("运行模式: %s", self.config.runtime_mode)
         self._running = True
         self._thread = threading.Thread(target=self._run_loop, daemon=True)
         self._thread.start()
@@ -141,12 +141,12 @@ class TelemetryAdapter:
     def _run_loop(self) -> None:
         """Main loop: heartbeat + receive status messages."""
         if self.config.runtime_mode == "simulated":
-            logger.info("当前为模拟模式，遥测数据为模拟值")
+            logger.info("模拟模式: 使用模拟数据")
             while self._running:
                 self._update_snapshot_no_client(error="simulated mode: robot I/O disabled")
                 time.sleep(0.5)
             return
-        logger.info("正在连接 AOS basic_server: %s:%s", self.config.host, self.config.tcp_port)
+        logger.info("连接AOS: %s:%s", self.config.host, self.config.tcp_port)
         config = BasicServerConfig(
             host=self.config.host,
             tcp_port=self.config.tcp_port,
@@ -161,9 +161,8 @@ class TelemetryAdapter:
 
         while self._running:
             try:
-                logger.info("正在连接 AOS basic_server: %s:%s...", self.config.host, self.config.tcp_port)
                 client.connect(timeout_seconds=3.0, read_only=True)
-                logger.info("已连接 AOS basic_server, 开始接收状态数据")
+                logger.info("遥测连接成功")
                 self._tcp_connected = True
                 self._connection_received_messages = 0
                 self._connection_count += 1
@@ -196,7 +195,7 @@ class TelemetryAdapter:
                     # churn through reconnects. Once a frame was received,
                     # the normal freshness threshold applies.
                     if client._last_received_at is not None and client.is_stale(now):
-                        logger.warning("遥测数据超时，正在重新连接...")
+                        logger.warning("遥测超时，重新连接...")
                         self._update_snapshot(client, connected=True, stale=True)
                         client.close()
                         self._client = None
@@ -212,7 +211,7 @@ class TelemetryAdapter:
                 time.sleep(1)
             except Exception as e:
                 self._tcp_connected = False
-                logger.error("遥测连接异常: %s", e)
+                logger.error("遥测异常: %s", e)
                 self._update_snapshot(client, connected=False, error=str(e))
                 time.sleep(1)
 

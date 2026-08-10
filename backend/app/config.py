@@ -28,6 +28,9 @@ class WebServiceConfig:
     auth_enabled: bool = True
     allow_anonymous: bool = False
     allow_real_io: bool = False
+    gimbal_host: str = ""
+    gimbal_username: str = "admin"
+    gimbal_password: str = "123456"
     manifest_path: str = ""
     static_root: str = ""
     auth_db_path: str = ""
@@ -84,6 +87,9 @@ class ConfigLoader:
             auth_enabled=data.get("auth_enabled", True),
             allow_anonymous=data.get("allow_anonymous", False),
             allow_real_io=data.get("allow_real_io", False),
+            gimbal_host=data.get("gimbal_host", ""),
+            gimbal_username=data.get("gimbal_username", "admin"),
+            gimbal_password=data.get("gimbal_password", "123456"),
             manifest_path=manifest_path,
             static_root=data.get("static_root", str(release_root / "docs" / "website")),
             auth_db_path=data.get("auth_db_path", str(release_root / "var" / "m20_auth.db")),

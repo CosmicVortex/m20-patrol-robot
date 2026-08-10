@@ -28,6 +28,7 @@ from backend.app.api.handlers import BaseHandler
 from backend.app.navigation.service import NavigationService
 from backend.app.navigation.v010 import NavigationSafetySnapshot
 from backend.app.robot.basic_client import BasicServerConfig
+from backend.app.gimbal.adapter import SoarGimbalAdapter, GimbalConfig
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +63,7 @@ class M20WebServer:
 
         # Always create the adapter. In simulated mode it provides an explicit
         # SIMULATED/NO_DATA API state instead of making the endpoint disappear.
-        logger.info("正在初始化遥测适配器...")
+        logger.info("初始化遥测适配器...")
         telemetry_config = ConnectionConfig(
             host=self.config.aos_host,
             tcp_port=self.config.aos_port,
@@ -103,7 +104,23 @@ class M20WebServer:
             telemetry_adapter=self.telemetry_adapter,
             nav_service=self.nav_service,
             config=self.config,
+            gimbal_adapter=self.gimbal_adapter,
         )
+
+        # Setup gimbal adapter
+        self.gimbal_adapter: Optional[SoarGimbalAdapter] = None
+        if self.config.gimbal_host:
+            logger.info("初始化云台适配器: %s", self.config.gimbal_host)
+            gimbal_config = GimbalConfig(
+                host=self.config.gimbal_host,
+                username=self.config.gimbal_username,
+                password=self.config.gimbal_password,
+            )
+            self.gimbal_adapter = SoarGimbalAdapter(gimbal_config)
+            if self.gimbal_adapter.login():
+                logger.info("云台连接成功: %s", self.config.gimbal_host)
+            else:
+                logger.warning("云台连接失败: %s", self.config.gimbal_host)
 
     def _ensure_admin_user(self) -> None:
         """Create default admin user if not exists."""
@@ -143,15 +160,17 @@ class M20WebServer:
             "Runtime mode: %s\n"
             "Read-only: %s\n"
             "Control enabled: %s\n"
-            "Auth enabled: %s",
+            "Auth enabled: %s\n"
+            "Gimbal: %s",
             self.config.host, self.config.port,
             self.config.runtime_mode, self.config.read_only_mode,
             self.config.control_enabled, self.config.auth_enabled,
+            self.config.gimbal_host or "未配置",
         )
 
-        logger.info("已启动 Web 服务: %s:%s", self.config.host, self.config.port)
+        logger.info("Web服务已启动: %s:%s", self.config.host, self.config.port)
         logger.info("遥测目标: %s:%s (模式: %s)", self.config.aos_host, self.config.aos_port, self.config.runtime_mode)
-        logger.info("安全门控: 只读模式=%s, 控制命令=%s", self.config.read_only_mode, self.config.control_enabled)
+        logger.info("安全配置: 只读模式=%s, 控制命令=%s", self.config.read_only_mode, self.config.control_enabled)
 
         try:
             self.server.serve_forever()
@@ -196,6 +215,9 @@ class M20WebServer:
                     self.wfile.write(body)
                     return
                 if router:
+                    # Inject gimbal adapter for handlers that need it
+                    if hasattr(router, 'gimbal_adapter'):
+                        self._gimbal = router.gimbal_adapter
                     router.route(self)  # type: ignore[arg-type]
                 else:
                     self.send_error_response(503, "Service not ready")
@@ -215,6 +237,8 @@ class M20WebServer:
         """Stop the web server."""
         if self.telemetry_adapter:
             self.telemetry_adapter.stop()
+        if self.gimbal_adapter:
+            self.gimbal_adapter.close()
         if self.server:
             self.server.shutdown()
             self.server = None

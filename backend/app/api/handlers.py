@@ -149,7 +149,7 @@ class AuthLoginHandler(BaseHandler):
         try:
             user = self.user_store.authenticate(username, password)
             session = self.user_store.create_session(user)
-            logger.info("用户登录成功: %s, 角色: %s", user.username, user.role)
+            logger.info("用户登录: %s", user.username)
             body = {
                 "user_id": user.user_id,
                 "username": user.username,
@@ -169,8 +169,7 @@ class AuthLoginHandler(BaseHandler):
             self.end_headers()
             self.wfile.write(encoded)
         except AuthenticationError:
-            # Don't leak whether username exists
-            logger.warning("登录失败: 用户名或密码错误")
+            logger.warning("登录失败")
             self.send_error_response(401, "invalid credentials")
         except Exception as exc:
             logger.error("Login error: %s", exc)
