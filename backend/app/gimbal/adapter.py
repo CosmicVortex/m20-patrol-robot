@@ -108,10 +108,10 @@ class SoarGimbalAdapter:
                 except json.JSONDecodeError:
                     return resp.status, {}
         except urllib.error.HTTPError as e:
-            logger.debug("Gimbal request %s %s -> %s", method, path, e.code)
+            logger.debug("云台请求 %s %s -> HTTP %s", method, path, e.code)
             return e.code, {}
         except Exception as e:
-            logger.debug("Gimbal request error %s %s: %s", method, path, e)
+            logger.debug("云台请求异常 %s %s: %s", method, path, e)
             return 0, {}
 
     # ---- Discovery ----
@@ -157,7 +157,7 @@ class SoarGimbalAdapter:
                     accessible=True,
                 )
         except Exception as e:
-            logger.debug("Failed to get gimbal info from %s: %s", host, e)
+            logger.debug("获取云台信息失败 %s: %s", host, e)
             return None
 
     def discover(self, ranges: Optional[List[str]] = None, max_hosts: int = 100) -> List[DiscoveredGimbal]:
@@ -271,10 +271,6 @@ class SoarGimbalAdapter:
 
         # Connect
         return self.login()
-        logger.info("云台自动发现: %s (型号: %s)", self.config.host, found[0].model)
-
-        # Connect
-        return self.login()
 
     # ---- Connection ----
 
@@ -296,7 +292,12 @@ class SoarGimbalAdapter:
                 if self._session:
                     logger.info("云台登录成功: %s", self.config.host)
                     self._start_heartbeat()
+                else:
+                    logger.warning("云台登录响应缺少 Session 字段: %s", data)
                 return self._session is not None
+        except urllib.error.HTTPError as e:
+            logger.warning("云台登录 HTTP 错误: %s", e.code)
+            return False
         except Exception as e:
             logger.warning("云台登录失败: %s", e)
             return False

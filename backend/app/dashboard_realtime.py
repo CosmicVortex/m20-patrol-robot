@@ -550,7 +550,7 @@ setInterval(() => {{
             const navLabel = navStatusMap[nav.status] || String(nav.status || 0);
             const metrics = navEl.querySelectorAll('.metric');
             if (metrics[0]) metrics[0].querySelector('.num').textContent = nav.loop_count || 0;
-            if (metrics[1]) metrics[1].querySelector('.num').textContent = '0%'; // coverage from inspection_stats
+            if (metrics[1]) metrics[1].querySelector('.num').textContent = (v.inspection_stats?.coverage_rate ?? 0) + '%'; // coverage from inspection_stats
             if (metrics[2]) {{
                 const n = metrics[2].querySelector('.num');
                 n.textContent = navLabel;

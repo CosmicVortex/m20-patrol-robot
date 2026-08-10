@@ -44,7 +44,7 @@ class VideoStreamManager:
 
     def __init__(self, *, allow_real_io: bool = False) -> None:
         if type(allow_real_io) is not bool:
-            raise ValueError("allow_real_io must be boolean")
+            raise ValueError("allow_real_io 必须为布尔值")
         self.allow_real_io = allow_real_io
         self._streams: Dict[str, CameraConfig] = {
             "front": CameraConfig("front", "前向本体相机", "rtsp://10.21.31.103:8554/video1"),
@@ -87,6 +87,13 @@ class VideoStreamManager:
     def get_camera_config(self, source: str) -> Optional[CameraConfig]:
         return self._streams.get(source)
 
+    def set_rtsp_url(self, source: str, rtsp_url: str) -> bool:
+        """Update RTSP URL for a camera source."""
+        if source not in self._streams:
+            return False
+        self._streams[source] = self._streams[source]._replace(rtsp_url=rtsp_url)
+        return True
+
     def get_stream_state(self, source: str) -> StreamState:
         return self._stream_states.get(source, StreamState.DISCONNECTED)
 
@@ -98,6 +105,7 @@ class VideoStreamManager:
                 if self._last_update[source]
                 else None,
                 "rtsp_url": self._streams[source].rtsp_url,
+                "label": self._streams[source].name,
             }
             for source, state in self._stream_states.items()
         }
@@ -120,10 +128,10 @@ class VideoStreamManager:
     async def probe_camera(self, source: str) -> Dict[str, Any]:
         """Probe RTSP accessibility and codec metadata without leaking ffprobe."""
         if source not in self._streams:
-            return {"error": f"Unknown camera source: {source}"}
+            return {"error": f"未知摄像头源: {source}"}
         self._get_process_lock(source)
         if not self.allow_real_io:
-            return {"error": "real video I/O is disabled by default", "status": "BLOCKED"}
+            return {"error": "视频 I/O 默认禁用，需配置 allow_real_io=true", "status": "BLOCKED"}
         config = self._streams[source]
         result: Dict[str, Any] = {
             "source": source,
@@ -193,10 +201,10 @@ class VideoStreamManager:
     async def start_stream(self, source: str) -> Dict[str, Any]:
         """Start an FFmpeg stream and monitor all owned subprocess resources."""
         if not self.allow_real_io:
-            return {"error": "real video I/O is disabled by default", "status": "BLOCKED"}
+            return {"error": "视频 I/O 默认禁用，需配置 allow_real_io=true", "status": "BLOCKED"}
         config = self._streams.get(source)
         if not config:
-            return {"error": f"Unknown camera source: {source}"}
+            return {"error": f"未知摄像头源: {source}"}
 
         async with self._get_process_lock(source):
             existing = self._processes.get(source)
@@ -208,7 +216,7 @@ class VideoStreamManager:
                 if not stopped:
                     with self._lock:
                         self._stream_states[source] = StreamState.ERROR
-                    return {"status": "error", "message": "stale process did not exit"}
+                    return {"status": "error", "message": "进程未能正常退出"}
                 self._processes.pop(source, None)
                 await self._cancel_tasks(source)
             with self._lock:
@@ -236,7 +244,7 @@ class VideoStreamManager:
                     lambda task, stream=source: self._watcher_done(stream, task)
                 )
                 self._start_drainers(source, proc)
-                logger.info("Started RTSP stream for %s: %s", source, config.rtsp_url)
+                logger.info("已启动 RTSP 流: %s - %s", source, config.rtsp_url)
                 return {"status": "started", "source": source, "rtsp_url": config.rtsp_url}
             except BaseException as error:
                 if proc is not None:
@@ -245,7 +253,7 @@ class VideoStreamManager:
                     await self._cancel_tasks(source)
                 with self._lock:
                     self._stream_states[source] = StreamState.ERROR
-                logger.error("Failed to start stream for %s: %s", source, error)
+                logger.error("启动 RTSP 流失败 %s: %s", source, error)
                 if isinstance(error, asyncio.CancelledError):
                     raise
                 return {"error": str(error)}
@@ -253,7 +261,7 @@ class VideoStreamManager:
     async def stop_stream(self, source: str) -> Dict[str, Any]:
         """Stop a stream, retaining failed process references for retry/diagnosis."""
         if source not in self._streams:
-            return {"error": f"Unknown camera source: {source}"}
+            return {"error": f"未知摄像头源: {source}"}
         async with self._get_process_lock(source):
             proc = self._processes.get(source)
             if proc is None:
@@ -261,8 +269,8 @@ class VideoStreamManager:
             try:
                 stopped = await self._finalize_stop(source, proc)
                 if not stopped:
-                    return {"status": "error", "message": "process did not exit"}
-                logger.info("Stopped RTSP stream for %s", source)
+                    return {"status": "error", "message": "进程未能正常退出"}
+                logger.info("已停止 RTSP 流: %s", source)
                 return {"status": "stopped", "source": source}
             except asyncio.CancelledError:
                 cleanup_task = asyncio.create_task(self._finalize_stop(source, proc))
@@ -274,7 +282,7 @@ class VideoStreamManager:
             except Exception as error:
                 with self._lock:
                     self._stream_states[source] = StreamState.ERROR
-                logger.error("Error stopping stream %s: %s", source, error)
+                logger.error("停止 RTSP 流失败 %s: %s", source, error)
                 return {"status": "error", "message": str(error)}
 
     async def _terminate_process(self, proc: asyncio.subprocess.Process, label: str) -> bool:
@@ -292,12 +300,12 @@ class VideoStreamManager:
             except ProcessLookupError:
                 return True
             except Exception as error:
-                logger.error("%s process did not exit after kill: %s", label, error)
+                logger.error("进程未能正常退出: %s", label)
                 return False
         except ProcessLookupError:
             return True
         except Exception as error:
-            logger.error("%s process termination failed: %s", label, error)
+            logger.error("进程终止失败: %s", error)
             return False
 
     def _start_drainers(self, source: str, proc: asyncio.subprocess.Process) -> None:
@@ -316,7 +324,7 @@ class VideoStreamManager:
         except asyncio.CancelledError:
             raise
         except Exception as error:
-            logger.warning("Video subprocess pipe drain failed: %s", error)
+            logger.warning("视频子进程管道清理失败: %s", error)
 
     async def _watch_process(self, source: str, proc: asyncio.subprocess.Process) -> None:
         try:
@@ -336,12 +344,12 @@ class VideoStreamManager:
 
     def _watcher_done(self, source: str, task: asyncio.Task[None]) -> None:
         if not task.cancelled() and (error := task.exception()) is not None:
-            logger.error("Video watcher failed for %s: %s", source, error)
+            logger.error("视频监控任务失败 %s: %s", source, error)
 
     def _drainer_done(self, source: str, task: asyncio.Task[None]) -> None:
         self._drainers[source].discard(task)
         if not task.cancelled() and (error := task.exception()) is not None:
-            logger.warning("Video drainer failed for %s: %s", source, error)
+            logger.warning("视频数据清理失败 %s: %s", source, error)
 
     async def _cancel_tasks(
         self, source: str, exclude: Optional[asyncio.Task] = None

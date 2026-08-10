@@ -116,7 +116,7 @@ class TelemetryAdapter:
         return self._error_count
 
     def start(self) -> None:
-        """Start real-time status streaming."""
+        """启动实时状态订阅。"""
         if self._running:
             return
         logger.info("启动遥测连接: %s:%s", self.config.host, self.config.tcp_port)
@@ -126,7 +126,7 @@ class TelemetryAdapter:
         self._thread.start()
 
     def stop(self) -> None:
-        """Stop streaming and close connection."""
+        """停止订阅并关闭连接。"""
         self._running = False
         if self._client:
             try:
@@ -139,14 +139,14 @@ class TelemetryAdapter:
             self._thread = None
 
     def _run_loop(self) -> None:
-        """Main loop: heartbeat + receive status messages."""
+        """主循环: 心跳 + 接收状态消息。"""
         if self.config.runtime_mode == "simulated":
             logger.info("模拟模式: 使用模拟数据")
             while self._running:
                 self._update_snapshot_no_client(error="simulated mode: robot I/O disabled")
                 time.sleep(0.5)
             return
-        logger.info("连接AOS: %s:%s", self.config.host, self.config.tcp_port)
+        logger.info("连接 AOS: %s:%s", self.config.host, self.config.tcp_port)
         config = BasicServerConfig(
             host=self.config.host,
             tcp_port=self.config.tcp_port,
@@ -195,7 +195,7 @@ class TelemetryAdapter:
                     # churn through reconnects. Once a frame was received,
                     # the normal freshness threshold applies.
                     if client._last_received_at is not None and client.is_stale(now):
-                        logger.warning("遥测超时，重新连接...")
+                        logger.warning("遥测数据超时，重新连接...")
                         self._update_snapshot(client, connected=True, stale=True)
                         client.close()
                         self._client = None

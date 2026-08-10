@@ -304,7 +304,3 @@ def main() -> None:
     # Start server
     server = M20WebServer(config)
     server.start()
-
-
-if __name__ == "__main__":
-    main()

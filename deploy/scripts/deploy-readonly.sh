@@ -19,7 +19,7 @@ say() { printf '%s\n' "$*"; }
 fail() { say "BLOCKED:$*" >&2; exit 2; }
 
 load_manifest_values() {
-  [ -f "$MANIFEST" ] || fail 'MANIFEST_MISSING'
+  [ -f "$MANIFEST" ] || fail 'MANIFEST_MISSING (部署清单文件未找到)'
   IFS=$'\t' read -r GOS_HOST AOS_HOST NOS_HOST AOS_TCP_PORT AOS_UDP_PORT RTSP_PORT WEB_PORT STALE_AFTER_SECONDS < <(
     python3 - "$MANIFEST" <<'PY'
 import json, sys
@@ -35,8 +35,8 @@ PY
 }
 
 check_manifest() {
-  [ -f "$MANIFEST" ] || fail 'MANIFEST_MISSING'
-  command -v python3 >/dev/null || fail 'PYTHON3_MISSING'
+  [ -f "$MANIFEST" ] || fail 'MANIFEST_MISSING (部署清单文件未找到)'
+  command -v python3 >/dev/null || fail 'PYTHON3_MISSING (python3 命令未找到)'
   python3 - "$MANIFEST" <<'PY'
 import json, sys
 p=sys.argv[1]
@@ -55,15 +55,15 @@ assert d["credentials_included"] is False
 PY
   if grep -R -n '10\.21\.31\.101' "$ROOT/deploy" "$ROOT/backend" --include='*.py' --include='*.sh' --include='*.service' >/dev/null; then fail 'DEPRECATED_ADDRESS_PRESENT'; fi
   if grep -R -n -E 'pkill|nohup' "$ROOT/deploy/scripts" --include='*.sh' --exclude='deploy-readonly.sh' >/dev/null; then
-    fail 'UNSAFE_PROCESS_CONTROL_PRESENT'
+    fail 'UNSAFE_PROCESS_CONTROL_PRESENT (检测到不安全的进程控制命令)'
   fi
 }
 
 check_clean_source() {
   if [ -d "$ROOT/.git" ] || [ -f "$ROOT/.git" ]; then
-    [ -z "$(git -C "$ROOT" status --porcelain)" ] || fail 'WORKTREE_DIRTY_COMMIT_REQUIRED'
+    [ -z "$(git -C "$ROOT" status --porcelain)" ] || fail 'WORKTREE_DIRTY_COMMIT_REQUIRED (工作目录有未提交的更改)'
   else
-    [ -f "$ROOT/deploy/release-provenance.json" ] || fail 'RELEASE_PROVENANCE_MISSING'
+    [ -f "$ROOT/deploy/release-provenance.json" ] || fail 'RELEASE_PROVENANCE_MISSING (发布证明文件缺失)'
   fi
 }
 
@@ -81,7 +81,7 @@ check_python() {
   PYTHON_BIN=""
   PYTHON_BIN="$(command -v python3.8 || true)"
   [ -n "$PYTHON_BIN" ] || PYTHON_BIN="$(command -v python3 || true)"
-  [ -n "$PYTHON_BIN" ] || fail 'PYTHON_MISSING'
+  [ -n "$PYTHON_BIN" ] || fail 'PYTHON_MISSING (python3 命令未找到)'
 
   # Check Python version - accept 3.8+ or 3.10+
   PY_VERSION="$("$PYTHON_BIN" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")')"
@@ -94,16 +94,16 @@ check_python() {
     fail "PYTHON_VERSION_UNSUPPORTED (需要 Python 3.8+，当前: $PY_VERSION)"
   fi
 
-  say 'PY_RUNTIME_CHECK=PASS'
-  "$PYTHON_BIN" -m compileall -q "$ROOT/backend" || fail 'COMPILE_FAILED'
-  PYTHONPATH="$ROOT" "$PYTHON_BIN" - <<'PY' || fail 'PY_IMPORT_CHECK_FAILED'
+  say 'PY_RUNTIME_CHECK=PASS (Python 运行时检查通过)'
+  "$PYTHON_BIN" -m compileall -q "$ROOT/backend" || fail 'COMPILE_FAILED (Python 代码编译失败)'
+  PYTHONPATH="$ROOT" "$PYTHON_BIN" - <<'PY' || fail 'PY_IMPORT_CHECK_FAILED (Python 模块导入失败)'
 from backend.app.dashboard_realtime import DashboardConfig, RealTimeDashboard
 from backend.app.robot.telemetry import ConnectionConfig
 assert DashboardConfig().read_only_mode is True
 assert ConnectionConfig(host="10.21.31.103").telemetry_tx_enabled is False
 PY
-  say 'PY_AST_CHECK=PASS'
-  say 'PY_IMPORT_CHECK=PASS'
+  say 'PY_AST_CHECK=PASS (Python 代码 AST 检查通过)'
+  say 'PY_IMPORT_CHECK=PASS (Python 模块导入检查通过)'
 }
 
 check_host() {
@@ -115,7 +115,7 @@ check_host() {
 
   # 检查systemd
   if ! command -v systemctl >/dev/null 2>&1; then
-    fail 'SYSTEMCTL_MISSING'
+    fail 'SYSTEMCTL_MISSING (systemctl 命令未找到，需要 systemd 支持)'
   fi
   say "systemctl: $(command -v systemctl)"
 
@@ -123,13 +123,13 @@ check_host() {
     say "警告: systemd user session不可用，尝试systemd --user检查..."
     # 尝试检查是否用户已loginctl
     if ! loginctl show-user $(id -un) 2>/dev/null | grep -q "State:.*active"; then
-      fail 'SYSTEMD_USER_UNAVAILABLE'
+      fail 'SYSTEMD_USER_UNAVAILABLE (systemd 用户会话不可用)'
     fi
   fi
 
   # 检查root用户
   if [ "$(id -u)" = "0" ]; then
-    fail 'ROOT_USER_NOT_ALLOWED'
+    fail 'ROOT_USER_NOT_ALLOWED (不允许以 root 用户部署)'
   fi
 
   # 检查ip命令
@@ -142,7 +142,12 @@ check_host() {
   # 检查GOS身份 - 尝试多种方法
   _ip_addr=""
   if command -v ip >/dev/null 2>&1; then
-    _ip_addr=$(ip -4 -o addr show 2>/dev/null | awk '{print $4}' | cut -d/ -f1 || true)
+    # 尝试获取 eth0 的 IPv4 地址
+    _ip_addr=$(ip -4 -o addr show eth0 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1 || true)
+    # 如果没有 eth0，获取第一个非回环地址
+    if [ -z "$_ip_addr" ]; then
+      _ip_addr=$(ip -4 -o addr show 2>/dev/null | grep -v "127.0.0.1" | awk '{print $4}' | cut -d/ -f1 | head -1 || true)
+    fi
     say "ip命令输出: $_ip_addr"
   fi
 
@@ -166,7 +171,7 @@ check_host() {
     hostname -I 2>/dev/null || echo "  (hostname -I失败)"
     ip -4 -o addr show 2>/dev/null || echo "  (ip addr show失败)"
     ifconfig -a 2>/dev/null || echo "  (ifconfig失败)"
-    fail 'IP_ADDRESS_UNAVAILABLE'
+    fail 'IP_ADDRESS_UNAVAILABLE (无法获取本机IP地址)'
   fi
 
   # 验证IP匹配
@@ -178,7 +183,7 @@ check_host() {
     say "  实际IP: $_ip_addr"
     say "所有网络接口:"
     ip -4 -o addr show 2>/dev/null || hostname -I 2>/dev/null || ifconfig -a 2>/dev/null || true
-    fail 'GOS_IDENTITY_MISMATCH'
+    fail 'GOS_IDENTITY_MISMATCH (GOS 身份不匹配)'
   fi
 
   # 检查磁盘空间
@@ -191,21 +196,21 @@ preflight() {
   check_manifest
   check_python
   check_host
-  grep -Fq 'M20_RUNTIME_MODE=realtime_readonly' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_RUNTIME_MODE_MISMATCH'
-  grep -Fq 'M20_TARGET_HOST=@AOS_HOST@' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_TARGET_TEMPLATE_MISSING'
-  grep -iqF 'control_enabled=false' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_CONTROL_NOT_DISABLED'
-  grep -iqF 'telemetry_tx_enabled=false' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_TX_NOT_DISABLED'
-  grep -Fq 'backend.app.server' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_ENTRYPOINT_MODERN_SERVER_MISSING'
-  ! grep -Fq 'dashboard_realtime' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_ENTRYPOINT_LEGACY_STILL_PRESENT'
-  conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || fail 'CONFLICTING_SERVICE_STATE_UNKNOWN'
-  conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || fail 'CONFLICTING_SERVICE_ENABLEMENT_UNKNOWN'
-  [ "$conflict_active" = inactive ] || fail "CONFLICTING_REALTIME_SERVICE_STATE=$conflict_active"
-  [ "$conflict_enabled" = disabled ] || fail "CONFLICTING_REALTIME_SERVICE_ENABLEMENT=$conflict_enabled"
-  say 'TARGET_IDENTITY_CONFIRMED=PASS'
-  say 'TELEMETRY_TX_ENABLED=false'
-  say 'CONTROL_ENABLED=false'
-  say 'WEB_REALTIME_ENABLED=true'
-  say 'PREFLIGHT=PASS'
+  grep -Fq 'M20_RUNTIME_MODE=realtime_readonly' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_RUNTIME_MODE_MISMATCH (服务文件运行时模式不匹配)'
+  grep -Fq 'M20_TARGET_HOST=@AOS_HOST@' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_TARGET_TEMPLATE_MISSING (服务文件目标模板缺失)'
+  grep -iqF 'control_enabled=false' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_CONTROL_NOT_DISABLED (服务文件控制未禁用)'
+  grep -iqF 'telemetry_tx_enabled=false' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_TX_NOT_DISABLED (服务文件遥测发送未禁用)'
+  grep -Fq 'backend.app.server' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_ENTRYPOINT_MODERN_SERVER_MISSING (服务文件入口点不正确)'
+  ! grep -Fq 'dashboard_realtime' "$ROOT/deploy/systemd/m20-patrol-readonly.service" || fail 'UNIT_ENTRYPOINT_LEGACY_STILL_PRESENT (服务文件仍使用旧入口点)'
+  conflict_active="$(systemctl --user show -p ActiveState --value m20-patrol-realtime.service)" || fail 'CONFLICTING_SERVICE_STATE_UNKNOWN (冲突服务状态未知)'
+  conflict_enabled="$(systemctl --user show -p UnitFileState --value m20-patrol-realtime.service)" || fail 'CONFLICTING_SERVICE_ENABLEMENT_UNKNOWN (冲突服务启用状态未知)'
+  [ "$conflict_active" = inactive ] || fail "CONFLICTING_REALTIME_SERVICE_STATE=$conflict_active (冲突的实时服务处于活动状态)"
+  [ "$conflict_enabled" = disabled ] || fail "CONFLICTING_REALTIME_SERVICE_ENABLEMENT=$conflict_enabled (冲突的实时服务已启用)"
+  say 'TARGET_IDENTITY_CONFIRMED=PASS (目标身份验证通过)'
+  say 'TELEMETRY_TX_ENABLED=false (遥测发送已禁用)'
+  say 'CONTROL_ENABLED=false (控制命令已禁用)'
+  say 'WEB_REALTIME_ENABLED=true (Web 实时模式已启用)'
+  say 'PREFLIGHT=PASS (预检通过)'
 }
 
 render_unit_template() {
@@ -225,7 +230,7 @@ install() {
   local ref
   ref="$(source_ref)"
   "$ROOT/deploy/scripts/install-gos.sh" --repo "$ROOT" --ref "$ref" --target-root "$TARGET_ROOT" --apply
-  systemctl --user daemon-reload || fail 'SYSTEMD_RELOAD_FAILED'
+  systemctl --user daemon-reload || fail 'SYSTEMD_RELOAD_FAILED (systemd 重新加载失败)'
 }
 
 start() {
@@ -237,8 +242,8 @@ start() {
 status() {
   preflight
   load_manifest_values
-  systemctl --user --no-pager is-active "$SERVICE_NAME" >/dev/null || fail 'SERVICE_NOT_ACTIVE'
-  say 'SERVICE_ACTIVE=confirmed'
+  systemctl --user --no-pager is-active "$SERVICE_NAME" >/dev/null || fail 'SERVICE_NOT_ACTIVE (服务未处于活动状态)'
+  say 'SERVICE_ACTIVE=confirmed (服务已确认运行)'
 }
 
 case "${1:---one-shot}" in
