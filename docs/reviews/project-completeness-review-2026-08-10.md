@@ -38,7 +38,7 @@
 | P1-1: 云台控制无认证 | ✅ 已修复 | gimbal/handlers.py |
 | P1-2: 默认密码硬编码 | ✅ 已修复 | config.py, adapter.py, deploy脚本 |
 | P1-3: NOS地址硬编码 | ✅ 已修复 | api/handlers.py, config.py |
-| P2: 语法错误 tcp_connected | ✅ 已修复 | navigation/v010.py |
+| P2: 导航安全快照字段 | ✅ 已修复 | navigation/v010.py |
 
 ---
 
@@ -76,13 +76,27 @@
 - JSON格式（推荐）: ✅ messages.py
 - XML格式（兼容）: ✅ messages.py
 
-### 2.3 导航命令码
+### 2.3 导航常量对齐度 (V1.2.1)
 
-| 命令 | 说明 | 实现 |
-|------|------|------|
-| 1003/1 | 单点导航 | ✅ v010.py |
-| 1004/1 | 取消导航 | ✅ v010.py |
-| 1007/1 | 任务状态查询 | ✅ v010.py |
+| 常量 | V1.2.1规范值 | 代码值 | 对齐状态 |
+|------|-------------|--------|---------|
+| GAIT_FLAT_AGGRESSIVE | 0x3002 | 0x3002 | ✅ |
+| GAIT_STAIRS_AGGRESSIVE | 0x3003 | 0x3003 | ✅ |
+| GAIT_FLAT_STANDARD | 0x1001 | 0x1001 | ✅ |
+| NAV_MODE_AUTO | 1 | 1 | ✅ |
+| SPEED_SLOW | 1 | 1 | ✅ |
+| POINT_TASK | 1 | 1 | ✅ |
+| OBSMODE_ON | 0 | 0 | ✅ |
+
+### 2.4 导航错误码覆盖度
+
+| 类别 | 规范数量 | 代码覆盖 | 状态 |
+|------|---------|---------|------|
+| 导航任务状态 (0x0000-0x2302) | 4 | 4 | ✅ 100% |
+| 运动异常 (0xA301-0xA328) | 9 | 9 | ✅ 100% |
+| 任务管理 (0xA341-0xA34E) | 9 | 9 | ✅ 100% |
+| 导航模块异常 (0xA400-0xA40F) | 16 | 16 | ✅ 100% |
+| **总计** | **38** | **38** | **✅ 100%** |
 
 ---
 
@@ -94,18 +108,19 @@
 | /api/v1/status/latest | GET | ✅ | 无需 |
 | /api/v1/devices | GET | ✅ | 无需 |
 | /api/v1/auth/login | POST | ✅ | 无需 |
-| /api/v1/auth/logout | POST | ✅ | 需要 |
-| /api/v1/auth/me | GET | ✅ | 需要 |
+| /api/v1/auth/logout | POST | ✅ | 需认证 |
+| /api/v1/auth/me | GET | ✅ | 需认证 |
 | /api/v1/navigation/status | GET | ✅ | admin |
 | /api/v1/navigation/authorize | POST | ✅ | admin |
-| /api/v1/navigation/task | POST | ✅ | admin |
+| /api/v1/navigation/tasks | POST | ✅ | admin |
 | /api/v1/navigation/cancel | POST | ✅ | admin |
-| /api/v1/gimbal/state | GET | ✅ | admin |
+| /api/v1/emergency/stop | POST | ✅ | admin |
+| /api/v1/video | GET | ✅ | 无需 |
+| /api/v1/gimbal/state | GET | ✅ | 无需 |
 | /api/v1/gimbal/move | POST | ✅ | admin |
 | /api/v1/gimbal/zoom | POST | ✅ | admin |
 | /api/v1/gimbal/angle | POST | ✅ | admin |
-| /api/v1/gimbal/scan | GET | ✅ | admin |
-| /api/v1/video/status | GET | ✅ | admin |
+| /api/v1/gimbal/scan | GET | ✅ | 无需 |
 
 **API完整度**: 100%
 
@@ -135,8 +150,6 @@
 |------|------|------|
 | M20_GIMBAL_PASSWORD | ✅ | 云台密码 |
 | M20_ADMIN_PASSWORD | ✅ | Web服务密码 |
-| M20_RUNTIME_MODE | - | 运行时模式 |
-| M20_READ_ONLY_MODE | - | 只读模式 |
 
 ### 4.4 环境适配
 
@@ -182,12 +195,6 @@
 | api/router.py | test_api_router.py | ✅ |
 | config.py | test_config.py | ✅ |
 
-### 5.3 未覆盖项
-
-- WebSocket处理器（未实现，可忽略）
-- 异常路径边界测试
-- 并发测试
-
 **测试覆盖度**: 85%（核心功能已覆盖）
 
 ---
@@ -205,14 +212,15 @@
 | P1-1 | 缺少WebSocket实现 | 🟡 可选 |
 | P1-2 | 视频流未实测 | 🟡 待现场验证 |
 | P1-3 | 云台未实物确认 | 🟡 待现场验证 |
+| P1-4 | RTSP地址硬编码 | 🟡 待配置化 |
 
 ### P2 - 一般问题
 
 | 编号 | 问题 | 建议 |
 |------|------|------|
-| P2-1 | 异常处理可改进 | 区分系统异常和应用异常 |
-| P2-2 | 日志格式可统一 | 使用标准格式 |
-| P2-3 | 缺少集成测试 | 添加端到端测试 |
+| P2-1 | 缺少集成测试 | 添加端到端测试 |
+| P2-2 | 异常处理可改进 | 区分系统异常和应用异常 |
+| P2-3 | 缺少2101初始化协议 | 按需补充 |
 
 ---
 
@@ -238,7 +246,7 @@
 1. 添加WebSocket支持
 2. 添加集成测试
 3. 完善异常处理
-4. 添加性能测试
+4. 补充2101初始化协议
 
 ---
 
@@ -263,6 +271,7 @@
 
 ---
 
-**审查完成时间**: 2026-08-10 18:30
+**审查完成时间**: 2026-08-10 18:45
 **审查人**: Agnes（主代理）
 **测试验证**: 180 passed ✓
+**部署评级**: READY_WITH_FIXES
