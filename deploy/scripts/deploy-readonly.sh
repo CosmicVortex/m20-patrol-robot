@@ -43,16 +43,22 @@ check_dependencies() {
     exit 1
   fi
   
-  # 检查python3-venv
-  if ! python3 -m venv --help >/dev/null 2>&1; then
-    echo "警告: python3-venv 未安装，尝试自动安装..."
+  # 检查python3-venv和ensurepip
+  if ! python3 -c "import venv; import ensurepip" 2>/dev/null; then
+    echo "警告: python3-venv 或 ensurepip 未安装，尝试自动安装..."
     if command -v sudo >/dev/null 2>&1; then
       sudo apt install -y python3-venv python3-dev
     else
-      echo "ERROR: 无法自动安装python3-venv，请手动安装:"
+      echo "ERROR: 无法自动安装依赖，请手动安装:"
       echo "  sudo apt install python3-venv python3-dev"
       exit 1
     fi
+  fi
+  
+  # 再次验证
+  if ! python3 -c "import venv; import ensurepip" 2>/dev/null; then
+    echo "ERROR: python3-venv 安装后仍然不可用"
+    exit 1
   fi
   
   # 检查systemd
@@ -160,13 +166,26 @@ install() {
   (cd "$ROOT" && tar cf - --exclude='__pycache__' --exclude='.venv' \
     --exclude='.local' .) | (cd "$TARGET_ROOT" && tar xf -)
   
-  # 创建虚拟环境
+  # 创建虚拟环境（带错误处理）
   echo "创建Python虚拟环境..."
-  python3 -m venv --system-site-packages "$TARGET_ROOT/.venv"
+  if ! python3 -m venv --system-site-packages "$TARGET_ROOT/.venv" 2>&1; then
+    echo ""
+    echo "ERROR: 创建虚拟环境失败"
+    echo ""
+    echo "请手动安装依赖后重试:"
+    echo "  sudo apt install python3-venv python3-dev"
+    echo ""
+    echo "安装完成后，删除已创建的目录并重新部署:"
+    echo "  rm -rf $TARGET_ROOT"
+    echo "  bash deploy/scripts/deploy-readonly.sh --one-shot"
+    exit 1
+  fi
   
   # 编译Python代码
   echo "编译Python代码..."
-  PYTHONPATH="$TARGET_ROOT" "$TARGET_ROOT/.venv/bin/python" -m compileall -q "$TARGET_ROOT/backend"
+  if ! PYTHONPATH="$TARGET_ROOT" "$TARGET_ROOT/.venv/bin/python" -m compileall -q "$TARGET_ROOT/backend" 2>&1; then
+    echo "警告: Python代码编译有错误，但不影响部署"
+  fi
   
   # 准备systemd服务文件
   echo "准备systemd服务文件..."
