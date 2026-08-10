@@ -4,22 +4,22 @@
 
 | 编号 | 需求 | 状态 | 验收证据 |
 |------|------|------|----------|
-| R-01 | APDU 帧编解码 | ✅ | `protocol/frame.py`、`test_frame.py` |
-| R-02 | PatrolMessage 信封 | ✅ | `protocol/messages.py`、`test_messages.py` |
+| R-01 | APDU 帧编解码 | ✅ | `protocol/frame.py`, `test_frame.py` |
+| R-02 | PatrolMessage 信封 | ✅ | `protocol/messages.py`, `test_messages.py` |
 | R-03 | 状态监控页面 | ✅ | `dashboard_realtime.py` |
 | R-04 | GOS 现场核验 | 🟡 | `deploy/scripts/collect-readonly-info.sh` |
-| R-05 | 安装/回滚 | ✅ | `install-gos.sh`、`rollback-gos.sh` |
-| R-06 | 真实状态订阅 | ✅ | `robot/telemetry.py`、`test_telemetry.py` |
+| R-05 | 安装/回滚 | ✅ | `install-gos.sh`, `rollback-gos.sh` |
+| R-06 | 真实状态订阅 | ✅ | `robot/telemetry.py`, `test_telemetry.py` |
 | R-07 | 视频接入 | 🟡 | `video/stream_manager.py` |
-| R-08 | 单点导航 | 🟡 | `navigation/service.py` |
+| R-08 | 单点导航 | 🟡 | `navigation/v010.py` |
 | R-09 | 多点巡逻 | 🔴 | 待 R-06/R-07/R-08 验收 |
 | R-10 | 云台适配 | 🔴 | 待实物确认 |
 
 ## 阶段目标
 
-**阶段1**：完成测试场地建图、状态订阅、视频回传、单点导航控制
+**阶段 1**：完成测试场地建图、状态订阅、视频回传、单点导航控制
 
-**阶段2**：测试场地验收通过后，正式场地重新建图并单独验收
+**阶段 2**：测试场地验收通过后，正式场地重新建图并单独验收
 
 ## 验收规则
 
@@ -42,17 +42,17 @@ PYTHONPATH=. uv run --with pytest pytest -q
 5. 现场安全条件已确认
 6. 书面放行
 
-## 当前实现
+## 当前实现详情
 
 ### R-06 真实状态订阅
 
 AOS 地址：10.21.31.103，固件 V1.1.8
 
-订阅的消息类型：
-- `1002/6` 基础状态
-- `1002/4` 运控状态
-- `1002/5` 设备状态
-- `1002/3` 异常列表
+订阅消息类型：
+- `1002/6` 基础状态（2Hz）
+- `1002/4` 运控状态（10Hz）
+- `1002/5` 设备状态（2Hz）
+- `1002/3` 异常列表（事件驱动）
 - `1007/1` 导航状态
 - `1007/2` 位置
 - `1007/3` 导航异常（≥V1.1.8）
@@ -61,11 +61,11 @@ AOS 地址：10.21.31.103，固件 V1.1.8
 
 ### R-07 视频接入
 
-RTSP 地址（候选值）：
-- 前相机：`rtsp://10.21.31.103:8554/video1`
-- 后相机：`rtsp://10.21.31.103:8554/video2`
-
-需现场确认：ffprobe、编码格式、分辨率。
+RTSP 地址（候选值，需实测）：
+- 本体前相机：`rtsp://10.21.31.103:8554/video1`
+- 本体后相机：`rtsp://10.21.31.103:8554/video2`
+- 云台可见光：`rtsp://192.168.1.108:554/id=1&type=0`
+- 云台热成像：`rtsp://192.168.1.108:554/id=2&type=0`
 
 ### R-08 单点导航
 

@@ -1,34 +1,65 @@
 # 文档导航
 
-## 核心文档
+## 项目文档
 
-| 编号 | 文件名 | 用途 | 读者 |
-|------|--------|------|------|
-| 01 | [overview.md](./01-overview.md) | 项目概览 | 新成员、管理层 |
-| 02 | [architecture.md](./02-architecture.md) | 系统架构 | 架构师、开发者 |
-| 03 | [modules.md](./03-modules.md) | 模块说明 | 开发者 |
-| 04 | [requirements.md](./04-requirements.md) | 需求清单 | PM、测试人员 |
-| 05 | [testing.md](./05-testing.md) | 测试流程 | 测试人员 |
-| 06 | [deployment.md](./06-deployment.md) | 部署流程 | 运维工程师 |
-| 09 | [official-docs.md](./09-official-docs.md) | 官方文档索引 | 所有人 |
+| 编号 | 文档 | 内容 | 读者 |
+|------|------|------|------|
+| 01 | [项目概览](./01-overview.md) | 目标、范围、当前状态 | 全员 |
+| 02 | [系统架构](./02-architecture.md) | 拓扑、协议、安全边界 | 架构师、开发 |
+| 03 | [模块说明](./03-modules.md) | 代码结构、接口定义 | 开发 |
+| 04 | [需求清单](./04-requirements.md) | 功能状态、验收规则 | PM、测试 |
+| 05 | [测试流程](./05-testing.md) | 离线验证、部署验证 | 测试 |
+| 06 | [部署流程](./06-deployment.md) | 安装、配置、故障排查 | 运维 |
+
+## 官方文档（只读）
+
+### 机器狗本体 — 山猫M20系列
+
+| 文档 | 版本 | 用途 |
+|------|------|------|
+| [软件开发指南](./official/机器狗本体/山猫M20软件开发指南V1.2.1.md) | V1.2.1 | **协议优先依据** |
+| [basic_server协议总览](./official/机器狗本体/山猫M20basic_server通信协议总览.md) | V1.0.0 | APDU/ASDU、接口字典 |
+| [导航任务下发](./official/机器狗本体/山猫M20导航任务下发.md) | V1.0.0 | 单点导航、取消、错误码 |
+| [运动控制协议](./official/机器狗本体/山猫M20运动控制basic_server协议.md) | V1.0.0 | 步态、速度指令 |
+| [错误码与异常处理](./official/机器狗本体/山猫M20错误码与异常处理.md) | V1.0.0 | 26个导航错误码 |
+| [自主充电](./official/机器狗本体/山猫M20自主充电.md) | V1.0.0 | 充电状态机 |
+| [设备与传感器概览](./official/机器狗本体/山猫M20设备与传感器概览.md) | V1.0.0 | 器件接口 |
+| [软件系统架构](./official/机器狗本体/山猫M20软件系统架构说明.md) | V1.0.0 | AOS/NOS/GOS职责 |
+| [网络配置](./official/机器狗本体/山猫M20网络配置.md) | V1.0.0 | 网络架构、SSH/VNC |
+| [对外通信方式](./official/机器狗本体/山猫M20对外通信方式.md) | V1.0.0 | basic_server vs ROS2 |
+| [计算平台与资源分配](./official/机器狗本体/山猫M20计算平台与资源分配.md) | V1.0.0 | RK3588算力、绑核 |
+| [运行服务与系统监控](./official/机器狗本体/山猫M20运行服务与系统监控.md) | V1.0.0 | 日志、监控、服务管理 |
+| [ROS2 DDS接口总览](./official/机器狗本体/山猫M20ROS2DDS接口总览.md) | V1.0.0 | ROS2话题服务 |
+| [Python二次开发教程](./official/机器狗本体/山猫M20基于Python的二次开发教程V0.1.1.md) | V0.1.1 | Python示例代码 |
+| [C++二次开发教程](./official/机器狗本体/山猫M20基于C++的二次开发教程V0.1.1.md) | V0.1.1 | C++示例代码 |
+| [开发者文档总览](./official/机器狗本体/山猫M20开发者文档总览V1.0.0.md) | V1.0.0 | 文档导航索引 |
+
+### 上装设备 — 数尔云台
+
+| 文档 | 版本 | 用途 |
+|------|------|------|
+| [SR-UPA810T609规格文档](./official/上装设备/数尔SR-UPA810T609规格文档.md) | — | 技术参数、接口说明 |
+| [WEB通讯协议V1.0](./official/上装设备/数尔WEB通讯协议V1.0.md) | V1.0 | 完整API文档 |
+| [快速操作手册V2](./official/上装设备/数尔吊舱快速操作手册V2.md) | V2.0 | 使用指南 |
+| [Demo代码](./official/上装设备/soar_demo/) | — | ptz_client.py, ptz_preview_rtsp.py |
 
 ## 目录结构
 
 ```
 docs/
-├── index.md                 本文件
 ├── 01-overview.md           项目概览
 ├── 02-architecture.md       系统架构
 ├── 03-modules.md            模块说明
 ├── 04-requirements.md       需求清单
 ├── 05-testing.md            测试流程
 ├── 06-deployment.md         部署流程
-├── 09-official-docs.md      官方文档索引
 │
-└── official/                官方文档（只读）
-    ├── 山猫M20软件开发指南V1.2.1.md
-    ├── 山猫M20basic_server通信协议总览.md
-    └── ... (19份官方文档)
+├── official/
+│   ├── 机器狗本体/          山猫M20系列官方手册（15份）
+│   └── 上装设备/            数尔云台资料（3份）
+│
+└── reviews/                 审查报告
+    └── project-completeness-review-final-2026-08-10.md
 ```
 
 ## 文档状态图例

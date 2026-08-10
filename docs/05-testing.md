@@ -1,19 +1,19 @@
-# 测试
+# 测试流程
 
 ## 离线验证
 
 ```bash
-# 运行测试
+# 运行测试套件
 PYTHONPATH=. uv run --with pytest pytest -q
 
 # 编译检查
 python3 -m compileall -q backend
 
-# 部署脚本检查
-bash deploy/scripts/deploy-readonly.sh --dry-run
+# 部署脚本语法检查
+bash -n deploy/scripts/*.sh
 ```
 
-结果：180 passed（当前版本）
+当前结果：180 passed
 
 ## 部署验证
 
@@ -38,7 +38,8 @@ telemetry_fresh=true
 
 ## 禁止项
 
+以下操作在未获书面放行前禁止执行：
 - 发送心跳（Type=100）
-- 发送控制命令
+- 发送控制命令（Type=2）
 - 修改 AOS/NOS 配置
 - 使用旧地址 10.21.31.101
