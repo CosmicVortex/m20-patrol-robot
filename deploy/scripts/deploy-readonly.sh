@@ -14,6 +14,7 @@ ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 MANIFEST="$ROOT/deploy/readonly-manifest.json"
 TARGET_ROOT="$HOME/m20-patrol-robot"
+SERVICE_NAME='m20-patrol-readonly.service'
 # 密码文件路径
 CONFIG_DIR="$HOME/.config/m20-patrol"
 # 默认密码（首次部署自动生成）
