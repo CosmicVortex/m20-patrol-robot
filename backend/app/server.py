@@ -34,6 +34,8 @@ from backend.app.navigation.v010 import NavigationSafetySnapshot
 from backend.app.robot.basic_client import BasicServerConfig
 from backend.app.gimbal.adapter import SoarGimbalAdapter, GimbalConfig
 from backend.app.video.stream_manager import VideoStreamManager
+from backend.app.websocket.ws_handler import init_ws_handlers, video_ws_handler, navigation_ws_handler
+from backend.app.websocket.upgrade import WebSocketUpgradeHandler
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +52,7 @@ class M20WebServer:
         self.router: Optional[ApiRouter] = None
         self.server: Optional[ThreadingHTTPServer] = None
         self.video_manager: Optional[VideoStreamManager] = None
+        self.ws_upgrade_handler: Optional[WebSocketUpgradeHandler] = None
 
     def setup(self) -> None:
         """Initialize all components."""
@@ -141,6 +144,17 @@ class M20WebServer:
             video_manager=self.video_manager,
             server_instance=self,  # Inject server reference for handlers
         )
+
+        # Initialize WebSocket handlers
+        if self.video_manager and self.nav_service:
+            init_ws_handlers(self.video_manager, self.nav_service)
+            self.ws_upgrade_handler = WebSocketUpgradeHandler(
+                video_handler=video_ws_handler,
+                nav_handler=navigation_ws_handler,
+            )
+            logger.info("WebSocket handlers initialized")
+        else:
+            logger.warning("WebSocket handlers not initialized (missing video_manager or nav_service)")
 
     def _ensure_admin_user(self) -> None:
         """Create default admin user if not exists."""
@@ -245,6 +259,7 @@ class M20WebServer:
         """Create request handler class with injected dependencies."""
         config = self.config
         router = self.router
+        server_instance = self
 
         class M20RequestHandler(BaseHandler):
             def log_message(self, format: str, *args: object) -> None:
@@ -278,6 +293,19 @@ class M20WebServer:
                     self.wfile.write(body)
                     return
                 if router:
+                    # Check for WebSocket upgrade
+                    upgrade_header = self.headers.get("Upgrade", "").lower()
+                    if upgrade_header == "websocket":
+                        if server_instance and server_instance.ws_upgrade_handler:
+                            import socket
+                            # Get the underlying socket
+                            sock = self.request
+                            server_instance.ws_upgrade_handler.handle_request(sock)
+                            return
+                        else:
+                            self.send_error_response(503, "WebSocket not available")
+                            return
+                    
                     # Inject dependencies for handlers
                     self._gimbal = router.gimbal_adapter
                     self._video_manager = router.video_manager

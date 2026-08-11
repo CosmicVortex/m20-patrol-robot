@@ -513,6 +513,7 @@ function handleLogin(e) {
       authToken = data.token;
       currentUser = data.user;
       showApp();
+      initWebSocket(); // Initialize WebSocket after login
     } else {
       errEl.textContent = data.message || '用户名或密码错误';
     }
@@ -565,6 +566,86 @@ async function fetchNavStatus() {
     const v = await r.json();
     updateEmergencyBtn(v);
   } catch(e) { console.log('Nav status fetch error:', e); }
+}
+
+// ── WebSocket connection ───────────────────────────────────────────────────────
+let wsVideo = null;
+let wsNav = null;
+let wsReconnectTimer = null;
+
+function getWsUrl(path) {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${proto}//${location.host}${path}`;
+}
+
+function connectVideoWebSocket() {
+  if (wsVideo && wsVideo.readyState === WebSocket.OPEN) return;
+  try {
+    wsVideo = new WebSocket(getWsUrl('/ws/video'));
+    wsVideo.onopen = () => { console.log('Video WS connected'); };
+    wsVideo.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'video_states') {
+          updateVideoStatusFromWS(data.data);
+        }
+      } catch(e) {}
+    };
+    wsVideo.onclose = () => {
+      console.log('Video WS disconnected');
+      wsVideo = null;
+      scheduleWsReconnect();
+    };
+    wsVideo.onerror = () => { console.log('Video WS error'); };
+  } catch(e) { console.log('Video WS init error:', e); }
+}
+
+function connectNavWebSocket() {
+  if (wsNav && wsNav.readyState === WebSocket.OPEN) return;
+  try {
+    wsNav = new WebSocket(getWsUrl('/ws/navigation'));
+    wsNav.onopen = () => { console.log('Navigation WS connected'); };
+    wsNav.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'error') {
+          console.error('WS Error:', data.message);
+        }
+      } catch(e) {}
+    };
+    wsNav.onclose = () => {
+      console.log('Nav WS disconnected');
+      wsNav = null;
+      scheduleWsReconnect();
+    };
+    wsNav.onerror = () => { console.log('Nav WS error'); };
+  } catch(e) { console.log('Nav WS init error:', e); }
+}
+
+function scheduleWsReconnect() {
+  if (wsReconnectTimer) clearTimeout(wsReconnectTimer);
+  wsReconnectTimer = setTimeout(() => {
+    connectVideoWebSocket();
+    connectNavWebSocket();
+  }, 3000);
+}
+
+function sendWsVideo(action, params = {}) {
+  if (!wsVideo || wsVideo.readyState !== WebSocket.OPEN) return null;
+  wsVideo.send(JSON.stringify({ action, ...params }));
+  return true;
+}
+
+function sendWsNav(action, params = {}) {
+  if (!wsNav || wsNav.readyState !== WebSocket.OPEN) return null;
+  wsNav.send(JSON.stringify({ action, ...params }));
+  return true;
+}
+
+// Call on login success
+function initWebSocket() {
+  connectVideoWebSocket();
+  connectNavWebSocket();
 }
 
 function updateDashboard(v) {
