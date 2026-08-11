@@ -55,23 +55,29 @@ class NavigationService:
         self._current_task_id: int = 0
 
     def update_safety_from_telemetry(self, telemetry_data: dict[str, Any]) -> None:
-        """Update navigation safety snapshot from telemetry data."""
+        """Update navigation safety snapshot from telemetry data.
+
+        V1.2.1 §1.3: Status messages include basic_status (1002/6),
+        motion_status (1002/4), device_status (1002/5), error_list (1002/3),
+        nav_status (1007/1), position (1007/2), perception (2002/1).
+        """
         # Extract safety-critical fields from telemetry
         basic = telemetry_data.get("basic", {})
-        nav_status = telemetry_data.get("nav_status", {})
         position = telemetry_data.get("position", {})
-        
+        perception = telemetry_data.get("perception", {})
+        nav_status = telemetry_data.get("nav_status", {})
+
         # Update safety snapshot fields based on telemetry
         self._safety = NavigationSafetySnapshot(
             control_enabled=self._safety.control_enabled,  # Keep configured value
-            field_authorization="field_auth_required" if telemetry_data.get("tcp_connected") else "",
+            field_authorization=self._auth.authorized_by if self._auth.authorized else "",
             tcp_connected=telemetry_data.get("tcp_connected", False),
-            location_normal=telemetry_data.get("location_normal", False),
-            obstacle_avoidance_active=telemetry_data.get("obstacle_avoidance_active", True),
-            hard_estop_active=telemetry_data.get("hard_estop_active", False),
-            protective_fault_active=telemetry_data.get("protective_fault_active", False),
+            location_normal=position.get("location") == 0 or bool(position.get("pos_x")),
+            obstacle_avoidance_active=perception.get("obstacle_state") == 0,
+            hard_estop_active=basic.get("hes") == 1,
+            protective_fault_active=False,  # TODO: parse from error_list
             battery_percent=telemetry_data.get("battery_percent", 100),
-            active_task=telemetry_data.get("active_task", False),
+            active_task=nav_status.get("status") in (2, 3, 4),  # processing/navigating/done
         )
 
     @property
@@ -119,8 +125,8 @@ class NavigationService:
 
         try:
             nav = SinglePointNavigation(
-                value=1,
-                map_id=map_id,
+                value=0,  # V1.2.1: 使用默认值 0
+                map_id=0,  # V1.2.1: 使用默认值 0
                 pos_x=pos_x,
                 pos_y=pos_y,
                 pos_z=pos_z,

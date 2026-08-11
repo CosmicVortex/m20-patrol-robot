@@ -30,16 +30,18 @@ def test_builds_v010_low_speed_autonomous_task_point_request_after_all_gates_pas
     message = task.to_message(valid_snapshot(), "2026-08-06 14:00:00")
 
     assert (message.message_type, message.command) == (1003, 1)
+    # V1.2.1 §3.1: Value and MapID default to 0 per documentation
+    # Speed defaults to NORMAL (0), Gait defaults to FLAT_AGGRESSIVE (0x3002)
     assert message.items == {
-        "Value": 7,
-        "MapID": 0,
+        "Value": 0,  # V1.2.1: 使用默认值 0
+        "MapID": 0,  # V1.2.1: 使用默认值 0
         "PosX": 1.2,
         "PosY": -0.4,
         "PosZ": 0.0,
         "AngleYaw": 1.57,
         "PointInfo": 1,  # POINT_TASK
-        "Gait": 0x3002,  # V1.2.1: GAIT_FLAT敏捷 (平地敏捷模式)
-        "Speed": 1,  # SPEED_SLOW
+        "Gait": 0x3002,  # V1.2.1: GAIT_FLAT_AGGRESSIVE (平地敏捷模式)
+        "Speed": 0,  # V1.2.1: SPEED_NORMAL (正常速度)
         "Manner": 0,  # 前进行走
         "ObsMode": 0,  # OBSMODE_ON (开启停避障)
         "NavMode": 1,  # NAV_MODE_AUTO (自主导航)

@@ -118,15 +118,15 @@ class SinglePointNavigation:
             command=1,
             sent_at=sent_at,
             items={
-                "Value": self.value,
-                "MapID": self.map_id,
+                "Value": 0,  # V1.2.1: 使用默认值 0
+                "MapID": 0,  # V1.2.1: 使用默认值 0
                 "PosX": float(self.pos_x),
                 "PosY": float(self.pos_y),
                 "PosZ": float(self.pos_z),
                 "AngleYaw": float(self.angle_yaw),
                 "PointInfo": POINT_TASK,
                 "Gait": GAIT_FLAT_AGGRESSIVE,  # V1.2.1: 平地敏捷模式 = 0x3002
-                "Speed": SPEED_SLOW,  # V1.2.1: 低速模式
+                "Speed": SPEED_NORMAL,  # V1.2.1: 正常速度 = 0
                 "Manner": 0,  # 前进行走
                 "ObsMode": OBSMODE_ON,  # 开启停避障
                 "NavMode": NAV_MODE_AUTO,  # 自主导航
