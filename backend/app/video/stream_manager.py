@@ -50,7 +50,7 @@ class VideoStreamManager:
         self._streams: Dict[str, CameraConfig] = {
             "front": CameraConfig("front", "前向本体相机", "rtsp://10.21.31.103:8554/video1"),
             "rear": CameraConfig("rear", "后向本体相机", "rtsp://10.21.31.103:8554/video2"),
-            "thermal": CameraConfig("thermal", "热成像相机", "rtsp://10.21.31.103:8554/thermal"),
+            "thermal": CameraConfig("thermal", "热成像相机", ""),
         }
         self._stream_states: Dict[str, StreamState] = {
             source: StreamState.DISCONNECTED for source in self._streams
@@ -95,7 +95,8 @@ class VideoStreamManager:
         """Update RTSP URL for a camera source."""
         if source not in self._streams:
             return False
-        self._streams[source] = self._streams[source]._replace(rtsp_url=rtsp_url)
+        import dataclasses
+        self._streams[source] = dataclasses.replace(self._streams[source], rtsp_url=rtsp_url)
         return True
 
     def get_stream_state(self, source: str) -> StreamState:

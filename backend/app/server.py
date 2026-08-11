@@ -108,6 +108,8 @@ class M20WebServer:
 
         # Setup gimbal adapter with auto-discovery support (MUST be before router)
         self.gimbal_adapter: Optional[SoarGimbalAdapter] = None
+        self.gimbal_connected = False
+        self.gimbal_host = ""
         if self.config.gimbal_host:
             logger.info("配置云台地址: %s", self.config.gimbal_host)
             gimbal_config = GimbalConfig(
@@ -142,9 +144,9 @@ class M20WebServer:
             return
         password = os.environ.get("M20_ADMIN_PASSWORD")
         if not password:
-            # 使用固定默认密码
-            password = "m20_patrol_2026"
-            logger.info("使用默认管理员密码，请首次登录后修改")
+            # 使用文档规定的固定密码
+            password = "123456"
+            logger.info("使用文档默认管理员密码，请首次登录后修改")
         try:
             self.user_store.authenticate("admin", password)
         except Exception:

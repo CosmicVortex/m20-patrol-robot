@@ -30,6 +30,7 @@ from backend.app.api.handlers import (
 )
 from backend.app.api.extended_handlers import (
     GimbalAngleHandler,
+    GimbalConnectHandler,
     GimbalDeviceInfoHandler,
     GimbalMoveHandler,
     GimbalScanHandler,
@@ -44,15 +45,6 @@ from backend.app.api.extended_handlers import (
     WorkOrdersCreateHandler,
     WorkOrdersListHandler,
     WorkOrdersUpdateHandler,
-)
-from backend.app.gimbal.handlers import (
-    GimbalStateHandler as GimbalStateHandlerOrig,
-    GimbalMoveHandler as GimbalMoveHandlerOrig,
-    GimbalZoomHandler as GimbalZoomHandlerOrig,
-    GimbalAngleHandler as GimbalAngleHandlerOrig,
-    GimbalDeviceInfoHandler as GimbalDeviceInfoHandlerOrig,
-    GimbalVideoHandler as GimbalVideoHandlerOrig,
-    GimbalScanHandler as GimbalScanHandlerOrig,
 )
 from backend.app.gimbal.adapter import SoarGimbalAdapter
 from backend.app.video.stream_manager import VideoStreamManager
@@ -93,6 +85,7 @@ class ApiRouter:
         "/api/v1/gimbal/device/info": GimbalDeviceInfoHandler,
         "/api/v1/gimbal/video": GimbalVideoHandler,
         "/api/v1/gimbal/scan": GimbalScanHandler,
+        "/api/v1/gimbal/connect": GimbalConnectHandler,
     }
 
     def __init__(

@@ -13,7 +13,10 @@
   "targets": {
     "gos_host": "10.21.31.104",
     "aos_host": "10.21.31.103",
-    "nos_host": "10.21.31.106"
+    "nos_host": "10.21.31.106",
+    "gimbal_host": "192.168.1.108",
+    "gimbal_username": "admin",
+    "gimbal_password": "123456"
   },
   "ports": {
     "aos_tcp": 30001,

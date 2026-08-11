@@ -498,8 +498,8 @@ class SystemInfoHandler(BaseHandler):
             "hos": {
                 "aos_host": self.config.aos_host if self.config else "",
                 "aos_port": self.config.aos_port if self.config else 30001,
-                "nos_host": self.config.nos_host if self.config else "",
-                "gos_host": "10.21.31.104",
+                "nos_host": self.config.nos_host if self.config else "not_configured",
+                "gos_host": self.config.gos_host if self.config else "not_configured",
             },
             "gimbal_connected": (
                 bool(self.gimbal_adapter and self.gimbal_adapter.connected)
@@ -724,3 +724,69 @@ class GimbalVideoHandler(BaseHandler):
             self.send_json_response(200, {"connected": True, "video_urls": urls})
         except Exception as exc:
             self.send_json_response(200, {"connected": True, "error": str(exc)})
+
+
+class GimbalConnectHandler(BaseHandler):
+    """POST /api/v1/gimbal/connect - Connect to gimbal by IP."""
+
+    def do_POST(self) -> None:
+        if self.path != "/api/v1/gimbal/connect":
+            self.send_error_response(404, "Not found")
+            return
+
+        auth = self._authenticate()
+        if not auth:
+            return
+
+        body = self._parse_json_body()
+        host = body.get("host", "").strip()
+        username = body.get("username", "admin")
+        password = body.get("password", "123456")
+
+        if not host:
+            self.send_error_response(400, "host 不能为空")
+            return
+
+        # Validate IP format
+        import ipaddress
+        try:
+            ipaddress.ip_address(host)
+        except ValueError:
+            self.send_error_response(400, "IP 地址格式错误")
+            return
+
+        # Update server's gimbal adapter
+        from backend.app.gimbal.adapter import GimbalConfig
+        new_config = GimbalConfig(
+            host=host,
+            port=80,
+            username=username,
+            password=password,
+        )
+
+        # Create new adapter and try to connect
+        new_adapter = SoarGimbalAdapter(new_config)
+        if new_adapter.auto_connect():
+            # Update server's gimbal adapter reference
+            self.server.gimbal_adapter = new_adapter
+            self.server.gimbal_connected = True
+            self.server.gimbal_host = host
+            logger.info("云台手动连接成功: %s", host)
+
+            # Update video stream manager with gimbal RTSP URLs
+            if self.server.video_manager:
+                video_urls = new_adapter.get_video_urls()
+                if video_urls.get("visible_light"):
+                    self.server.video_manager.set_rtsp_url("front", video_urls["visible_light"])
+                if video_urls.get("thermal"):
+                    self.server.video_manager.set_rtsp_url("thermal", video_urls["thermal"])
+
+            self.send_json_response(200, {
+                "success": True,
+                "host": host,
+                "message": "云台连接成功",
+                "video_urls": video_urls,
+            })
+        else:
+            logger.warning("云台连接失败: %s", host)
+            self.send_error_response(503, f"云台连接失败: {host}，请检查 IP 和凭据")

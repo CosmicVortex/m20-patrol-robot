@@ -423,18 +423,17 @@ class EmergencyStopHandler(BaseHandler):
             return
 
         # Authenticated path - still blocks actual command in read-only mode
-        if not result.get("control_enabled"):
-            self.send_json_response(200, {
-                "authorized": True,
-                "message": "Emergency stop blocked: control_enabled=false (read-only mode)",
-            })
-            return
-
-        # 强制检查只读模式配置
         if self.config and self.config.read_only_mode:
             self.send_json_response(200, {
                 "authorized": True,
                 "message": "Emergency stop blocked: read_only_mode=true",
+            })
+            return
+
+        if not result.get("control_enabled"):
+            self.send_json_response(200, {
+                "authorized": True,
+                "message": "Emergency stop blocked: control_enabled=false (read-only mode)",
             })
             return
 
@@ -485,9 +484,9 @@ class VideoStatusHandler(BaseHandler):
                 },
                 "thermal": {
                     "state": "blocked" if not allow_real_io else "unverified",
-                    "rtsp_url": "rtsp://10.21.31.103:8554/thermal",
+                    "rtsp_url": "rtsp://{gimbal_host}:554/id=2&type=0",
                     "label": "热成像相机",
-                    "note": "云台IP待确认",
+                    "note": "来自云台，需确认 gimbal_host 配置",
                 },
                 "body_front": {
                     "state": "blocked" if not allow_real_io else "unverified",

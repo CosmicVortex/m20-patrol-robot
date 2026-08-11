@@ -20,7 +20,7 @@ except ImportError:
     from datetime import datetime, timezone
     UTC = timezone.utc
 
-PASSWORD = "m20_patrol_2026"
+PASSWORD = "123456"
 DB_DEFAULT = str(Path.home() / "m20-patrol-robot" / "var" / "m20_auth.db")
 OUTPUT_DEFAULT = str(Path.home() / ".config" / "m20-patrol" / "passwords.env")
 

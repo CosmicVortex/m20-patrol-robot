@@ -212,8 +212,8 @@ class TestGimbalHandlers:
     """Tests for gimbal API handlers."""
 
     def test_handler_imports(self):
-        """Test all handlers can be imported."""
-        from backend.app.gimbal.handlers import (
+        """Test all gimbal handlers can be imported from extended_handlers."""
+        from backend.app.api.extended_handlers import (
             GimbalStateHandler,
             GimbalMoveHandler,
             GimbalZoomHandler,

@@ -33,6 +33,7 @@ class WebServiceConfig:
     gimbal_username: str = "admin"
     gimbal_password: str = ""  # 可选，通过环境变量 M20_GIMBAL_PASSWORD 设置
     nos_host: str = ""  # 导航操作员站地址，从 manifest 读取
+    gos_host: str = ""  # GOS主机地址，从 manifest 读取
     manifest_path: str = ""
     static_root: str = ""
     auth_db_path: str = ""
@@ -80,6 +81,7 @@ class ConfigLoader:
             aos_host=data.get("aos_host", targets.get("aos_host", "")),
             aos_port=data.get("aos_port", ports.get("aos_tcp", 30001)),
             nos_host=data.get("nos_host", targets.get("nos_host", "")),
+            gos_host=data.get("gos_host", targets.get("gos_host", "")),
             runtime_mode=data.get("runtime_mode", "simulated"),
             read_only_mode=data.get("read_only_mode", True),
             control_enabled=data.get("control_enabled", False),
