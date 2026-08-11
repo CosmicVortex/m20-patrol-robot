@@ -175,7 +175,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 "Microsoft Y
       <input type="password" id="login-password" placeholder="请输入密码" required autocomplete="current-password">
       <button type="submit">登录</button>
     </form>
-    <div class="login-footer">默认账号: admin / 123456789012</div>
+    <div class="login-footer">默认账号: admin / m20_patrol_2026</div>
   </div>
 </div>
 
@@ -531,6 +531,7 @@ function updateDashboard(v) {
 
   // Robot state
   document.getElementById('robot-state').textContent = '状态: ' + _motion(b.motion_state || 0);
+  document.getElementById('motion-state').textContent = _motion(b.motion_state || 0);
 
   // Gait
   const gaitMap = {0x1001: '标准步态', 0x1002: '高台标准', 0x3002: '敏捷步态', 0x3003: '楼梯敏捷'};
@@ -579,7 +580,7 @@ function updateDashboard(v) {
 function updateVideoStatus(v) {
   const sources = v.sources || {};
   const cameras = document.querySelectorAll('#camera-wall .camera');
-  const keys = ['front', 'thermal', 'front_body', 'rear_body'];
+  const keys = ['front', 'thermal', 'body_front', 'rear'];
   cameras.forEach((cam, i) => {
     const key = keys[i];
     const src = sources[key] || {};
