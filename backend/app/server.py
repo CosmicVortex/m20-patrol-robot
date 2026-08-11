@@ -30,6 +30,7 @@ from backend.app.robot.telemetry import TelemetryAdapter, ConnectionConfig
 from backend.app.api.router import ApiRouter
 from backend.app.api.handlers import BaseHandler
 from backend.app.navigation.service import NavigationService
+from backend.app.motion.service import MotionControlService, MotionSafetySnapshot
 from backend.app.navigation.v010 import NavigationSafetySnapshot
 from backend.app.robot.basic_client import BasicServerConfig
 from backend.app.gimbal.adapter import SoarGimbalAdapter, GimbalConfig
@@ -49,6 +50,7 @@ class M20WebServer:
         self.user_store: Optional[UserStore] = None
         self.auth_middleware: Optional[AuthMiddleware] = None
         self.nav_service: Optional[NavigationService] = None
+        self.motion_service: Optional[MotionControlService] = None
         self.router: Optional[ApiRouter] = None
         self.server: Optional[ThreadingHTTPServer] = None
         self.video_manager: Optional[VideoStreamManager] = None
@@ -109,6 +111,17 @@ class M20WebServer:
         basic_client = BasicServerClient(basic_config)
         self.nav_service = NavigationService(basic_client, safety_snapshot)
 
+        # Setup motion control service (uses same client as navigation)
+        motion_safety_snapshot = MotionSafetySnapshot(
+            control_enabled=self.config.control_enabled,
+            tcp_connected=False,
+            hard_estop_active=False,
+            protective_fault_active=False,
+            battery_percent=100,
+            motion_state=0,
+        )
+        self.motion_service = MotionControlService(basic_client, motion_safety_snapshot)
+
         # Setup video stream manager
         self.video_manager = VideoStreamManager(allow_real_io=self.config.allow_real_io)
 
@@ -143,6 +156,7 @@ class M20WebServer:
             gimbal_adapter=self.gimbal_adapter,
             video_manager=self.video_manager,
             server_instance=self,  # Inject server reference for handlers
+            motion_service=self.motion_service,
         )
 
         # Initialize WebSocket handlers
@@ -183,6 +197,12 @@ class M20WebServer:
             def _sync_nav(data: dict[str, Any]) -> None:
                 self.nav_service.update_safety_from_telemetry(data.get("data", {}))
             self.telemetry_adapter.set_navigation_sync_callback(_sync_nav)
+
+        # Setup motion sync callback
+        if self.telemetry_adapter and self.motion_service:
+            def _sync_motion(data: dict[str, Any]) -> None:
+                self.motion_service.update_safety(data.get("data", {}))
+            self.telemetry_adapter.set_navigation_sync_callback(_sync_motion)
 
         if self.telemetry_adapter:
             self.telemetry_adapter.start()

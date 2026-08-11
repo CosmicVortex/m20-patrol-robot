@@ -48,6 +48,18 @@ from backend.app.api.extended_handlers import (
 )
 from backend.app.gimbal.adapter import SoarGimbalAdapter
 from backend.app.video.stream_manager import VideoStreamManager
+from backend.app.motion.handlers import (
+    MotionStateHandler,
+    GaitSwitchHandler,
+    AxisControlHandler,
+    LightControlHandler,
+    ModeSwitchHandler,
+    ChargeControlHandler,
+    SleepModeHandler,
+    MotionStatusHandler,
+    MotionAuthorizeHandler,
+    MotionDeauthorizeHandler,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +98,17 @@ class ApiRouter:
         "/api/v1/gimbal/video": GimbalVideoHandler,
         "/api/v1/gimbal/scan": GimbalScanHandler,
         "/api/v1/gimbal/connect": GimbalConnectHandler,
+        # Motion control handlers
+        "/api/v1/motion/state": MotionStateHandler,
+        "/api/v1/motion/gait": GaitSwitchHandler,
+        "/api/v1/motion/axis": AxisControlHandler,
+        "/api/v1/motion/light": LightControlHandler,
+        "/api/v1/motion/mode": ModeSwitchHandler,
+        "/api/v1/motion/charge": ChargeControlHandler,
+        "/api/v1/motion/sleep": SleepModeHandler,
+        "/api/v1/motion/status": MotionStatusHandler,
+        "/api/v1/motion/authorize": MotionAuthorizeHandler,
+        "/api/v1/motion/deauthorize": MotionDeauthorizeHandler,
     }
 
     # WebSocket paths
@@ -101,6 +124,7 @@ class ApiRouter:
         gimbal_adapter: Optional[SoarGimbalAdapter] = None,
         video_manager: Optional[VideoStreamManager] = None,
         server_instance: Any = None,
+        motion_service: Any = None,
     ) -> None:
         self.user_store = user_store
         self.auth_middleware = auth_middleware
@@ -110,6 +134,7 @@ class ApiRouter:
         self.gimbal_adapter = gimbal_adapter
         self.video_manager = video_manager
         self.server_instance = server_instance
+        self.motion_service = motion_service
 
     def route(self, handler: BaseHandler) -> None:
         """Route the request to the appropriate handler."""
@@ -134,6 +159,7 @@ class ApiRouter:
         handler.gimbal_adapter = self.gimbal_adapter
         handler.video_manager = self.video_manager
         handler.server_instance = self.server_instance
+        handler.motion_service = self.motion_service
 
         # Dispatch on the live request handler.
         method = handler.command.lower()
