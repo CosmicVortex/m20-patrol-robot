@@ -439,15 +439,23 @@ class SystemInfoHandler(BaseHandler):
 
         auth = self._authenticate()
         if not auth and (not self.auth_middleware or not self.auth_middleware.allow_anonymous):
+            self.send_error_response(403, "Authentication required")
             return
+
+        # Check control enabled status
+        control_enabled = False
+        read_only = True
+        if self.telemetry_adapter:
+            control_enabled = getattr(self.telemetry_adapter, 'control_enabled', False)
+            read_only = not control_enabled
 
         info = {
             "service": "M20 Pro 巡逻机器人监控系统",
             "version": "1.0.0",
             "site": "东莞中升奔驰4S店",
             "mode": self.config.runtime_mode if self.config else "unknown",
-            "read_only": True,
-            "control_enabled": False,
+            "read_only": read_only,
+            "control_enabled": control_enabled,
             "auth_enabled": self.config.auth_enabled if self.config else True,
             "hos": {
                 "aos_host": self.config.aos_host if self.config else "",

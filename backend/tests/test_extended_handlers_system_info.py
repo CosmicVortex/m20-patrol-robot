@@ -17,9 +17,11 @@ def test_system_info_returns_gos_host_from_config():
     handler.config.aos_port = 30001
     handler.config.nos_host = "10.21.31.106"
     handler.config.gos_host = "10.21.31.104"
-    handler.config.runtime_mode = "realtime_readonly"
+    handler.config.runtime_mode = "realtime"
     handler.config.auth_enabled = True
     handler.gimbal_adapter = None
+    handler.telemetry_adapter = MagicMock()
+    handler.telemetry_adapter.control_enabled = True
 
     # Mock response methods
     handler.send_json_response = MagicMock()
@@ -27,7 +29,8 @@ def test_system_info_returns_gos_host_from_config():
     # Call do_GET
     handler.path = "/api/v1/system/info"
     handler._authenticate = MagicMock(return_value=None)
-    handler.config.allow_anonymous = True
+    handler.auth_middleware = MagicMock()
+    handler.auth_middleware.allow_anonymous = True
 
     handler.do_GET()
 
@@ -37,3 +40,6 @@ def test_system_info_returns_gos_host_from_config():
     data = response_args[0][1]
     assert data["hos"]["gos_host"] == "10.21.31.104"
     assert data["hos"]["nos_host"] == "10.21.31.106"
+    assert data["control_enabled"] == True
+    assert data["read_only"] == False
+
