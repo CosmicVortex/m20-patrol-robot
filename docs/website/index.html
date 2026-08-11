@@ -25,6 +25,19 @@
 body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 "Microsoft YaHei","PingFang SC","Noto Sans SC",Arial,sans-serif}
 .app{min-height:100vh;display:flex;background:radial-gradient(circle at 55% 0,rgba(30,67,116,.22),transparent 45%),var(--bg)}
 
+/* Login overlay */
+.login-overlay{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center}
+.login-box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:32px;width:360px;max-width:90vw}
+.login-box h2{margin:0 0 6px;font-size:20px;color:#fff;text-align:center}
+.login-box p{margin:0 0 24px;font-size:12px;color:var(--muted);text-align:center}
+.login-box label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+.login-box input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel2);color:var(--text);font-size:14px;margin-bottom:16px}
+.login-box input:focus{outline:none;border-color:var(--cyan)}
+.login-box button{width:100%;padding:12px;border:none;border-radius:6px;background:linear-gradient(135deg,var(--cyan),#1c5e90);color:#fff;font-size:14px;font-weight:600;cursor:pointer}
+.login-box button:hover{opacity:.9}
+.login-error{color:var(--red);font-size:12px;margin-bottom:12px;text-align:center}
+.login-footer{margin-top:16px;font-size:11px;color:var(--muted);text-align:center}
+
 /* Sidebar */
 .sidebar{width:218px;flex:0 0 218px;background:#0a172d;border-right:1px solid var(--line);display:flex;flex-direction:column}
 .brand{height:78px;padding:17px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(91,200,237,.15)}
@@ -149,7 +162,25 @@ body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 "Microsoft Y
 </style>
 </head>
 <body>
-<div class="app">
+<!-- Login overlay -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <h2>M20 Pro 巡检系统</h2>
+    <p>东莞中升奔驰 · 仅限授权人员访问</p>
+    <div class="login-error" id="login-error"></div>
+    <form id="login-form" onsubmit="return handleLogin(event)">
+      <label>用户名</label>
+      <input type="text" id="login-username" placeholder="请输入用户名" required autocomplete="username">
+      <label>密码</label>
+      <input type="password" id="login-password" placeholder="请输入密码" required autocomplete="current-password">
+      <button type="submit">登录</button>
+    </form>
+    <div class="login-footer">默认账号: admin / 123456789012</div>
+  </div>
+</div>
+
+<!-- Main app (hidden until logged in) -->
+<div class="app" id="main-app" style="display:none">
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-mark">M20</div>
@@ -181,6 +212,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 "Microsoft Y
         <div class="user">
           <div class="avatar">管</div>
           <span>管理员</span>
+          <span style="cursor:pointer;color:var(--red);margin-left:4px" onclick="handleLogout()" title="退出登录">✕</span>
         </div>
       </div>
     </header>
@@ -325,6 +357,10 @@ body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 "Microsoft Y
                 <div class="val" id="nav-state">—</div>
               </div>
               <div class="robot-stat">
+                <label>步态模式</label>
+                <div class="val" id="gait-state">—</div>
+              </div>
+              <div class="robot-stat">
                 <label>最新巡检项</label>
                 <div class="val" style="font-size:12px" id="last-inspection">暂无数据</div>
               </div>
@@ -340,15 +376,72 @@ body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 "Microsoft Y
   </main>
 </div>
 
-<button class="emergency-btn" id="emergency-btn" disabled>
-  一键应急巡检
-  <small>需管理员授权</small>
-</button>
-
 <div class="foot">M20 Pro · READ-ONLY · 视频流/地图配置中</div>
+</div>
+</div>
 
 <script>
 const API_BASE = '/api/v1';
+let authToken = null;
+let currentUser = null;
+
+// Check existing session
+(function checkSession() {
+  fetch(API_BASE + '/auth/me')
+    .then(r => { if (r.ok) return r.json(); throw new Error(); })
+    .then(v => { currentUser = v.data; showApp(); })
+    .catch(() => { showLogin(); });
+})();
+
+function showLogin() {
+  document.getElementById('login-overlay').style.display = 'flex';
+  document.getElementById('main-app').style.display = 'none';
+}
+
+function showApp() {
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('main-app').style.display = 'block';
+  if (currentUser) {
+    document.querySelector('.user span').textContent = currentUser.username;
+    document.querySelector('.avatar').textContent = currentUser.username[0];
+  }
+  fetchStatus();
+  fetchVideo();
+  fetchNavStatus();
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  fetch(API_BASE + '/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({username, password})
+  })
+  .then(r => r.json().then(v => ({ok: r.ok, data: v})))
+  .then(({ok, data}) => {
+    if (ok) {
+      authToken = data.token;
+      currentUser = data.user;
+      showApp();
+    } else {
+      errEl.textContent = data.message || '用户名或密码错误';
+    }
+  })
+  .catch(() => { errEl.textContent = '登录请求失败'; });
+  return false;
+}
+
+function handleLogout() {
+  fetch(API_BASE + '/auth/logout', {method: 'POST'}).catch(() => {});
+  authToken = null;
+  currentUser = null;
+  showLogin();
+}
+
 const clock = document.getElementById('clock');
 
 function tick() {
@@ -439,6 +532,11 @@ function updateDashboard(v) {
   // Robot state
   document.getElementById('robot-state').textContent = '状态: ' + _motion(b.motion_state || 0);
 
+  // Gait
+  const gaitMap = {0x1001: '标准步态', 0x1002: '高台标准', 0x3002: '敏捷步态', 0x3003: '楼梯敏捷'};
+  const gaitVal = b.gait;
+  document.getElementById('gait-state').textContent = gaitMap[gaitVal] || (gaitVal ? '0x' + gaitVal.toString(16).toUpperCase() : '—');
+
   // Battery
   const bat = (dev.BatteryStatus || {});
   const leftP = bat.Left?.BatteryLevel ?? 0;
@@ -483,30 +581,28 @@ function updateVideoStatus(v) {
   const cameras = document.querySelectorAll('#camera-wall .camera');
   const keys = ['front', 'thermal', 'front_body', 'rear_body'];
   cameras.forEach((cam, i) => {
-    const src = sources[keys[i]] || {};
+    const key = keys[i];
+    const src = sources[key] || {};
     const stateEl = cam.querySelector('.media-state');
+    const noteEl = cam.querySelector('.camera-watermark small');
     if (src.state === 'connected') {
       stateEl.className = 'media-state ok';
       stateEl.innerHTML = '<strong>ONLINE</strong>实时视频流';
+      if (noteEl) noteEl.textContent = src.label || '';
     } else if (src.state === 'blocked') {
       stateEl.className = 'media-state blocked';
       stateEl.innerHTML = '<strong>BLOCKED</strong>' + (src.note || '视频流已禁用');
+      if (noteEl) noteEl.textContent = src.label || '';
     } else {
       stateEl.className = 'media-state unverified';
-      stateEl.innerHTML = '<strong>UNVERIFIED</strong>' + (src.note || '现场配置中');
+      stateEl.innerHTML = '<strong>UNVERIFIED</strong>' + (src.note || '待配置');
+      if (noteEl) noteEl.textContent = src.label || '';
     }
   });
 }
 
 function updateEmergencyBtn(nav) {
-  const btn = document.getElementById('emergency-btn');
-  if (nav.authorized && nav.control_enabled) {
-    btn.disabled = false;
-    btn.querySelector('small').textContent = '已授权，点击执行';
-  } else {
-    btn.disabled = true;
-    btn.querySelector('small').textContent = nav.authorized ? 'control_enabled=false' : '需管理员授权';
-  }
+  // Reserved for future use
 }
 
 // Initial load
@@ -518,15 +614,6 @@ fetchNavStatus();
 setInterval(fetchStatus, 2000);
 setInterval(fetchVideo, 5000);
 setInterval(fetchNavStatus, 10000);
-
-// Emergency button
-document.getElementById('emergency-btn').addEventListener('click', async () => {
-  try {
-    const r = await fetch(API_BASE + '/emergency/stop', {method: 'POST'});
-    const v = await r.json();
-    alert(v.message || '操作完成');
-  } catch(e) { alert('请求失败: ' + e.message); }
-});
 
 // Nav buttons
 document.querySelectorAll('.nav button').forEach(b => {

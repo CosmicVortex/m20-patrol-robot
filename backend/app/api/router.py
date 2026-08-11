@@ -1,6 +1,6 @@
-"""API router for M20 Web service.
+"""API route for M20 Pro patrol robot.
 
-Routes HTTP requests to appropriate handlers.
+Routes HTTP requests to appropriate handler classes.
 """
 
 from __future__ import annotations
@@ -28,14 +28,31 @@ from backend.app.api.handlers import (
     StatusLatestHandler,
     VideoStatusHandler,
 )
-from backend.app.gimbal.handlers import (
-    GimbalStateHandler,
-    GimbalMoveHandler,
-    GimbalZoomHandler,
+from backend.app.api.extended_handlers import (
     GimbalAngleHandler,
     GimbalDeviceInfoHandler,
-    GimbalVideoHandler,
+    GimbalMoveHandler,
     GimbalScanHandler,
+    GimbalStateHandler,
+    GimbalVideoHandler,
+    GimbalZoomHandler,
+    InspectionPointsHandler,
+    SystemInfoHandler,
+    TimelineHandler,
+    UserChangePasswordHandler,
+    UserListHandler,
+    WorkOrdersCreateHandler,
+    WorkOrdersListHandler,
+    WorkOrdersUpdateHandler,
+)
+from backend.app.gimbal.handlers import (
+    GimbalStateHandler as GimbalStateHandlerOrig,
+    GimbalMoveHandler as GimbalMoveHandlerOrig,
+    GimbalZoomHandler as GimbalZoomHandlerOrig,
+    GimbalAngleHandler as GimbalAngleHandlerOrig,
+    GimbalDeviceInfoHandler as GimbalDeviceInfoHandlerOrig,
+    GimbalVideoHandler as GimbalVideoHandlerOrig,
+    GimbalScanHandler as GimbalScanHandlerOrig,
 )
 from backend.app.gimbal.adapter import SoarGimbalAdapter
 from backend.app.video.stream_manager import VideoStreamManager
@@ -59,6 +76,16 @@ class ApiRouter:
         "/api/v1/navigation/cancel": NavigationCancelHandler,
         "/api/v1/emergency/stop": EmergencyStopHandler,
         "/api/v1/video": VideoStatusHandler,
+        # Extended handlers
+        "/api/v1/work-orders": WorkOrdersListHandler,
+        "/api/v1/work-orders/create": WorkOrdersCreateHandler,
+        "/api/v1/work-orders/update": WorkOrdersUpdateHandler,
+        "/api/v1/inspection-points": InspectionPointsHandler,
+        "/api/v1/timeline": TimelineHandler,
+        "/api/v1/users": UserListHandler,
+        "/api/v1/users/password": UserChangePasswordHandler,
+        "/api/v1/system/info": SystemInfoHandler,
+        # Gimbal handlers (extended versions take precedence)
         "/api/v1/gimbal/state": GimbalStateHandler,
         "/api/v1/gimbal/move": GimbalMoveHandler,
         "/api/v1/gimbal/zoom": GimbalZoomHandler,
@@ -109,8 +136,7 @@ class ApiRouter:
         handler.gimbal_adapter = self.gimbal_adapter
         handler.video_manager = self.video_manager
 
-        # Dispatch on the live request handler. Creating a detached
-        # BaseHTTPRequestHandler bypasses the socket, headers and request body.
+        # Dispatch on the live request handler.
         method = handler.command.lower()
         handler_method = f"do_{method.upper()}"
         if hasattr(handler_class, handler_method):

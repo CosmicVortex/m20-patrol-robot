@@ -489,6 +489,12 @@ class VideoStatusHandler(BaseHandler):
                     "label": "热成像相机",
                     "note": "云台IP待确认",
                 },
+                "body_front": {
+                    "state": "blocked" if not allow_real_io else "unverified",
+                    "rtsp_url": "rtsp://10.21.31.103:8554/body_front",
+                    "label": "车身广角前视",
+                    "note": "需现场ffprobe确认编码与分辨率",
+                },
             }
 
         self.send_json_response(200, {
