@@ -47,8 +47,12 @@ class WebServiceConfig:
             raise ValueError("session_ttl_s must be positive")
         if self.telemetry_tx_enabled:
             raise ValueError("telemetry transmission is disabled in this release")
-        if not self.read_only_mode or self.control_enabled:
-            raise ValueError("service requires read_only_mode=true and control_enabled=false")
+        # 安全约束：禁止同时启用读写控制且不禁用只读模式
+        # 允许 read_only_mode=false 且 control_enabled=true（完整控制模式）
+        # 允许 read_only_mode=true 且 control_enabled=false（只读模式）
+        # 不允许 read_only_mode=false 且 control_enabled=false（无效配置）
+        if not self.read_only_mode and not self.control_enabled:
+            raise ValueError("service requires control_enabled=true when read_only_mode=false")
 
 
 class ConfigLoader:

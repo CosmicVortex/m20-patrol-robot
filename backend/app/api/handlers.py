@@ -36,7 +36,7 @@ class HealthHandler(BaseHandler):
                 "runtime_mode": getattr(self.telemetry_adapter.config, "runtime_mode", "unconfigured") if self.telemetry_adapter else "unconfigured",
                 "read_only_mode": not getattr(self.telemetry_adapter, "control_enabled", False),
                 "control_enabled": getattr(self.telemetry_adapter, "control_enabled", False),
-                "telemetry_tx_enabled": False,
+                "telemetry_tx_enabled": self.config.telemetry_tx_enabled if self.config else False,
                 "source": payload.get("source", "NO_DATA"),
                 "connected": payload.get("connected", False),
                 "valid_frames": payload.get("valid_frames", 0),
@@ -52,8 +52,11 @@ class HealthHandler(BaseHandler):
                 "timestamp": datetime.now(UTC).isoformat(),
             }
             stale_limit = self.telemetry_adapter.config.stale_after_s * 1000 if self.telemetry_adapter else 0
+            # 支持两种健康模式：实时只读模式 或 完整控制模式
+            is_readonly_mode = self.config.runtime_mode == "realtime_readonly" if self.config else False
+            is_control_mode = self.config.control_enabled if self.config else False
             health["healthy"] = (
-                health["runtime_mode"] == "realtime_readonly"
+                (is_readonly_mode or is_control_mode)
                 and health["source"] == "REAL"
                 and health["connected"] is True
                 and health["valid_frames"] > 0
