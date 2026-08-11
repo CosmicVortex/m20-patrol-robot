@@ -165,7 +165,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 "Microsoft Y
       <button>▤<span>设备档案</span></button>
       <button>⚙<span>系统设置</span></button>
     </nav>
-    <div class="side-foot">东莞中升奔驰<br>只读演示界面<br>媒体与地图待现场验收</div>
+    <div class="side-foot">东莞中升奔驰<br>M20 Pro 巡检系统<br>视频流/地图现场配置中</div>
   </aside>
 
   <main class="main">
@@ -226,7 +226,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 "Microsoft Y
           <div class="camera-wall" id="camera-wall">
             <div class="camera">
               <div class="camera-title"><b>可见光主码流</b></div>
-              <div class="camera-watermark">设备标识待确认<small>现场 RTSP/WebRTC 探测</small></div>
+              <div class="camera-watermark">设备标识待确认<small>现场 RTSP/WebRTC 探测中</small></div>
               <div class="media-state blocked"><strong>UNVERIFIED</strong>需要现场 RTSP 探测</div>
               <div class="detection"><span>检测框仅为UI层示意</span></div>
               <div class="camera-tools">
@@ -236,7 +236,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 "Microsoft Y
             </div>
             <div class="camera">
               <div class="camera-title"><b>热成像</b></div>
-              <div class="camera-watermark">热成像媒体未接入<small>设备标识待确认 · 分辨率待现场 ffprobe</small></div>
+              <div class="camera-watermark">热成像媒体未接入<small>设备标识待现场配置 · 编码格式待确认</small></div>
               <div class="media-state blocked"><strong>BLOCKED</strong>编码、分辨率、帧率未确认</div>
               <div class="camera-tools">
                 <button disabled>⛶ 全屏</button>
@@ -245,7 +245,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 "Microsoft Y
             </div>
             <div class="camera">
               <div class="camera-title"><b>机身前视角</b></div>
-              <div class="camera-watermark">机身前视角媒体未接入<small>前广角通道 · 文档默认 video1，现场可达性未确认</small></div>
+              <div class="camera-watermark">机身前视角媒体未接入<small>前广角通道 · 现场可达性待确认</small></div>
               <div class="media-state blocked"><strong>UNVERIFIED</strong>不能显示在线或首帧</div>
               <div class="camera-tools">
                 <button disabled>⛶ 全屏</button>
@@ -254,7 +254,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 "Microsoft Y
             </div>
             <div class="camera">
               <div class="camera-title"><b>机身后视角</b></div>
-              <div class="camera-watermark">机身后视角媒体未接入<small>后广角通道 · 文档默认 video2，现场可达性未确认</small></div>
+              <div class="camera-watermark">机身后视角媒体未接入<small>后广角通道 · 现场可达性待确认</small></div>
               <div class="media-state blocked"><strong>UNVERIFIED</strong>不能显示在线或首帧</div>
               <div class="camera-tools">
                 <button disabled>⛶ 全屏</button>
@@ -287,7 +287,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 "Microsoft Y
           <div class="map-card">
             <div class="map-head">
               <h2>机器狗 #02 状态</h2>
-              <small>冲压车间B区配电间</small>
+              <small>展示厅配电间</small>
             </div>
             <div class="map-canvas">
               <div class="map-placeholder">
@@ -345,7 +345,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 "Microsoft Y
   <small>需管理员授权</small>
 </button>
 
-<div class="foot">M20 Pro · READ-ONLY · 视频流/地图待现场验收</div>
+<div class="foot">M20 Pro · READ-ONLY · 视频流/地图配置中</div>
 
 <script>
 const API_BASE = '/api/v1';
@@ -493,7 +493,7 @@ function updateVideoStatus(v) {
       stateEl.innerHTML = '<strong>BLOCKED</strong>' + (src.note || '视频流已禁用');
     } else {
       stateEl.className = 'media-state unverified';
-      stateEl.innerHTML = '<strong>UNVERIFIED</strong>' + (src.note || '待现场确认');
+      stateEl.innerHTML = '<strong>UNVERIFIED</strong>' + (src.note || '现场配置中');
     }
   });
 }
