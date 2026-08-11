@@ -54,6 +54,26 @@ class NavigationService:
         self._audit_log: list[NavigationAuditLog] = []
         self._current_task_id: int = 0
 
+    def update_safety_from_telemetry(self, telemetry_data: dict[str, Any]) -> None:
+        """Update navigation safety snapshot from telemetry data."""
+        # Extract safety-critical fields from telemetry
+        basic = telemetry_data.get("basic", {})
+        nav_status = telemetry_data.get("nav_status", {})
+        position = telemetry_data.get("position", {})
+        
+        # Update safety snapshot fields based on telemetry
+        self._safety = NavigationSafetySnapshot(
+            control_enabled=self._safety.control_enabled,  # Keep configured value
+            field_authorization="field_auth_required" if telemetry_data.get("tcp_connected") else "",
+            tcp_connected=telemetry_data.get("tcp_connected", False),
+            location_normal=telemetry_data.get("location_normal", False),
+            obstacle_avoidance_active=telemetry_data.get("obstacle_avoidance_active", True),
+            hard_estop_active=telemetry_data.get("hard_estop_active", False),
+            protective_fault_active=telemetry_data.get("protective_fault_active", False),
+            battery_percent=telemetry_data.get("battery_percent", 100),
+            active_task=telemetry_data.get("active_task", False),
+        )
+
     @property
     def is_authorized(self) -> bool:
         return self._auth.authorized

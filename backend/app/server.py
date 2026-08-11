@@ -15,7 +15,7 @@ import os
 from dataclasses import replace
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 # Ensure backend is importable
 # __file__ = backend/app/server.py
@@ -79,7 +79,10 @@ class M20WebServer:
             telemetry_receive_enabled=self.config.telemetry_receive_enabled,
             stale_after_s=self.config.stale_after_s,
         )
-        self.telemetry_adapter = TelemetryAdapter(telemetry_config)
+        self.telemetry_adapter = TelemetryAdapter(
+            telemetry_config,
+            control_enabled=self.config.control_enabled,
+        )
 
         # Setup navigation service (disabled by default until authorized)
         basic_config = BasicServerConfig(
@@ -136,6 +139,7 @@ class M20WebServer:
             config=self.config,
             gimbal_adapter=self.gimbal_adapter,
             video_manager=self.video_manager,
+            server_instance=self,  # Inject server reference for handlers
         )
 
     def _ensure_admin_user(self) -> None:
@@ -159,6 +163,12 @@ class M20WebServer:
     def start(self) -> None:
         """Start the web server."""
         self.setup()
+
+        # Setup navigation sync callback
+        if self.telemetry_adapter and self.nav_service:
+            def _sync_nav(data: dict[str, Any]) -> None:
+                self.nav_service.update_safety_from_telemetry(data.get("data", {}))
+            self.telemetry_adapter.set_navigation_sync_callback(_sync_nav)
 
         if self.telemetry_adapter:
             self.telemetry_adapter.start()
@@ -271,6 +281,7 @@ class M20WebServer:
                     # Inject dependencies for handlers
                     self._gimbal = router.gimbal_adapter
                     self._video_manager = router.video_manager
+                    self.server_instance = self.server  # Reference to M20WebServer
                     router.route(self)  # type: ignore[arg-type]
                 else:
                     self.send_error_response(503, "Service not ready")

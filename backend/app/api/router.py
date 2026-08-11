@@ -6,7 +6,7 @@ Routes HTTP requests to appropriate handler classes.
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 from backend.app.auth.middleware import AuthMiddleware
 from backend.app.auth.store import UserStore
@@ -88,6 +88,9 @@ class ApiRouter:
         "/api/v1/gimbal/connect": GimbalConnectHandler,
     }
 
+    # WebSocket paths
+    WS_HANDLERS: dict[str, Any] = {}
+
     def __init__(
         self,
         user_store: UserStore,
@@ -97,6 +100,7 @@ class ApiRouter:
         config: Optional[WebServiceConfig] = None,
         gimbal_adapter: Optional[SoarGimbalAdapter] = None,
         video_manager: Optional[VideoStreamManager] = None,
+        server_instance: Any = None,
     ) -> None:
         self.user_store = user_store
         self.auth_middleware = auth_middleware
@@ -105,6 +109,7 @@ class ApiRouter:
         self.config = config
         self.gimbal_adapter = gimbal_adapter
         self.video_manager = video_manager
+        self.server_instance = server_instance
 
     def route(self, handler: BaseHandler) -> None:
         """Route the request to the appropriate handler."""
@@ -128,6 +133,7 @@ class ApiRouter:
         handler.config = self.config
         handler.gimbal_adapter = self.gimbal_adapter
         handler.video_manager = self.video_manager
+        handler.server_instance = self.server_instance
 
         # Dispatch on the live request handler.
         method = handler.command.lower()

@@ -79,8 +79,9 @@ class StatusSnapshot:
 class TelemetryAdapter:
     """Real-time status adapter for basic_server TCP connection."""
 
-    def __init__(self, config: ConnectionConfig) -> None:
+    def __init__(self, config: ConnectionConfig, *, control_enabled: bool = False) -> None:
         self.config = config
+        self.control_enabled = control_enabled
         self._client: Optional[BasicServerClient] = None
         self._snapshot = StatusSnapshot(
             source="NO_DATA",
@@ -101,6 +102,11 @@ class TelemetryAdapter:
         self._valid_frames = 0
         self._invalid_frames = 0
         self._tcp_connected = False
+        self._nav_sync_callback = None  # Optional callback for nav service sync
+
+    def set_navigation_sync_callback(self, callback) -> None:
+        """Set callback to sync navigation safety snapshot from telemetry."""
+        self._nav_sync_callback = callback
 
     @property
     def snapshot(self) -> StatusSnapshot:
@@ -238,6 +244,12 @@ class TelemetryAdapter:
                 self._connection_received_messages += 1
                 self._last_message_type = (msg.message_type, msg.command)
                 self._update_snapshot_inner(client, result)
+                # Sync navigation safety snapshot if callback is set
+                if self._nav_sync_callback:
+                    try:
+                        self._nav_sync_callback(self.get_status_payload())
+                    except Exception as e:
+                        logger.warning("导航安全快照同步失败: %s", e)
                 if self._message_count % 10 == 0:
                     logger.info("已接收 %d 条状态消息", self._message_count)
         except Exception as e:
@@ -293,11 +305,11 @@ class TelemetryAdapter:
         """Get status payload for dashboard API."""
         with self._lock:
             snap = self._snapshot
-            return {
-                "source": snap.source,
-                "connected": snap.connected,
-                "control_enabled": False,
-                "telemetry_tx_enabled": self.config.telemetry_tx_enabled,
+            return {\
+                "source": snap.source,\
+                "connected": snap.connected,\
+                "control_enabled": self.control_enabled,\
+                "telemetry_tx_enabled": self.config.telemetry_tx_enabled,\
                 "connection_state": "CONNECTED" if snap.connected else snap.source,
                 "network_ready": self._connection_count > 0,
                 "tcp_connected": self._tcp_connected,

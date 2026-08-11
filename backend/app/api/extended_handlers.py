@@ -46,6 +46,7 @@ class BaseHandler(BaseHTTPRequestHandler):
     config: Optional[WebServiceConfig] = None
     gimbal_adapter: Optional[SoarGimbalAdapter] = None
     video_manager: Any = None
+    server_instance: Any = None  # Reference to M20WebServer instance
 
     def log_message(self, format: str, *args: Any) -> None:
         context = RequestContext(
@@ -119,39 +120,8 @@ def _init_default_work_orders() -> None:
     """Initialize with default work orders if file doesn't exist."""
     if os.path.exists(WORK_ORDERS_FILE):
         return
-    defaults = [
-        {
-            "id": "WO-2026-001",
-            "title": "维修间配电柜温度异常",
-            "location": "维修间 A 区",
-            "priority": "high",
-            "status": "pending",
-            "created_at": "2026-08-10T09:15:00",
-            "assigned_to": "张工",
-            "description": "热成像检测到配电柜温度超过阈值",
-        },
-        {
-            "id": "WO-2026-002",
-            "title": "展车区照明故障报修",
-            "location": "展车区 B 排",
-            "priority": "medium",
-            "status": "in_progress",
-            "created_at": "2026-08-10T11:30:00",
-            "assigned_to": "李工",
-            "description": "B排3号展车位照明异常",
-        },
-        {
-            "id": "WO-2026-003",
-            "title": "客户休息区空调滤网更换",
-            "location": "客户休息室",
-            "priority": "low",
-            "status": "completed",
-            "created_at": "2026-08-09T14:00:00",
-            "assigned_to": "王工",
-            "description": "季度保养计划",
-        },
-    ]
-    _save_work_orders(defaults)
+    # No default work orders - let users create their own
+    _save_work_orders([])
 
 
 class WorkOrdersListHandler(BaseHandler):
@@ -282,17 +252,11 @@ def _save_inspection_points(points: list[dict[str, Any]]) -> None:
 
 
 def _init_default_inspection_points() -> None:
+    """Initialize with default inspection points if file doesn't exist."""
     if os.path.exists(INSPECTION_POINTS_FILE):
         return
-    defaults = [
-        {"id": "PT-01", "name": "客户接待区", "area": "接待区", "type": "visual", "lat": 31.8, "lon": 117.2, "status": "active"},
-        {"id": "PT-02", "name": "展车区主通道", "area": "展车区", "type": "thermal", "lat": 31.8, "lon": 117.2, "status": "active"},
-        {"id": "PT-03", "name": "维修间配电柜", "area": "维修区", "type": "thermal", "lat": 31.8, "lon": 117.2, "status": "active"},
-        {"id": "PT-04", "name": "配件仓库入口", "area": "配件区", "type": "visual", "lat": 31.8, "lon": 117.2, "status": "active"},
-        {"id": "PT-05", "name": "洗车房外侧", "area": "服务区", "type": "visual", "lat": 31.8, "lon": 117.2, "status": "active"},
-        {"id": "PT-06", "name": "试驾车停放区", "area": "展车区", "type": "visual", "lat": 31.8, "lon": 117.2, "status": "active"},
-    ]
-    _save_inspection_points(defaults)
+    # No default inspection points - site-specific configuration required
+    _save_inspection_points([])
 
 
 class InspectionPointsHandler(BaseHandler):
@@ -342,21 +306,11 @@ def _save_timeline(entries: list[dict[str, Any]]) -> None:
 
 
 def _init_default_timeline() -> None:
+    """Initialize with default timeline if file doesn't exist."""
     if os.path.exists(TIMELINE_FILE):
         return
-    now = datetime.now(UTC)
-    defaults = [
-        {"time": (now.replace(hour=8, minute=0)).isoformat(), "event": "巡检开始", "type": "info", "location": "起点"},
-        {"time": (now.replace(hour=8, minute=15)).isoformat(), "event": "通过客户接待区", "type": "info", "location": "PT-01"},
-        {"time": (now.replace(hour=8, minute=32)).isoformat(), "event": "通过展车区主通道", "type": "info", "location": "PT-02"},
-        {"time": (now.replace(hour=8, minute=45)).isoformat(), "event": "温度异常告警", "type": "alert", "location": "PT-03", "detail": "配电柜温度 62°C"},
-        {"time": (now.replace(hour=9, minute=0)).isoformat(), "event": "生成工单 WO-2026-001", "type": "work_order", "location": "PT-03"},
-        {"time": (now.replace(hour=9, minute=10)).isoformat(), "event": "通过配件仓库入口", "type": "info", "location": "PT-04"},
-        {"time": (now.replace(hour=9, minute=25)).isoformat(), "event": "通过洗车房外侧", "type": "info", "location": "PT-05"},
-        {"time": (now.replace(hour=9, minute=40)).isoformat(), "event": "通过试驾车停放区", "type": "info", "location": "PT-06"},
-        {"time": (now.replace(hour=9, minute=55)).isoformat(), "event": "巡检结束，返回起点", "type": "info", "location": "起点"},
-    ]
-    _save_timeline(defaults)
+    # No default timeline - wait for real patrol data
+    _save_timeline([])
 
 
 class TimelineHandler(BaseHandler):
@@ -767,19 +721,26 @@ class GimbalConnectHandler(BaseHandler):
         # Create new adapter and try to connect
         new_adapter = SoarGimbalAdapter(new_config)
         if new_adapter.auto_connect():
+            # Close old adapter if exists
+            if self.server_instance and self.server_instance.gimbal_adapter:
+                try:
+                    self.server_instance.gimbal_adapter.close()
+                except Exception:
+                    pass
+            
             # Update server's gimbal adapter reference
-            self.server.gimbal_adapter = new_adapter
-            self.server.gimbal_connected = True
-            self.server.gimbal_host = host
+            self.server_instance.gimbal_adapter = new_adapter
+            self.server_instance.gimbal_connected = True
+            self.server_instance.gimbal_host = host
             logger.info("云台手动连接成功: %s", host)
 
             # Update video stream manager with gimbal RTSP URLs
-            if self.server.video_manager:
+            if self.server_instance and self.server_instance.video_manager:
                 video_urls = new_adapter.get_video_urls()
                 if video_urls.get("visible_light"):
-                    self.server.video_manager.set_rtsp_url("front", video_urls["visible_light"])
+                    self.server_instance.video_manager.set_rtsp_url("front", video_urls["visible_light"])
                 if video_urls.get("thermal"):
-                    self.server.video_manager.set_rtsp_url("thermal", video_urls["thermal"])
+                    self.server_instance.video_manager.set_rtsp_url("thermal", video_urls["thermal"])
 
             self.send_json_response(200, {
                 "success": True,

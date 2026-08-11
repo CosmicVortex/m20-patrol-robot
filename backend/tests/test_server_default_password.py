@@ -16,11 +16,10 @@ def test_default_password_is_documented():
     assert len(expected_password) >= 6
 
 
-def test_password_not_random():
-    """Test that password follows documentation, not random generation."""
-    # The password should be the documented fixed password
+def test_password_is_numeric():
+    """Test that password is numeric as per documentation."""
     documented_password = "123456"
 
-    # Verify it's not a random token format
+    # Verify it's numeric
     assert documented_password.isascii()
     assert documented_password.isdigit()  # Simple numeric password as per docs
