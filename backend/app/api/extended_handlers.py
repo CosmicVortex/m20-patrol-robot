@@ -22,6 +22,7 @@ except ImportError:
 from backend.app.auth.middleware import AuthMiddleware, AuthRequiredError, AuthResult
 from backend.app.auth.store import AuthUser, AuthenticationError, Session, UserStore
 from backend.app.api.response import ApiFormatter, RequestContext
+from backend.app.api.base_handler import BaseHandler
 from backend.app.robot.telemetry import TelemetryAdapter
 from backend.app.navigation.service import NavigationService
 from backend.app.config import WebServiceConfig
@@ -34,68 +35,6 @@ WORK_ORDERS_FILE = os.environ.get(
     "M20_WORK_ORDERS_DB",
     str(pathlib.Path(__import__("pathlib").Path(__file__).parent.parent.parent / "var" / "work_orders.json")),
 )
-
-
-class BaseHandler(BaseHTTPRequestHandler):
-    """Base HTTP handler with auth and response formatting."""
-
-    auth_middleware: Optional[AuthMiddleware] = None
-    telemetry_adapter: Optional[TelemetryAdapter] = None
-    user_store: Optional[UserStore] = None
-    nav_service: Optional[NavigationService] = None
-    config: Optional[WebServiceConfig] = None
-    gimbal_adapter: Optional[SoarGimbalAdapter] = None
-    video_manager: Any = None
-    server_instance: Any = None  # Reference to M20WebServer instance
-
-    def log_message(self, format: str, *args: Any) -> None:
-        context = RequestContext(
-            method=self.command,
-            path=self.path,
-            client_address=self.client_address,
-        )
-        logger.info("%s %s - %s", context.method, context.path, format % args)
-
-    def _read_body(self) -> bytes:
-        content_length = int(self.headers.get("Content-Length", 0))
-        if content_length > 0:
-            return self.rfile.read(content_length)
-        return b""
-
-    def _parse_json_body(self) -> dict[str, Any]:
-        body = self._read_body()
-        if not body:
-            return {}
-        try:
-            return json.loads(body.decode("utf-8"))
-        except json.JSONDecodeError as exc:
-            self.send_error_response(400, f"Invalid JSON: {exc}")
-            return {}
-
-    def _authenticate(self) -> Optional[AuthResult]:
-        if self.auth_middleware is None:
-            return None
-        try:
-            return self.auth_middleware.authenticate(self)
-        except AuthRequiredError as exc:
-            self.send_error_response(401, str(exc), "unauthorized")
-            return None
-
-    def send_json_response(self, status: int, data: dict[str, Any]) -> None:
-        ApiFormatter.send_json(self, status, data)
-
-    def send_raw_json_response(self, status: int, data: dict[str, Any]) -> None:
-        body = json.dumps(data, ensure_ascii=False).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("X-Content-Type-Options", "nosniff")
-        self.end_headers()
-        self.wfile.write(body)
-
-    def send_error_response(self, status: int, message: str, code: str = "error") -> None:
-        ApiFormatter.send_error(self, status, message, code)
 
 
 # ── Work Order handlers ──────────────────────────────────────────────────────
