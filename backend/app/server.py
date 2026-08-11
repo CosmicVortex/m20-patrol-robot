@@ -198,11 +198,11 @@ class M20WebServer:
                 self.nav_service.update_safety_from_telemetry(data.get("data", {}))
             self.telemetry_adapter.set_navigation_sync_callback(_sync_nav)
 
-        # Setup motion sync callback
+        # Setup motion sync callback (separate from nav callback)
         if self.telemetry_adapter and self.motion_service:
             def _sync_motion(data: dict[str, Any]) -> None:
                 self.motion_service.update_safety(data.get("data", {}))
-            self.telemetry_adapter.set_navigation_sync_callback(_sync_motion)
+            self.telemetry_adapter.set_motion_sync_callback(_sync_motion)
 
         if self.telemetry_adapter:
             self.telemetry_adapter.start()

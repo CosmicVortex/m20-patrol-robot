@@ -341,15 +341,22 @@ class EmergencyStopHandler(BaseHandler):
             self.send_error_response(404, "Not found")
             return
 
+        # Safety first: block in read-only mode before any other checks
+        if self.config and self.config.read_only_mode:
+            self.send_json_response(200, {
+                "authorized": False,
+                "message": "紧急停止已禁用：只读模式",
+            })
+            return
+
         auth = self._authenticate()
         if not auth:
             return
 
         if auth.role != "admin":
-            self.send_error_response(403, "admin role required")
+            self.send_error_response(403, "需要管理员权限")
             return
 
-        # Read-only mode: emergency stop is blocked until field authorization
         nav_service = self.nav_service
         if nav_service is None:
             self.send_error_response(503, "Navigation service not configured")
@@ -359,30 +366,21 @@ class EmergencyStopHandler(BaseHandler):
         if not result.get("authorized"):
             self.send_json_response(200, {
                 "authorized": False,
-                "message": "Navigation control not authorized. Requires field authorization via /api/v1/navigation/authorize.",
+                "message": "需要现场授权才能执行紧急停止",
                 "service_status": result,
-            })
-            return
-
-        # Authenticated path - still blocks actual command in read-only mode
-        if self.config and self.config.read_only_mode:
-            self.send_json_response(200, {
-                "authorized": True,
-                "message": "Emergency stop blocked: read_only_mode=true",
             })
             return
 
         if not result.get("control_enabled"):
             self.send_json_response(200, {
-                "authorized": True,
-                "message": "Emergency stop blocked: control_enabled=false (read-only mode)",
+                "authorized": False,
+                "message": "控制未启用：紧急停止已禁用",
             })
             return
 
-        # This path requires field authorization + control_enabled=true
         self.send_json_response(200, {
             "authorized": True,
-            "message": "Emergency stop command sent",
+            "message": "紧急停止指令已发送",
             "timestamp": datetime.now(UTC).isoformat(),
         })
 

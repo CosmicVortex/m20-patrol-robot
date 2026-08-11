@@ -12,8 +12,11 @@ import os
 import sqlite3
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler
+from pathlib import Path
 from typing import Any, Optional
-
+import hashlib
+import ipaddress
+import secrets
 try:
     from datetime import UTC
 except ImportError:
@@ -27,13 +30,12 @@ from backend.app.robot.telemetry import TelemetryAdapter
 from backend.app.navigation.service import NavigationService
 from backend.app.config import WebServiceConfig
 from backend.app.gimbal.adapter import SoarGimbalAdapter
-import pathlib
 
 logger = logging.getLogger(__name__)
 
 WORK_ORDERS_FILE = os.environ.get(
     "M20_WORK_ORDERS_DB",
-    str(pathlib.Path(__import__("pathlib").Path(__file__).parent.parent.parent / "var" / "work_orders.json")),
+    str(Path(__file__).parent.parent.parent / "var" / "work_orders.json"),
 )
 
 
@@ -172,7 +174,7 @@ class WorkOrdersUpdateHandler(BaseHandler):
 
 INSPECTION_POINTS_FILE = os.environ.get(
     "M20_INSPECTION_POINTS",
-    str(pathlib.Path(__file__).parent.parent.parent / "var" / "inspection_points.json"),
+    str(Path(__file__).parent.parent.parent / "var" / "inspection_points.json"),
 )
 
 
@@ -226,7 +228,7 @@ class InspectionPointsHandler(BaseHandler):
 
 TIMELINE_FILE = os.environ.get(
     "M20_TIMELINE_DB",
-    str(pathlib.Path(__file__).parent.parent.parent / "var" / "patrol_timeline.json"),
+    str(Path(__file__).parent.parent.parent / "var" / "patrol_timeline.json"),
 )
 
 
@@ -340,13 +342,11 @@ class UserChangePasswordHandler(BaseHandler):
         try:
             # Re-authenticate with old password
             user = self.user_store.authenticate(auth.user.username, old_password)
-            # Create new hash (need to re-create user with new password)
-            import hashlib, secrets, hmac as hmac_mod
+            # Create new hash
             salt = secrets.token_bytes(16)
             digest = hashlib.pbkdf2_hmac("sha256", new_password.encode("utf-8"), salt, 240000)
             new_hash = "$".join(("pbkdf2_sha256", "240000", salt.hex(), digest.hex()))
 
-            import sqlite3
             conn = sqlite3.connect(str(self.user_store.path))
             conn.execute(
                 "UPDATE users SET password_hash=? WHERE username=?",
@@ -657,7 +657,6 @@ class GimbalConnectHandler(BaseHandler):
             return
 
         # Update server's gimbal adapter
-        from backend.app.gimbal.adapter import GimbalConfig
         new_config = GimbalConfig(
             host=host,
             port=80,

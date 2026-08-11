@@ -28,6 +28,7 @@ except ImportError:
     UTC = timezone.utc
 
 from backend.app.protocol.messages import PatrolMessage
+from backend.app.utils.safety import detect_protective_fault
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +116,7 @@ class MotionControlService:
             control_enabled=self._safety.control_enabled,
             tcp_connected=telemetry_data.get("tcp_connected", False),
             hard_estop_active=basic.get("hes") == 1,
-            protective_fault_active=self._detect_protective_fault(errors),
+            protective_fault_active=detect_protective_fault(errors),
             battery_percent=telemetry_data.get("battery_percent", 100),
             motion_state=basic.get("motion_state", 0),
         )
@@ -359,21 +360,6 @@ class MotionControlService:
             logger.warning("电量低于20%%")
             return False
         return True
-    
-    @staticmethod
-    def _detect_protective_fault(errors: list[dict[str, Any]]) -> bool:
-        """Detect protective faults from error list."""
-        PROTECTIVE_FAULT_CODES = {
-            0x8002, 0x8008, 0x8009, 0x8020,
-            0x8103, 0x8106, 0x8107, 0x8108, 0x8112, 0x8115, 0x8116,
-            0x8117, 0x8118, 0x8119, 0x8120, 0x8121, 0x8122,
-            0x8211, 0x8212,
-        }
-        for err in errors:
-            error_code = err.get("error_code", 0)
-            if error_code in PROTECTIVE_FAULT_CODES:
-                return True
-        return False
     
     def _log(self, action: str, details: str, success: bool) -> None:
         log_entry = {

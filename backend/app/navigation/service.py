@@ -22,6 +22,7 @@ from backend.app.navigation.v010 import (
 )
 from backend.app.robot.basic_client import BasicServerClient, BasicServerConfig
 from backend.app.protocol.messages import PatrolMessage
+from backend.app.utils.safety import detect_protective_fault
 
 logger = logging.getLogger(__name__)
 
@@ -54,33 +55,6 @@ class NavigationService:
         self._audit_log: list[NavigationAuditLog] = []
         self._current_task_id: int = 0
 
-    @staticmethod
-    def _detect_protective_fault(errors: list[dict[str, Any]]) -> bool:
-        """Detect protective faults from error list.
-
-        V1.2.1 错误码表 - 保护类错误:
-        - 0x8002: 电机温度过高保护
-        - 0x8008: 驱动器欠压保护
-        - 0x8009: 驱动器过压保护
-        - 0x8020: 驱动器过流保护
-        - 0x8103: 保护电量
-        - 0x8106: 电池输出最低电压保护
-        - 0x8107-0x8128: 各类电池保护错误
-        - 0x8211: CPU 占用率过高保护
-        - 0x8212: CPU 温度过高保护
-        """
-        PROTECTIVE_FAULT_CODES = {
-            0x8002, 0x8008, 0x8009, 0x8020,  # 电机/驱动器保护
-            0x8103, 0x8106, 0x8107, 0x8108, 0x8112, 0x8115, 0x8116,  # 电池保护
-            0x8117, 0x8118, 0x8119, 0x8120, 0x8121, 0x8122,  # 电池保护
-            0x8211, 0x8212,  # CPU保护
-        }
-        for err in errors:
-            error_code = err.get("error_code", 0)
-            if error_code in PROTECTIVE_FAULT_CODES:
-                return True
-        return False
-
     def update_safety_from_telemetry(self, telemetry_data: dict[str, Any]) -> None:
         """Update navigation safety snapshot from telemetry data.
 
@@ -103,7 +77,7 @@ class NavigationService:
             location_normal=position.get("location") == 0 or bool(position.get("pos_x")),
             obstacle_avoidance_active=perception.get("obstacle_state") == 0,
             hard_estop_active=basic.get("hes") == 1,
-            protective_fault_active=self._detect_protective_fault(errors),
+            protective_fault_active=detect_protective_fault(errors),
             battery_percent=telemetry_data.get("battery_percent", 100),
             active_task=nav_status.get("status") in (2, 3, 4),  # processing/navigating/done
         )

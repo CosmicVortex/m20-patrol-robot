@@ -102,11 +102,16 @@ class TelemetryAdapter:
         self._valid_frames = 0
         self._invalid_frames = 0
         self._tcp_connected = False
-        self._nav_sync_callback = None  # Optional callback for nav service sync
+        self._nav_sync_callback = None
+        self._motion_sync_callback = None
 
     def set_navigation_sync_callback(self, callback) -> None:
         """Set callback to sync navigation safety snapshot from telemetry."""
         self._nav_sync_callback = callback
+
+    def set_motion_sync_callback(self, callback) -> None:
+        """Set callback to sync motion control safety snapshot from telemetry."""
+        self._motion_sync_callback = callback
 
     @property
     def snapshot(self) -> StatusSnapshot:
@@ -250,6 +255,11 @@ class TelemetryAdapter:
                         self._nav_sync_callback(self.get_status_payload())
                     except Exception as e:
                         logger.warning("导航安全快照同步失败: %s", e)
+                if self._motion_sync_callback:
+                    try:
+                        self._motion_sync_callback(self.get_status_payload())
+                    except Exception as e:
+                        logger.warning("运动控制安全快照同步失败: %s", e)
                 if self._message_count % 10 == 0:
                     logger.info("已接收 %d 条状态消息", self._message_count)
         except Exception as e:

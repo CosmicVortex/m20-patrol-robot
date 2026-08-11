@@ -12,6 +12,7 @@ import json
 import logging
 import threading
 from dataclasses import dataclass
+import dataclasses
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set
@@ -95,7 +96,6 @@ class VideoStreamManager:
         """Update RTSP URL for a camera source."""
         if source not in self._streams:
             return False
-        import dataclasses
         self._streams[source] = dataclasses.replace(self._streams[source], rtsp_url=rtsp_url)
         return True
 

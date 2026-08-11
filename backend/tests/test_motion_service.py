@@ -211,14 +211,16 @@ class TestMotionControlService:
 
     def test_protective_fault_detection(self):
         """保护故障检测测试。"""
+        from backend.app.utils.safety import detect_protective_fault
+
         errors = [
             {"error_code": 0x8002},  # 电机过温保护
             {"error_code": 0x8008},  # 驱动器欠压
         ]
-        assert MotionControlService._detect_protective_fault(errors) is True
+        assert detect_protective_fault(errors) is True
 
         errors = [
             {"error_code": 0x8001},  # 电机过温预警（非保护）
             {"error_code": 0x8102},  # 低电量预警
         ]
-        assert MotionControlService._detect_protective_fault(errors) is False
+        assert detect_protective_fault(errors) is False
