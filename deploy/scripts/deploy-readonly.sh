@@ -78,7 +78,7 @@ check_ffmpeg() {
     _has_demux=false
     _has_proto=false
     # 用 tr 将输出转换为每行一个词，再用 grep -qx 精确匹配 rtsp
-    if "$_candidate" -hide_banner -demuxers 2>/dev/null | tr -s ' \t\n' '\n' | grep -qx rtsp; then
+    if "$_candidate" -hide_banner -demuxers 2>/dev/null | tr -s $' \t\n' $'\n' | grep -qx rtsp; then
       _has_demux=true
     fi
     "$_candidate" -hide_banner -protocols 2>/dev/null | grep -qwE 'tcp|udp' && _has_proto=true
