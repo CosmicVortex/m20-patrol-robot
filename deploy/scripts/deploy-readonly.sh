@@ -66,15 +66,24 @@ check_ffmpeg() {
     aarch64|arm64) ;;
     *) echo "错误: GOS架构必须为aarch64/arm64，当前为 $(uname -m)"; exit 1 ;;
   esac
-  # 优先使用系统 ffmpeg；若不支持 RTSP，fallback 到离线包 ~/.local/bin/ffmpeg
+  # 遍历所有候选 ffmpeg，选择第一个支持 RTSP 的版本
   local _candidate ffmpeg_bin=""
+  echo "查找支持 RTSP 的 FFmpeg..."
   for _candidate in /usr/bin/ffmpeg "$HOME/.local/bin/ffmpeg" "/opt/m20-ffmpeg/bin/ffmpeg"; do
     [ -x "$_candidate" ] || continue
-    # 测试该候选是否支持 RTSP：demuxer 含 rtsp + 传输层含 tcp/udp
-    if "$_candidate" -hide_banner -demuxers 2>/dev/null | grep -qw rtsp \
-       && "$_candidate" -hide_banner -protocols 2>/dev/null | grep -qwE 'tcp|udp'; then
+    echo "  检查: $_candidate"
+    # 测试 RTSP 能力：demuxer 含 rtsp + 传输层含 tcp/udp
+    local _has_demux=false _has_proto=false
+    "$_candidate" -hide_banner -demuxers 2>/dev/null | grep -qw rtsp && _has_demux=true
+    "$_candidate" -hide_banner -protocols 2>/dev/null | grep -qwE 'tcp|udp' && _has_proto=true
+    echo "    demuxer: $(_has_demux && echo 'rtsp ✓' || echo 'rtsp ✗')"
+    echo "    protocol: $(_has_proto && echo 'tcp/udp ✓' || echo 'tcp/udp ✗')"
+    if [ "$_has_demux" = true ] && [ "$_has_proto" = true ]; then
       ffmpeg_bin="$_candidate"
+      echo "  选择: $_candidate ✓"
       break
+    else
+      echo "  跳过: $_candidate"
     fi
   done
   FFMPEG_BIN="${ffmpeg_bin:-}"
@@ -92,7 +101,7 @@ check_ffmpeg() {
     echo "错误: FFmpeg 不支持 RTSP 输入（缺少 rtsp demuxer）"
     exit 1
   fi
-  if ! "$FFMPEG_BIN" -hide_banner -protocols 2>/dev/null | grep -qwE "(^|\\s)(tcp|udp)(\\s|$)"; then
+  if ! "$FFMPEG_BIN" -hide_banner -protocols 2>/dev/null | grep -qwE 'tcp|udp'; then
     echo "错误: FFmpeg 不支持 TCP/UDP 传输（RTSP 依赖此传输层）"
     exit 1
   fi
