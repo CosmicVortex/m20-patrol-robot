@@ -70,9 +70,9 @@ check_ffmpeg() {
   local _candidate ffmpeg_bin=""
   for _candidate in /usr/bin/ffmpeg "$HOME/.local/bin/ffmpeg" "/opt/m20-ffmpeg/bin/ffmpeg"; do
     [ -x "$_candidate" ] || continue
-    # 测试该候选是否支持 RTSP（demuxer + tcp 传输）
+    # 测试该候选是否支持 RTSP：demuxer 含 rtsp + 传输层含 tcp/udp
     if "$_candidate" -hide_banner -demuxers 2>/dev/null | grep -qw rtsp \
-       && "$_candidate" -hide_banner -protocols 2>/dev/null | grep -qwE '(^|\s)(tcp|udp)(\s|$)'; then
+       && "$_candidate" -hide_banner -protocols 2>/dev/null | grep -qwE 'tcp|udp'; then
       ffmpeg_bin="$_candidate"
       break
     fi
