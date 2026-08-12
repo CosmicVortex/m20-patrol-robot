@@ -78,8 +78,14 @@ check_ffmpeg() {
     echo "错误: 未找到ffprobe。请安装完整FFmpeg离线包，不要只复制ffmpeg单个文件。"
     exit 1
   fi
-  if ! "$FFMPEG_BIN" -hide_banner -protocols 2>/dev/null | grep -qwE "(^|\\s)rtsp(\\s|$)"; then
-    echo "错误: FFmpeg不支持RTSP协议"
+  # RTSP 通过 rtp 协议 + tcp/udp 传输实现，不直接出现在 protocols 列表。
+  # 正确判断：rtsp demuxer（RTSP 输入支持）+ tcp/udp 传输能力。
+  if ! "$FFMPEG_BIN" -hide_banner -demuxers 2>/dev/null | grep -qw rtsp; then
+    echo "错误: FFmpeg 不支持 RTSP 输入（缺少 rtsp demuxer）"
+    exit 1
+  fi
+  if ! "$FFMPEG_BIN" -hide_banner -protocols 2>/dev/null | grep -qwE "(^|\\s)(tcp|udp)(\\s|$)"; then
+    echo "错误: FFmpeg 不支持 TCP/UDP 传输（RTSP 依赖此传输层）"
     exit 1
   fi
   if ! "$FFMPEG_BIN" -hide_banner -encoders 2>/dev/null | grep -qE '(^|[[:space:]])libx264([[:space:]]|$)'; then
