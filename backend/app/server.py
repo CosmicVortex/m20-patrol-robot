@@ -143,10 +143,14 @@ class M20WebServer:
                 password=self.config.gimbal_password,
             )
             self.gimbal_adapter = SoarGimbalAdapter(gimbal_config)
-            if self.gimbal_adapter.auto_connect():
-                logger.info("云台已连接: %s", self.config.gimbal_host)
-            else:
-                logger.warning("云台连接失败，可使用 /api/v1/gimbal/scan 扫描")
+            # 在后台线程中执行云台连接/扫描，避免阻塞 HTTP 服务启动
+            def _gimbal_init() -> None:
+                if self.gimbal_adapter and self.gimbal_adapter.auto_connect():
+                    logger.info("云台已连接: %s", self.config.gimbal_host)
+                    self.gimbal_connected = True
+                else:
+                    logger.warning("云台连接失败，可使用 /api/v1/gimbal/scan 扫描")
+            threading.Thread(target=_gimbal_init, daemon=True, name="gimbal-init").start()
         else:
             # No host configured, enable auto-discovery mode
             logger.info("云台地址未配置，支持自动发现 (/api/v1/gimbal/scan)")
