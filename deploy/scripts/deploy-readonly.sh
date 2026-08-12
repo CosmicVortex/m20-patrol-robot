@@ -66,12 +66,20 @@ check_ffmpeg() {
     aarch64|arm64) ;;
     *) echo "错误: GOS架构必须为aarch64/arm64，当前为 $(uname -m)"; exit 1 ;;
   esac
-  FFMPEG_BIN="$(command -v ffmpeg || true)"
-  if [ -z "$FFMPEG_BIN" ] && [ -x "$HOME/.local/bin/ffmpeg" ]; then
-    FFMPEG_BIN="$HOME/.local/bin/ffmpeg"
-  fi
+  # 优先使用系统 ffmpeg；若不支持 RTSP，fallback 到离线包 ~/.local/bin/ffmpeg
+  local _candidate ffmpeg_bin=""
+  for _candidate in /usr/bin/ffmpeg "$HOME/.local/bin/ffmpeg" "/opt/m20-ffmpeg/bin/ffmpeg"; do
+    [ -x "$_candidate" ] || continue
+    # 测试该候选是否支持 RTSP（demuxer + tcp 传输）
+    if "$_candidate" -hide_banner -demuxers 2>/dev/null | grep -qw rtsp \
+       && "$_candidate" -hide_banner -protocols 2>/dev/null | grep -qwE '(^|\s)(tcp|udp)(\s|$)'; then
+      ffmpeg_bin="$_candidate"
+      break
+    fi
+  done
+  FFMPEG_BIN="${ffmpeg_bin:-}"
   if [ -z "$FFMPEG_BIN" ]; then
-    echo "错误: 未找到ffmpeg。请先传输并执行 deploy/offline/ffmpeg/install-ffmpeg-offline.sh"
+    echo "错误: 所有已安装的 FFmpeg 均不支持 RTSP。请执行 deploy/offline/ffmpeg/install-ffmpeg-offline.sh"
     exit 1
   fi
   if ! command -v ffprobe >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/ffprobe" ]; then
