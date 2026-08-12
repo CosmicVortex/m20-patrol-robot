@@ -1,24 +1,89 @@
 /**
- * Main Application Entry Point
- * Initializes StateManager, ApiService, WebSocketService, and ViewRouter
+ * M20 Pro 巡检机器狗管理平台 - 主应用入口
+ * 
+ * 功能：
+ * - 初始化所有服务（状态管理、API、WebSocket、路由）
+ * - 登录/登出处理
+ * - 视图路由管理
+ * - 紧急停止控制
+ * - 云台连接管理
  */
 
 (function() {
   'use strict';
   
-  // ── Global State ──────────────────────────────────────────────────────────
+  // ── 全局初始化 ──────────────────────────────────────────────────────────────
   window._state = new StateManager();
   window._api = new ApiService(window._state);
   window._ws = new WebSocketService(window._state);
   window._router = new ViewRouter(window._state);
   
-  // ── Register Views ────────────────────────────────────────────────────────
+  // ── 注册视图 ────────────────────────────────────────────────────────────────
   window._router.register('dashboard', new DashboardView());
   window._router.register('patrol', new PatrolView());
+  window._router.register('devices', new DevicesView());
+  window._router.register('reports', new ReportsView());
   window._router.register('settings', new SettingsView());
-
   
-  // ── Login/Logout Handlers ─────────────────────────────────────────────────
+  // ── 登录/登出处理 ───────────────────────────────────────────────────────────
+  document.getElementById('login-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl = document.getElementById('login-error');
+    
+    errEl.textContent = '';
+    
+    try {
+      const user = await window._state.login(username, password);
+      showApp();
+      initWebSocket();
+      window._router.init();
+    } catch (e) {
+      errEl.textContent = e.message || '登录失败';
+    }
+    return false;
+  });
+  
+  document.getElementById('logout-btn')?.addEventListener('click', async function() {
+    window._ws.disconnect();
+    await window._state.logout();
+    showLogin();
+  });
+  
+  // ── 视图切换 ────────────────────────────────────────────────────────────────
+  document.querySelectorAll('.nav button[data-view]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      window._router.navigate(btn.dataset.view);
+    });
+  });
+  
+  // ── 辅助函数 ────────────────────────────────────────────────────────────────
+  function showLogin() {
+    document.getElementById('login-overlay').style.display = 'flex';
+    document.getElementById('main-app').style.display = 'none';
+  }
+  
+  function showApp() {
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('main-app').style.display = '';
+    
+    // 更新用户信息
+    const user = window._state.get('user');
+    if (user) {
+      const userEl = document.querySelector('.user span');
+      const avatarEl = document.querySelector('.avatar');
+      if (userEl) userEl.textContent = user.username;
+      if (avatarEl) avatarEl.textContent = user.username[0];
+    }
+  }
+  
+  function initWebSocket() {
+    window._ws.connectVideo();
+    window._ws.connectNav();
+  }
+  
+  // ── 全局暴露的函数（供HTML内联事件调用）────────────────────────────────────
   window.handleLogin = async function(e) {
     e.preventDefault();
     const username = document.getElementById('login-username').value.trim();
@@ -43,35 +108,8 @@
     await window._state.logout();
     showLogin();
   };
-
   
-  // ── View Management ───────────────────────────────────────────────────────
-  function showLogin() {
-    document.getElementById('login-overlay').style.display = 'flex';
-    document.getElementById('main-app').style.display = 'none';
-  }
-  
-  function showApp() {
-    document.getElementById('login-overlay').style.display = 'none';
-    document.getElementById('main-app').style.display = '';
-    
-    // Update user info
-    const user = window._state.get('user');
-    if (user) {
-      const userEl = document.querySelector('.user span');
-      const avatarEl = document.querySelector('.avatar');
-      if (userEl) userEl.textContent = user.username;
-      if (avatarEl) avatarEl.textContent = user.username[0];
-    }
-  }
-  
-  // ── WebSocket ─────────────────────────────────────────────────────────────
-  function initWebSocket() {
-    window._ws.connectVideo();
-    window._ws.connectNav();
-  }
-  
-  // ── Emergency Stop ────────────────────────────────────────────────────────
+  // ── 紧急停止 ────────────────────────────────────────────────────────────────
   window.handleEmergencyStop = async function() {
     if (!confirm('确认执行紧急停止？')) return;
     
@@ -86,7 +124,7 @@
     }
   };
   
-  // ── Gimbal Functions ──────────────────────────────────────────────────────
+  // ── 云台管理 ────────────────────────────────────────────────────────────────
   window.showGimbalModal = function() {
     document.getElementById('gimbal-modal').classList.add('active');
   };
@@ -121,7 +159,7 @@
     }
   };
   
-  // ── Video Config Functions ────────────────────────────────────────────────
+  // ── 视频配置 ────────────────────────────────────────────────────────────────
   window.showVideoConfigModal = function() {
     document.getElementById('video-config-modal').classList.add('active');
   };
@@ -161,7 +199,7 @@
     }
   };
   
-  // ── Fullscreen & Capture ──────────────────────────────────────────────────
+  // ── 视频控制 ────────────────────────────────────────────────────────────────
   window.toggleFullscreen = function(cameraId) {
     const video = document.getElementById('video-' + cameraId);
     if (!video) return;
@@ -191,7 +229,7 @@
     link.click();
   };
   
-  // ── Navigation Actions ────────────────────────────────────────────────────
+  // ── 导航控制 ────────────────────────────────────────────────────────────────
   window.authorizeNavigation = async function() {
     try {
       await window._api.authorizeNavigation();
@@ -202,79 +240,16 @@
     }
   };
   
-  window.cancelNavigation = async function() {
-    if (!confirm('确认取消当前导航任务？')) return;
+  window.deauthorizeNavigation = async function() {
     try {
-      await window._api.cancelNavigation();
-      alert('导航已取消');
+      await window._api.deauthorizeNavigation();
+      alert('导航授权已撤销');
       await window._api.fetchNavStatus();
     } catch (e) {
-      alert('取消失败: ' + e.message);
+      alert('撤销失败: ' + e.message);
     }
   };
   
-  async function controlAction(action) {
-    const message = document.getElementById('control-message');
-    try {
-      const result = await action();
-      if (message) message.textContent = result.message || result.status || '操作完成';
-      await window._api.fetchNavStatus();
-      updateControlButtons();
-    } catch (error) { if (message) message.textContent = `操作失败：${error.message}`; }
-  }
-
-  function updateControlButtons() {
-    const nav = window._state.get('navigation') || {};
-    const enabled = Boolean(nav.control_enabled && nav.authorized);
-    ['nav-deauthorize-btn','motion-stand-btn','motion-lie-btn','motion-estop-btn'].forEach(id => {
-      const button = document.getElementById(id); if (button) button.disabled = !enabled;
-    });
-  }
-
-  // ── Map Functions ─────────────────────────────────────────────────────────
-  window.updateMap = function(position) {
-    // Called by legacy code, will be handled by DashboardView
-    const state = window._state;
-    if (state) {
-      state.merge('robot.position', position);
-    }
-  };
-  
-  document.getElementById('login-form')?.addEventListener('submit', window.handleLogin);
-  document.getElementById('logout-btn')?.addEventListener('click', window.handleLogout);
-  document.getElementById('gimbal-connect-btn')?.addEventListener('click', window.showGimbalModal);
-  document.getElementById('gimbal-scan-btn')?.addEventListener('click', window.scanGimbal);
-  document.getElementById('video-config-btn')?.addEventListener('click', window.showVideoConfigModal);
-  document.getElementById('emergency-btn')?.addEventListener('click', window.handleEmergencyStop);
-  document.getElementById('nav-authorize-btn')?.addEventListener('click', () => controlAction(window._api.authorizeNavigation.bind(window._api)));
-  document.getElementById('nav-deauthorize-btn')?.addEventListener('click', () => controlAction(window._api.deauthorizeNavigation.bind(window._api)));
-  document.getElementById('motion-stand-btn')?.addEventListener('click', () => controlAction(() => window._api.motionState(1)));
-  document.getElementById('motion-lie-btn')?.addEventListener('click', () => controlAction(() => window._api.motionState(0)));
-  document.getElementById('motion-estop-btn')?.addEventListener('click', () => controlAction(() => window._api.motionState(2)));
-  document.querySelectorAll('[data-camera-action="fullscreen"]').forEach(button => {
-    button.addEventListener('click', () => window.toggleFullscreen(button.dataset.camera));
-  });
-  document.querySelectorAll('[data-camera-action="capture"]').forEach(button => {
-    button.addEventListener('click', () => window.captureFrame(button.dataset.camera));
-  });
-  document.getElementById('gimbal-connect-submit')?.addEventListener('click', window.connectGimbal);
-  document.getElementById('video-config-submit')?.addEventListener('click', window.saveVideoConfig);
-
-  // ── App Initialization ────────────────────────────────────────────────────
-  async function init() {
-    // Check existing session
-    const isAuthenticated = await window._state.checkSession();
-    
-    if (isAuthenticated) {
-      showApp();
-      initWebSocket();
-      window._router.init();
-    } else {
-      showLogin();
-    }
-  }
-  
-  // Start the app
-  init();
-  
+  // 初始化完成
+  console.log('M20 Pro 巡检平台已初始化');
 })();

@@ -10,6 +10,61 @@
 
 ---
 
+## 环境要求
+
+## 环境要求
+
+### 硬件要求
+- GOS主机: x86_64或ARM64架构
+- 内存: ≥4GB RAM
+- 磁盘: ≥10GB可用空间
+
+### 软件要求
+- OS: Ubuntu 20.04 LTS 或更高版本
+- Python: 3.8.10 或更高版本（推荐3.10+）
+- systemd: 用于服务管理
+- FFmpeg: 7.1+（用于视频流处理）
+
+### 网络要求
+- GOS主机需访问以下端口:
+  - 30001: basic_server通信
+  - 8080: Web服务端口
+  - 1935: RTSP视频流端口
+
+
+## 目录结构
+
+## 目录结构
+
+```
+m20-patrol-robot/
+├── backend/              # Python后端
+│   ├── app/             # 应用核心
+│   │   ├── server.py    # 主服务入口
+│   │   ├── config.py    # 配置模块
+│   │   ├── api/         # API路由层
+│   │   ├── auth/        # 认证鉴权
+│   │   ├── gimbal/      # 云台控制
+│   │   ├── motion/      # 运动控制
+│   │   ├── navigation/  # 导航控制
+│   │   ├── protocol/    # 协议定义
+│   │   ├── robot/       # 机器人状态
+│   │   ├── utils/       # 工具函数
+│   │   └── video/       # 视频管理
+│   └── tests/           # 测试文件
+├── deploy/              # 部署配置
+│   ├── scripts/         # 部署脚本
+│   └── systemd/         # 系统服务
+├── docs/                # 前端资源
+│   ├── index.html       # 主页面
+│   ├── css/             # 样式文件
+│   └── js/              # JavaScript
+├── archive/             # 归档文件（大文件）
+├── README.md
+└── SECURITY.md
+```
+
+
 ## 快速开始
 
 ### 1. 克隆仓库
@@ -151,3 +206,32 @@ chmod +x install-ffmpeg-offline.sh
 **版本**: V1.0.0  
 **更新日期**: 2026-08-11  
 **开发团队**: 云深处机器狗巡检二次开发
+
+
+
+## 故障排查
+
+### 常见问题
+
+#### 1. 服务启动失败
+```bash
+# 查看服务日志
+journalctl --user -u m20-patrol-readonly.service -n 100 --no-pager
+
+# 检查端口占用
+netstat -tlnp | grep :8080
+```
+
+#### 2. 健康检查返回503
+- 检查AOS连接: `10.21.31.103:30001`
+- 检查云台连接: `10.21.31.108`
+- 查看telemetry日志
+
+#### 3. 视频流无法播放
+- 检查FFmpeg是否安装: `ffmpeg -version`
+- 检查RTSP地址是否正确
+- 确认网络可达性
+
+### 日志位置
+- 服务日志: `journalctl --user -u m20-patrol-readonly.service`
+- 应用日志: `~/m20-patrol-robot/logs/`

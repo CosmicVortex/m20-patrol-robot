@@ -51,11 +51,9 @@ class SoarGimbalAdapter:
         """Public accessor for connection state."""
         return self._connected
 
-    # Common IP ranges to scan (priority order)
+    # Common IP ranges to scan (现场网络已确认)
     SCAN_RANGES = [
-        "10.21.31.0/24",   # M20 robot internal network
-        "192.168.1.0/24",  # Local device network (full /24)
-        "192.168.0.0/24",  # Alternative local network
+        "10.21.31.0/24",   # 现场网络 - 已确认
     ]
 
     # Skip these common non-device IPs
@@ -233,7 +231,7 @@ class SoarGimbalAdapter:
 
         Priority:
         1. Use configured host if set
-        2. Try default Soar IP (192.168.1.108)
+        2. Try default Soar IP (10.21.31.108)
         3. Fall back to network scan
         """
         # Priority 1: Use configured host
@@ -245,7 +243,7 @@ class SoarGimbalAdapter:
             logger.warning("直连失败: %s，尝试默认IP...", self.config.host)
 
         # Priority 2: Try default Soar IP
-        default_ip = "192.168.1.108"
+        default_ip = "10.21.31.108"
         logger.info("尝试默认IP: %s", default_ip)
         self.config.host = default_ip
         self._base_url = f"http://{default_ip}:{self.config.port}"

@@ -344,8 +344,8 @@ class UserChangePasswordHandler(BaseHandler):
             self.send_error_response(400, "请填写旧密码和新密码")
             return
 
-        if len(new_password) < 12:
-            self.send_error_response(400, "新密码至少12个字符")
+        if len(new_password) < 6:
+            self.send_error_response(400, "新密码至少6个字符")
             return
 
         try:

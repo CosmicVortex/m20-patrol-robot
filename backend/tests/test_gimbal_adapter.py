@@ -38,7 +38,7 @@ class TestDiscoveredGimbal:
 
     def test_default_values(self):
         """Test default values for discovered gimbal."""
-        gimbal = DiscoveredGimbal(host="192.168.1.108")
+        gimbal = DiscoveredGimbal(host="10.21.31.108")
         assert gimbal.port == 80
         assert gimbal.model == ""
         assert gimbal.serial == ""
@@ -47,13 +47,13 @@ class TestDiscoveredGimbal:
     def test_full_values(self):
         """Test full configuration."""
         gimbal = DiscoveredGimbal(
-            host="192.168.1.108",
+            host="10.21.31.108",
             port=80,
             model="SR-UPA810T609",
             serial="SN123456",
             firmware="v1.2.3",
-            rtsp_url="rtsp://192.168.1.108:554/id=1&type=0",
-            thermal_rtsp_url="rtsp://192.168.1.108:554/id=2&type=0",
+            rtsp_url="rtsp://10.21.31.108:554/id=1&type=0",
+            thermal_rtsp_url="rtsp://10.21.31.108:554/id=2&type=0",
             accessible=True,
         )
         assert gimbal.model == "SR-UPA810T609"
@@ -66,9 +66,9 @@ class TestGimbalAdapter:
 
     def test_init_with_config(self):
         """Test adapter initialization with config."""
-        config = GimbalConfig(host="192.168.1.108", username="admin", password="pass")
+        config = GimbalConfig(host="10.21.31.108", username="admin", password="pass")
         adapter = SoarGimbalAdapter(config)
-        assert adapter.config.host == "192.168.1.108"
+        assert adapter.config.host == "10.21.31.108"
         assert adapter._connected is False
 
     def test_init_without_config(self):
@@ -79,10 +79,10 @@ class TestGimbalAdapter:
 
     def test_get_video_urls_default(self):
         """Test video URL generation with defaults."""
-        adapter = SoarGimbalAdapter(GimbalConfig(host="192.168.1.108"))
+        adapter = SoarGimbalAdapter(GimbalConfig(host="10.21.31.108"))
         urls = adapter.get_video_urls()
-        assert urls["visible_light"] == "rtsp://192.168.1.108:554/id=1&type=0"
-        assert urls["thermal"] == "rtsp://192.168.1.108:554/id=2&type=0"
+        assert urls["visible_light"] == "rtsp://10.21.31.108:554/id=1&type=0"
+        assert urls["thermal"] == "rtsp://10.21.31.108:554/id=2&type=0"
 
     def test_get_video_urls_custom(self):
         """Test video URL with custom RTSP URLs."""
@@ -121,7 +121,7 @@ class TestGimbalAdapter:
 
     def test_get_gimbal_info_success(self):
         """Test getting gimbal info from discovered device."""
-        adapter = SoarGimbalAdapter(GimbalConfig(host="192.168.1.108"))
+        adapter = SoarGimbalAdapter(GimbalConfig(host="10.21.31.108"))
 
         mock_resp = MagicMock()
         mock_resp.read.return_value = b'{"FlyInfo": {"model": "SR-UPA810T609", "sn": "SN123", "yaw": 0, "pitch": -10}, "CamerInfo": {"zoom": 1}}'
@@ -129,7 +129,7 @@ class TestGimbalAdapter:
         mock_resp.__exit__ = MagicMock(return_value=False)
 
         with patch('urllib.request.urlopen', return_value=mock_resp):
-            info = adapter._get_gimbal_info("192.168.1.108")
+            info = adapter._get_gimbal_info("10.21.31.108")
             assert info is not None
             assert info.model == "SR-UPA810T609"
             assert info.serial == "SN123"
@@ -140,12 +140,12 @@ class TestGimbalAdapter:
         adapter = SoarGimbalAdapter()
 
         with patch('urllib.request.urlopen', side_effect=Exception("Connection failed")):
-            info = adapter._get_gimbal_info("192.168.1.108")
+            info = adapter._get_gimbal_info("10.21.31.108")
             assert info is None
 
     def test_auto_connect_with_configured_host(self):
         """Test auto-connect when host is pre-configured."""
-        adapter = SoarGimbalAdapter(GimbalConfig(host="192.168.1.108"))
+        adapter = SoarGimbalAdapter(GimbalConfig(host="10.21.31.108"))
 
         mock_resp = MagicMock()
         mock_resp.read.return_value = b'{"Session": "abc123"}'
@@ -161,7 +161,7 @@ class TestGimbalAdapter:
         """Test auto-connect without host falls back to scan."""
         adapter = SoarGimbalAdapter()
 
-        mock_info = DiscoveredGimbal(host="192.168.1.108", model="SR-UPA810T609", accessible=True)
+        mock_info = DiscoveredGimbal(host="10.21.31.108", model="SR-UPA810T609", accessible=True)
         adapter._discovered = [mock_info]
 
         with patch.object(adapter, '_ping_host', return_value=True):
@@ -174,20 +174,20 @@ class TestGimbalAdapter:
                 with patch('urllib.request.urlopen', return_value=mock_resp):
                     result = adapter.auto_connect()
                     assert result is True
-                    assert adapter.config.host == "192.168.1.108"
+                    assert adapter.config.host == "10.21.31.108"
 
     def test_scan_returns_dicts(self):
         """Test scan method returns list of dicts."""
         adapter = SoarGimbalAdapter()
 
-        mock_info = DiscoveredGimbal(host="192.168.1.108", model="SR-UPA810T609", serial="SN123")
+        mock_info = DiscoveredGimbal(host="10.21.31.108", model="SR-UPA810T609", serial="SN123")
         adapter._discovered = [mock_info]
 
         # Mock discover to avoid actual network scanning
         with patch.object(adapter, 'discover', return_value=[mock_info]):
             result = adapter.scan()
             assert len(result) == 1
-            assert result[0]["host"] == "192.168.1.108"
+            assert result[0]["host"] == "10.21.31.108"
             assert result[0]["model"] == "SR-UPA810T609"
             assert result[0]["serial"] == "SN123"
 
@@ -201,7 +201,7 @@ class TestGimbalAdapter:
 
     def test_close_cleans_up(self):
         """Test close method cleans up connection."""
-        adapter = SoarGimbalAdapter(GimbalConfig(host="192.168.1.108"))
+        adapter = SoarGimbalAdapter(GimbalConfig(host="10.21.31.108"))
         adapter._connected = True
         adapter.close()
         assert adapter._connected is False

@@ -516,10 +516,10 @@ class VideoStatusHandler(BaseHandler):
                 },
                 "thermal": {
                     "state": "blocked" if not allow_real_io else "unverified",
-                    "rtsp_url": "rtsp://{gimbal_host}:554/id=2&type=0",
+                    "rtsp_url": f"rtsp://{self.config.gimbal_host}:554/id=2&type=0" if self.config and self.config.gimbal_host else "",
                     "playback_url": None,
                     "label": "热成像相机",
-                    "note": "来自云台，需确认 gimbal_host 配置",
+                    "note": "来自光电吊舱，需确认 gimbal_host 配置",
                 },
                 "body_front": {
                     "state": "blocked" if not allow_real_io else "unverified",

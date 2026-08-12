@@ -235,7 +235,11 @@ class M20WebServer:
 
     def start(self) -> None:
         """Start the web server."""
+        logger.info("=" * 60)
+        logger.info("开始启动 M20 Web 服务...")
+        logger.info("=" * 60)
         self.setup()
+        logger.info("组件初始化完成，准备绑定端口...")
 
         self._register_safety_callbacks()
 
@@ -246,13 +250,15 @@ class M20WebServer:
         handler = self._create_handler()
 
         # Start HTTP server
+        logger.info("尝试绑定 %s:%s...", self.config.host, self.config.port)
         try:
             self.server = ThreadingHTTPServer(
                 (self.config.host, self.config.port),
                 handler,
             )
+            logger.info("✓ 端口绑定成功: %s:%s", self.config.host, self.config.port)
         except OSError as e:
-            logger.error("无法绑定到 %s:%s - %s", self.config.host, self.config.port, e)
+            logger.error("✗ 无法绑定到 %s:%s - %s", self.config.host, self.config.port, e)
             logger.info("尝试使用其他端口...")
             # 尝试其他端口
             for alt_port in range(self.config.port + 1, self.config.port + 11):
@@ -262,29 +268,27 @@ class M20WebServer:
                         handler,
                     )
                     self.config = replace(self.config, port=alt_port)
-                    logger.info("使用备用端口: %s", alt_port)
+                    logger.info("✓ 使用备用端口: %s", alt_port)
                     break
-                except OSError:
+                except OSError as e2:
+                    logger.warning("端口 %s 也被占用: %s", alt_port, e2)
                     continue
             else:
+                logger.error("✗ 无法绑定到任何端口（8080-8090）")
                 raise RuntimeError("无法绑定到任何端口")
 
-        logger.info(
-            "M20 Web Service starting on %s:%s\n"
-            "Runtime mode: %s\n"
-            "Read-only: %s\n"
-            "Control enabled: %s\n"
-            "Auth enabled: %s\n"
-            "Gimbal: %s",
-            self.config.host, self.config.port,
-            self.config.runtime_mode, self.config.read_only_mode,
-            self.config.control_enabled, self.config.auth_enabled,
-            self.config.gimbal_host or "未配置",
-        )
-
-        logger.info("Web服务已启动: %s:%s", self.config.host, self.config.port)
+        logger.info("")
+        logger.info("M20 Web Service 已启动")
+        logger.info("  地址: http://%s:%s", self.config.host, self.config.port)
+        logger.info("  运行模式: %s", self.config.runtime_mode)
+        logger.info("  只读模式: %s", self.config.read_only_mode)
+        logger.info("  控制启用: %s", self.config.control_enabled)
+        logger.info("  认证启用: %s", self.config.auth_enabled)
+        logger.info("  云台地址: %s", self.config.gimbal_host or "未配置")
+        logger.info("")
         logger.info("遥测目标: %s:%s (模式: %s)", self.config.aos_host, self.config.aos_port, self.config.runtime_mode)
         logger.info("安全配置: 只读模式=%s, 控制命令=%s", self.config.read_only_mode, self.config.control_enabled)
+        logger.info("=" * 60)
 
         # 设置信号处理器
         self._setup_signal_handlers()
@@ -349,13 +353,26 @@ class M20WebServer:
 
             def _handle_request(self) -> None:
                 request_path = self.path.split("?", 1)[0]
+                # Decode URL encoding to prevent bypass
+                from urllib.parse import unquote
+                request_path = unquote(request_path)
                 if request_path == "/":
                     request_path = "/index.html"
                 if not request_path.startswith("/api/") and not request_path.startswith("/ws/"):
-                    root = Path(config.static_root).resolve()
+                    # Resolve static_root safely (Python 3.8 compatible)
+                    static_root = Path(config.static_root)
+                    if not static_root.is_absolute():
+                        # Get project root from this file's location
+                        project_root = Path(__file__).parent.parent.parent
+                        static_root = project_root / static_root
+                    # Use absolute path - avoid resolve() on Python 3.8
+                    root = static_root.absolute().resolve()
                     asset = (root / request_path.lstrip("/")).resolve()
-                    if root not in asset.parents and asset != root:
-                        self.send_error_response(403, "invalid static asset path")
+                    # Security check: ensure asset is within root directory
+                    try:
+                        asset.relative_to(root)
+                    except ValueError:
+                        self.send_error_response(403, "access denied")
                         return
                     if not asset.is_file():
                         self.send_error_response(503, "web asset is not installed")

@@ -13,7 +13,7 @@ with open(MANIFEST_PATH) as f:
 
 # Add gimbal configuration
 if "gimbal_host" not in manifest.get("targets", {}):
-    manifest.setdefault("targets", {})["gimbal_host"] = "192.168.1.108"
+    manifest.setdefault("targets", {})["gimbal_host"] = "10.21.31.108"
     manifest.setdefault("targets", {})["gimbal_username"] = "admin"
 
 # Save back
