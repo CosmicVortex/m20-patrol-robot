@@ -430,6 +430,31 @@ class SoarGimbalAdapter:
         status, _ = self._request("POST", "SetPtzAbility.cgi", data=data)
         return status == 200
 
+    def set_laser_ranging(self, enable: bool) -> bool:
+        """Enable/disable laser ranging.
+
+        V1.0 §8: SetLaserRanging.cgi?channel=0
+        """
+        params = {"channel": 0}
+        status, _ = self._request("POST", "SetLaserRanging.cgi", params=params)
+        return status == 200
+
+    def set_preset(self, preset_id: int) -> bool:
+        """Set gimbal to preset position.
+
+        V1.0: PtzCtrl.cgi?operation=10&value=preset_id
+        """
+        params = {"operation": 10, "speed": 5, "channelno": 0, "value": preset_id}
+        status, _ = self._request("GET", "PtzCtrl.cgi", params=params)
+        return status == 200
+
+    def get_presets(self) -> list:
+        """Get list of preset positions."""
+        status, data = self._request("GET", "GetPresetList.cgi")
+        if status == 200:
+            return data.get("PresetList", [])
+        return []
+
     def scan(self, ranges: Optional[List[str]] = None) -> List[dict]:
         """Scan and return list of discovered gimbals as dicts."""
         discovered = self.discover(ranges)
