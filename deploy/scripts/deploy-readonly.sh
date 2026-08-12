@@ -68,16 +68,26 @@ check_ffmpeg() {
   esac
   # 遍历所有候选 ffmpeg，选择第一个支持 RTSP 的版本
   local _candidate ffmpeg_bin=""
+  local _has_demux=false _has_proto=false
   echo "查找支持 RTSP 的 FFmpeg..."
   for _candidate in /usr/bin/ffmpeg "$HOME/.local/bin/ffmpeg" "/opt/m20-ffmpeg/bin/ffmpeg"; do
     [ -x "$_candidate" ] || continue
     echo "  检查: $_candidate"
     # 测试 RTSP 能力：demuxer 含 rtsp + 传输层含 tcp/udp
-    local _has_demux=false _has_proto=false
+    _has_demux=false
+    _has_proto=false
     "$_candidate" -hide_banner -demuxers 2>/dev/null | grep -qw rtsp && _has_demux=true
     "$_candidate" -hide_banner -protocols 2>/dev/null | grep -qwE 'tcp|udp' && _has_proto=true
-    echo "    demuxer: $(_has_demux && echo 'rtsp ✓' || echo 'rtsp ✗')"
-    echo "    protocol: $(_has_proto && echo 'tcp/udp ✓' || echo 'tcp/udp ✗')"
+    if [ "$_has_demux" = true ]; then
+      echo "    demuxer: rtsp ✓"
+    else
+      echo "    demuxer: rtsp ✗"
+    fi
+    if [ "$_has_proto" = true ]; then
+      echo "    protocol: tcp/udp ✓"
+    else
+      echo "    protocol: tcp/udp ✗"
+    fi
     if [ "$_has_demux" = true ] && [ "$_has_proto" = true ]; then
       ffmpeg_bin="$_candidate"
       echo "  选择: $_candidate ✓"
