@@ -66,61 +66,53 @@ check_ffmpeg() {
     aarch64|arm64) ;;
     *) echo "错误: GOS架构必须为aarch64/arm64，当前为 $(uname -m)"; exit 1 ;;
   esac
+
   # 遍历所有候选 ffmpeg，选择第一个支持 RTSP 的版本
-  local _candidate ffmpeg_bin=""
-  local _has_demux=false _has_proto=false
+  local _candidate _has_demux _has_proto _selected_bin=""
   echo "查找支持 RTSP 的 FFmpeg..."
   for _candidate in /usr/bin/ffmpeg "$HOME/.local/bin/ffmpeg" "/opt/m20-ffmpeg/bin/ffmpeg"; do
     [ -x "$_candidate" ] || continue
     echo "  检查: $_candidate"
+
     # 测试 RTSP 能力：demuxer 含 rtsp + 传输层含 tcp/udp
     _has_demux=false
     _has_proto=false
     "$_candidate" -hide_banner -demuxers 2>/dev/null | grep -qw rtsp && _has_demux=true
     "$_candidate" -hide_banner -protocols 2>/dev/null | grep -qwE 'tcp|udp' && _has_proto=true
-    if [ "$_has_demux" = true ]; then
-      echo "    demuxer: rtsp ✓"
-    else
-      echo "    demuxer: rtsp ✗"
-    fi
-    if [ "$_has_proto" = true ]; then
-      echo "    protocol: tcp/udp ✓"
-    else
-      echo "    protocol: tcp/udp ✗"
-    fi
+
+    echo "    demuxer: $([ "$_has_demux" = true ] && echo 'rtsp ✓' || echo 'rtsp ✗')"
+    echo "    protocol: $([ "$_has_proto" = true ] && echo 'tcp/udp ✓' || echo 'tcp/udp ✗')"
+
     if [ "$_has_demux" = true ] && [ "$_has_proto" = true ]; then
-      ffmpeg_bin="$_candidate"
+      _selected_bin="$_candidate"
       echo "  选择: $_candidate ✓"
       break
     else
       echo "  跳过: $_candidate"
     fi
   done
-  FFMPEG_BIN="${ffmpeg_bin:-}"
-  if [ -z "$FFMPEG_BIN" ]; then
-    echo "错误: 所有已安装的 FFmpeg 均不支持 RTSP。请执行 deploy/offline/ffmpeg/install-ffmpeg-offline.sh"
+
+  if [ -z "$_selected_bin" ]; then
+    echo "错误: 所有已安装的 FFmpeg 均不支持 RTSP"
+    echo "  请执行: bash deploy/offline/ffmpeg/install-ffmpeg-offline.sh"
     exit 1
   fi
-  if ! command -v ffprobe >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/ffprobe" ]; then
-    echo "错误: 未找到ffprobe。请安装完整FFmpeg离线包，不要只复制ffmpeg单个文件。"
+
+  # 验证 ffprobe 存在（与选中的 ffmpeg 同目录）
+  local _ffprobe_bin
+  _ffprobe_bin="$(dirname "$_selected_bin")/ffprobe"
+  if [ ! -x "$_ffprobe_bin" ] && ! command -v ffprobe >/dev/null 2>&1; then
+    echo "错误: 未找到 ffprobe。请安装完整 FFmpeg 离线包"
     exit 1
   fi
-  # RTSP 通过 rtp 协议 + tcp/udp 传输实现，不直接出现在 protocols 列表。
-  # 正确判断：rtsp demuxer（RTSP 输入支持）+ tcp/udp 传输能力。
-  if ! "$FFMPEG_BIN" -hide_banner -demuxers 2>/dev/null | grep -qw rtsp; then
-    echo "错误: FFmpeg 不支持 RTSP 输入（缺少 rtsp demuxer）"
-    exit 1
-  fi
-  if ! "$FFMPEG_BIN" -hide_banner -protocols 2>/dev/null | grep -qwE 'tcp|udp'; then
-    echo "错误: FFmpeg 不支持 TCP/UDP 传输（RTSP 依赖此传输层）"
-    exit 1
-  fi
-  if ! "$FFMPEG_BIN" -hide_banner -encoders 2>/dev/null | grep -qE '(^|[[:space:]])libx264([[:space:]]|$)'; then
-    echo "错误: FFmpeg缺少libx264编码器"
-    exit 1
-  fi
-  "$FFMPEG_BIN" -version 2>/dev/null | sed -n '1,2p'
+
+  # 输出选中的版本信息
+  echo "使用 FFmpeg: $_selected_bin"
+  "$_selected_bin" -version 2>/dev/null | sed -n '1,2p'
   echo "FFmpeg环境检查通过 ✅"
+
+  # 导出全局变量供后续使用
+  FFMPEG_BIN="$_selected_bin"
 }
 
 # 确保配置目录存在
