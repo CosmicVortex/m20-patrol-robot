@@ -130,7 +130,12 @@ class WorkOrdersCreateHandler(BaseHandler):
 
         orders = _load_work_orders()
         orders.append(new_order)
-        _save_work_orders(orders)
+        try:
+            _save_work_orders(orders)
+        except (OSError, TypeError, ValueError) as exc:
+            logger.error("工单保存失败: %s", exc)
+            self.send_error_response(503, "工单保存失败，请检查存储权限或磁盘空间")
+            return
 
         self.send_json_response(201, {"order": new_order})
 
@@ -166,7 +171,12 @@ class WorkOrdersUpdateHandler(BaseHandler):
             self.send_error_response(404, "工单不存在")
             return
 
-        _save_work_orders(orders)
+        try:
+            _save_work_orders(orders)
+        except (OSError, TypeError, ValueError) as exc:
+            logger.error("工单保存失败: %s", exc)
+            self.send_error_response(503, "工单保存失败，请检查存储权限或磁盘空间")
+            return
         self.send_json_response(200, {"order": orders[[o["id"] for o in orders].index(order_id)]})
 
 
@@ -296,7 +306,6 @@ class UserListHandler(BaseHandler):
             return
 
         # Return non-sensitive user info
-        import sqlite3
         conn = sqlite3.connect(self.user_store.path)
         conn.row_factory = sqlite3.Row
         rows = conn.execute("SELECT id, username, role, enabled, created_at FROM users").fetchall()
@@ -391,7 +400,7 @@ class SystemInfoHandler(BaseHandler):
         info = {
             "service": "M20 Pro 巡逻机器人监控系统",
             "version": "1.0.0",
-            "site": "东莞中升奔驰4S店",
+            "site": "中升之星奔驰",
             "mode": self.config.runtime_mode if self.config else "unknown",
             "read_only": read_only,
             "control_enabled": control_enabled,
@@ -450,18 +459,19 @@ class GimbalMoveHandler(BaseHandler):
             self.send_error_response(404, "Not found")
             return
 
+        # Safety first: block in read-only mode before any other checks
+        if self.config and self.config.read_only_mode:
+            self.send_json_response(200, {
+                "status": "blocked",
+                "message": "只读模式：云台移动已禁用",
+            })
+            return
+
         auth = self._authenticate()
         if not auth:
             return
         if auth.role != "admin":
             self.send_error_response(403, "需要管理员权限")
-            return
-
-        if self.config and self.config.read_only_mode:
-            self.send_json_response(200, {
-                "status": "blocked",
-                "message": "只读模式：云台控制已禁用，需现场授权后启用",
-            })
             return
 
         gimbal = self.gimbal_adapter
@@ -486,7 +496,7 @@ class GimbalScanHandler(BaseHandler):
     """GET /api/v1/gimbal/scan - Scan for gimbal on network."""
 
     def do_GET(self) -> None:
-        if self.path != "/api/v1/gimbal/scan":
+        if not self.path.startswith("/api/v1/gimbal/scan"):
             self.send_error_response(404, "Not found")
             return
 
@@ -536,15 +546,16 @@ class GimbalZoomHandler(BaseHandler):
             self.send_error_response(404, "Not found")
             return
 
+        # Safety first: block in read-only mode before any other checks
+        if self.config and self.config.read_only_mode:
+            self.send_json_response(200, {"status": "blocked", "message": "只读模式：云台变焦已禁用"})
+            return
+
         auth = self._authenticate()
         if not auth:
             return
         if auth.role != "admin":
             self.send_error_response(403, "需要管理员权限")
-            return
-
-        if self.config and self.config.read_only_mode:
-            self.send_json_response(200, {"status": "blocked", "message": "只读模式：云台控制已禁用"})
             return
 
         gimbal = self.gimbal_adapter
@@ -569,6 +580,11 @@ class GimbalAngleHandler(BaseHandler):
     def do_POST(self) -> None:
         if self.path != "/api/v1/gimbal/angle":
             self.send_error_response(404, "Not found")
+            return
+
+        # Safety first: block in read-only mode before any other checks
+        if self.config and self.config.read_only_mode:
+            self.send_json_response(200, {"status": "blocked", "message": "只读模式：云台角度控制已禁用"})
             return
 
         auth = self._authenticate()
@@ -631,12 +647,20 @@ class GimbalConnectHandler(BaseHandler):
     """POST /api/v1/gimbal/connect - Connect to gimbal by IP."""
 
     def do_POST(self) -> None:
+        if self.config and (self.config.read_only_mode or not self.config.control_enabled):
+            self.send_error_response(403, "控制未启用")
+            return
+
         if self.path != "/api/v1/gimbal/connect":
             self.send_error_response(404, "Not found")
             return
 
         auth = self._authenticate()
         if not auth:
+            return
+
+        if auth.role != "admin":
+            self.send_error_response(403, "admin role required")
             return
 
         body = self._parse_json_body()
@@ -649,7 +673,6 @@ class GimbalConnectHandler(BaseHandler):
             return
 
         # Validate IP format
-        import ipaddress
         try:
             ipaddress.ip_address(host)
         except ValueError:
@@ -657,9 +680,13 @@ class GimbalConnectHandler(BaseHandler):
             return
 
         # Update server's gimbal adapter
+        port = body.get("port", 80)
+        if type(port) is not int or not 1 <= port <= 65535:
+            self.send_error_response(400, "端口必须是 1-65535 的整数")
+            return
         new_config = GimbalConfig(
             host=host,
-            port=80,
+            port=port,
             username=username,
             password=password,
         )
@@ -696,4 +723,8 @@ class GimbalConnectHandler(BaseHandler):
             })
         else:
             logger.warning("云台连接失败: %s", host)
+            try:
+                new_adapter.close()
+            except Exception:
+                pass
             self.send_error_response(503, f"云台连接失败: {host}，请检查 IP 和凭据")

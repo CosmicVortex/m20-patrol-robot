@@ -55,7 +55,9 @@ class NavigationSafetySnapshot:
     battery_percent: int
     active_task: bool
 
-    def validate_for_navigation(self) -> None:
+    def validate_for_navigation(self, *, allow_active_task: bool = False) -> None:
+        if type(allow_active_task) is not bool:
+            raise NavigationInterlockError("allow_active_task must be boolean")
         for name, value in (
             ("control_enabled", self.control_enabled),
             ("tcp_connected", self.tcp_connected),
@@ -84,7 +86,7 @@ class NavigationSafetySnapshot:
             raise NavigationInterlockError("protective fault is active")
         if type(self.battery_percent) is not int or self.battery_percent < 20:
             raise NavigationInterlockError("battery is below the documented safety threshold")
-        if self.active_task:
+        if self.active_task and not allow_active_task:
             raise NavigationInterlockError("a navigation task is already active")
 
 
@@ -136,7 +138,7 @@ class SinglePointNavigation:
 
 def build_cancel_navigation_message(safety: NavigationSafetySnapshot, sent_at: str) -> PatrolMessage:
     """Build the V0.1.0 `1004/1` cancellation request after all gates pass."""
-    safety.validate_for_navigation()
+    safety.validate_for_navigation(allow_active_task=True)
     return PatrolMessage(message_type=1004, command=1, sent_at=sent_at, items={})
 
 

@@ -8,7 +8,7 @@ stream decoder. This module does not open sockets or send robot commands.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Optional, Tuple
 
 
 class FrameProtocolError(ValueError):
@@ -26,9 +26,9 @@ class FrameLayout:
     header_size: int
     length_includes_header: bool = False
     byteorder: Literal["little", "big"] = "little"
-    reserved_offset: int | None = None
+    reserved_offset: Optional[int] = None
     reserved_size: int = 0
-    allowed_flags: tuple[int, ...] | None = None
+    allowed_flags: Optional[Tuple[int, ...]] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.sync_word, bytes) or not self.sync_word:

@@ -17,10 +17,11 @@ TARGET_ROOT="$HOME/m20-patrol-robot"
 SERVICE_NAME='m20-patrol-readonly.service'
 # 密码文件路径
 CONFIG_DIR="$HOME/.config/m20-patrol"
-# 默认密码（首次部署自动生成）
-DEFAULT_GIMBAL_PASSWORD="m20_gimbal_$(date +%s | sha256sum | head -c 12)"
-DEFAULT_ADMIN_PASSWORD="m20_admin_$(date +%s | sha256sum | head -c 12)"
+# 项目负责人确认的首次部署默认密码。现场验收后应立即修改。
+DEFAULT_GIMBAL_PASSWORD="123456"
+DEFAULT_ADMIN_PASSWORD="123456"
 PYTHON_BIN="$(command -v python3)"
+FFMPEG_BIN=""
 
 # 检查是否为root用户
 check_root() {
@@ -42,32 +43,75 @@ check_python() {
   
   PYTHON_VERSION=$(python3 --version 2>&1)
   echo "Python: $PYTHON_VERSION"
-  
-  # 检查关键模块
+  case "$PYTHON_VERSION" in
+    "Python 3.8.10"*) ;;
+    *) echo "错误: GOS必须使用Python 3.8.10，当前为 $PYTHON_VERSION"; exit 1 ;;
+  esac
+  # GOS离线环境禁止依赖虚拟环境；同时确认venv和ensurepip不可用/不被部署依赖。
   python3 -c "import asyncio, json, ssl, urllib, email, logging" 2>/dev/null || {
-    echo "ERROR: Python缺少必要模块"
+    echo "错误: Python缺少必要标准库模块"
     exit 1
+  }
+  python3 -c "import venv, ensurepip" >/dev/null 2>&1 || {
+    echo "提示: venv或ensurepip不可用，按系统Python部署，不创建虚拟环境"
   }
   
   echo "Python环境检查通过 ✅"
 }
 
 # 确保配置目录存在
+check_ffmpeg() {
+  echo "检查FFmpeg环境..."
+  case "$(uname -m)" in
+    aarch64|arm64) ;;
+    *) echo "错误: GOS架构必须为aarch64/arm64，当前为 $(uname -m)"; exit 1 ;;
+  esac
+  FFMPEG_BIN="$(command -v ffmpeg || true)"
+  if [ -z "$FFMPEG_BIN" ] && [ -x "$HOME/.local/bin/ffmpeg" ]; then
+    FFMPEG_BIN="$HOME/.local/bin/ffmpeg"
+  fi
+  if [ -z "$FFMPEG_BIN" ]; then
+    echo "错误: 未找到ffmpeg。请先传输并执行 deploy/offline/ffmpeg/install-ffmpeg-offline.sh"
+    exit 1
+  fi
+  if ! command -v ffprobe >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/ffprobe" ]; then
+    echo "错误: 未找到ffprobe。请安装完整FFmpeg离线包，不要只复制ffmpeg单个文件。"
+    exit 1
+  fi
+  if ! "$FFMPEG_BIN" -hide_banner -protocols 2>/dev/null | grep -qw rtsp; then
+    echo "错误: FFmpeg不支持RTSP协议"
+    exit 1
+  fi
+  if ! "$FFMPEG_BIN" -hide_banner -encoders 2>/dev/null | grep -qE '(^|[[:space:]])libx264([[:space:]]|$)'; then
+    echo "错误: FFmpeg缺少libx264编码器"
+    exit 1
+  fi
+  "$FFMPEG_BIN" -version 2>/dev/null | sed -n '1,2p'
+  echo "FFmpeg环境检查通过 ✅"
+}
+
+# 确保配置目录存在
 ensure_config() {
-  mkdir -p "$CONFIG_DIR"
-  
-  # 如果密码文件不存在，自动生成
+  # 创建配置目录并设置严格权限（仅所有者可读写执行）
+  mkdir -p -m 700 "$CONFIG_DIR"
+
   if [ ! -f "$CONFIG_DIR/passwords.env" ]; then
     echo "警告: 未找到密码文件，自动生成默认密码..."
     cat > "$CONFIG_DIR/passwords.env" <<EOF
-export M20_GIMBAL_PASSWORD='$DEFAULT_GIMBAL_PASSWORD'
-export M20_ADMIN_PASSWORD='$DEFAULT_ADMIN_PASSWORD'
+M20_GIMBAL_PASSWORD='$DEFAULT_GIMBAL_PASSWORD'
+M20_ADMIN_PASSWORD='$DEFAULT_ADMIN_PASSWORD'
 EOF
     chmod 600 "$CONFIG_DIR/passwords.env"
+    source "$CONFIG_DIR/passwords.env"
     echo "密码已保存到: $CONFIG_DIR/passwords.env"
-    echo "M20_GIMBAL_PASSWORD=$DEFAULT_GIMBAL_PASSWORD"
-    echo "M20_ADMIN_PASSWORD=$DEFAULT_ADMIN_PASSWORD"
   else
+    # 校验并修正已有密码文件的权限
+    local _perms
+    _perms=$(stat -c '%a' "$CONFIG_DIR/passwords.env" 2>/dev/null || stat -f '%Lp' "$CONFIG_DIR/passwords.env" 2>/dev/null || echo "unknown")
+    if [ "$_perms" != "600" ] && [ "$_perms" != "unknown" ]; then
+      echo "警告: 密码文件权限为 $_perms，应修正为 600"
+      chmod 600 "$CONFIG_DIR/passwords.env"
+    fi
     # 加载密码
     source "$CONFIG_DIR/passwords.env"
   fi
@@ -96,16 +140,13 @@ preflight() {
   # 检查root
   check_root
   
-  # 检查Python
   check_python
+  check_ffmpeg
   
   # 确保配置
   ensure_config
   
-  echo ""
-  echo "GIMBAL_PASSWORD=$M20_GIMBAL_PASSWORD"
-  echo "ADMIN_PASSWORD=$M20_ADMIN_PASSWORD"
-  echo ""
+  echo "密码文件已加载: $CONFIG_DIR/passwords.env（权限应为0600）"
   
   # 检查目标目录
   mkdir -p "$TARGET_ROOT"
@@ -156,6 +197,19 @@ install() {
   else
     echo "已在目标目录，跳过复制"
   fi
+
+  for asset in \
+    "$TARGET_ROOT/docs/website/index.html" \
+    "$TARGET_ROOT/docs/website/js/app.js" \
+    "$TARGET_ROOT/docs/website/js/views/dashboard.js" \
+    "$TARGET_ROOT/docs/website/robot-dog.png" \
+    "$TARGET_ROOT/docs/website/robot-dog.jpg"; do
+    if [ ! -f "$asset" ]; then
+      echo "错误: Web 资源缺失: $asset"
+      exit 1
+    fi
+  done
+  echo "Web 资源校验通过"
   
   # 编译Python代码
   echo "编译Python代码..."
@@ -176,6 +230,8 @@ After=network.target
 Type=simple
 WorkingDirectory=${TARGET_ROOT}
 Environment=PYTHONPATH=${TARGET_ROOT}
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=${CONFIG_DIR}/passwords.env
 Environment=M20_RUNTIME_MODE=realtime_readonly
 Environment=M20_READ_ONLY_MODE=true
 Environment=M20_CONTROL_ENABLED=false
@@ -210,8 +266,8 @@ EOF
   echo "  服务: $SERVICE_NAME"
   echo "  地址: http://${GOS_HOST}:${WEB_PORT}"
   echo "  用户名: admin"
-  echo "  密码: $M20_ADMIN_PASSWORD"
-  echo "  密码文件: $CONFIG_DIR/passwords.env"
+  echo "  密码: 已写入受限权限文件"
+  echo "  密码文件: $CONFIG_DIR/passwords.env（权限应为0600）"
 }
 
 # 启动服务
@@ -250,9 +306,8 @@ logs() {
 # 显示密码
 show-passwords() {
   ensure_config
-  echo "=== 已保存的密码 ==="
-  echo "M20_GIMBAL_PASSWORD=$M20_GIMBAL_PASSWORD"
-  echo "M20_ADMIN_PASSWORD=$M20_ADMIN_PASSWORD"
+  echo "密码文件路径: $CONFIG_DIR/passwords.env"
+  echo "如需查看或修改，请在本地受控终端操作。"
 }
 
 # 主入口

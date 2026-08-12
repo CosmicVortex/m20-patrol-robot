@@ -47,3 +47,32 @@ def test_config_gos_host_defaults_to_empty():
     """Test that config defaults gos_host to empty if not provided."""
     config = WebServiceConfig()
     assert config.gos_host == ""
+
+
+def test_config_loads_nested_gimbal_target():
+    """Test that manifest target metadata reaches the gimbal configuration."""
+    import json
+    import tempfile
+
+    manifest_data = {
+        "targets": {
+            "gimbal_host": "192.168.1.108",
+            "gimbal_username": "admin",
+            "gimbal_password": "test_password",
+        },
+        "runtime_mode": "realtime_readonly",
+        "read_only_mode": True,
+        "control_enabled": False,
+    }
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as file:
+        json.dump(manifest_data, file)
+        manifest_path = file.name
+
+    try:
+        config = ConfigLoader.load(manifest_path)
+        assert config.gimbal_host == "192.168.1.108"
+        assert config.gimbal_username == "admin"
+        assert config.gimbal_password == "test_password"
+    finally:
+        import os
+        os.unlink(manifest_path)

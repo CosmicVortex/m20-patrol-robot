@@ -168,3 +168,46 @@ class TestNavigationService:
         assert service.audit_log[0].action == "authorize"
         assert service.audit_log[-1].action == "send"
         assert service.audit_log[-1].success == False
+
+    def test_cancel_navigation_builds_and_sends_cancel_message(self):
+        client = Mock(spec=BasicServerClient)
+        client.send_control.return_value = Mock()
+        safety = NavigationSafetySnapshot(
+            control_enabled=True,
+            field_authorization="operator1",
+            tcp_connected=True,
+            location_normal=True,
+            obstacle_avoidance_active=True,
+            hard_estop_active=False,
+            protective_fault_active=False,
+            battery_percent=80,
+            active_task=True,
+        )
+        service = NavigationService(client, safety)
+        service.authorize("operator1")
+
+        result = service.cancel_navigation()
+
+        assert result["status"] == "cancelled"
+        message = client.send_control.call_args.args[0]
+        assert (message.message_type, message.command) == (1004, 1)
+
+    def test_cancel_navigation_rejects_when_control_disabled(self):
+        client = Mock(spec=BasicServerClient)
+        safety = NavigationSafetySnapshot(
+            control_enabled=False,
+            field_authorization="operator1",
+            tcp_connected=True,
+            location_normal=True,
+            obstacle_avoidance_active=True,
+            hard_estop_active=False,
+            protective_fault_active=False,
+            battery_percent=80,
+            active_task=False,
+        )
+        service = NavigationService(client, safety)
+        service.authorize("operator1")
+
+        result = service.cancel_navigation()
+
+        assert result["status"] == "error"

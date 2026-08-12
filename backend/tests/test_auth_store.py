@@ -30,8 +30,12 @@ class TestUserStore:
         assert user.user_id == 1
 
     def test_create_user_short_password(self, store):
-        with pytest.raises(AuthenticationError, match="12 characters"):
+        with pytest.raises(AuthenticationError, match="6 characters"):
             store.create_user("short", "short", "admin")
+
+    def test_create_user_with_deployment_default_password(self, store):
+        user = store.create_user("admin", "123456", "admin")
+        assert store.authenticate("admin", "123456") == user
 
     def test_create_user_empty_username(self, store):
         with pytest.raises(AuthenticationError, match="required"):

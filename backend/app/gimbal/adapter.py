@@ -52,11 +52,10 @@ class SoarGimbalAdapter:
         return self._connected
 
     # Common IP ranges to scan (priority order)
-    # Only scan M20 robot network and common device networks
     SCAN_RANGES = [
-        "10.21.31.0/24",  # M20 robot internal network (highest priority)
-        "192.168.1.0/28",  # Limited scan: only first 16 IPs (devices, not PCs)
-        "192.168.0.0/28",  # Limited scan
+        "10.21.31.0/24",   # M20 robot internal network
+        "192.168.1.0/24",  # Local device network (full /24)
+        "192.168.0.0/24",  # Alternative local network
     ]
 
     # Skip these common non-device IPs

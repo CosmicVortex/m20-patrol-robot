@@ -13,20 +13,24 @@ from backend.app.auth.store import UserStore
 from backend.app.config import WebServiceConfig
 from backend.app.robot.telemetry import TelemetryAdapter
 from backend.app.navigation.service import NavigationService
+from backend.app.api.base_handler import BaseHandler
 from backend.app.api.handlers import (
     AuthLoginHandler,
     AuthLogoutHandler,
     AuthMeHandler,
-    BaseHandler,
     DevicesListHandler,
     EmergencyStopHandler,
     HealthHandler,
     NavigationAuthorizeHandler,
+    NavigationDeauthorizeHandler,
     NavigationCancelHandler,
     NavigationStatusHandler,
     NavigationTaskHandler,
     StatusLatestHandler,
     VideoStatusHandler,
+    VideoConfigHandler,
+    VideoStreamControlHandler,
+    VideoPlaybackHandler,
 )
 from backend.app.api.extended_handlers import (
     GimbalAngleHandler,
@@ -76,10 +80,16 @@ class ApiRouter:
         "/api/v1/devices": DevicesListHandler,
         "/api/v1/navigation/status": NavigationStatusHandler,
         "/api/v1/navigation/authorize": NavigationAuthorizeHandler,
+        "/api/v1/navigation/deauthorize": NavigationDeauthorizeHandler,
         "/api/v1/navigation/tasks": NavigationTaskHandler,
         "/api/v1/navigation/cancel": NavigationCancelHandler,
         "/api/v1/emergency/stop": EmergencyStopHandler,
+        "/api/v1/video/playback/": VideoPlaybackHandler,
         "/api/v1/video": VideoStatusHandler,
+        "/api/v1/video/config": VideoConfigHandler,
+        "/api/v1/video/probe": VideoStreamControlHandler,
+        "/api/v1/video/start": VideoStreamControlHandler,
+        "/api/v1/video/stop": VideoStreamControlHandler,
         # Extended handlers
         "/api/v1/work-orders": WorkOrdersListHandler,
         "/api/v1/work-orders/create": WorkOrdersCreateHandler,
@@ -111,6 +121,12 @@ class ApiRouter:
         "/api/v1/motion/deauthorize": MotionDeauthorizeHandler,
     }
 
+    METHOD_HANDLERS: dict[tuple[str, str], type[BaseHandler]] = {
+        ("GET", "/api/v1/work-orders"): WorkOrdersListHandler,
+        ("POST", "/api/v1/work-orders"): WorkOrdersCreateHandler,
+        ("PUT", "/api/v1/work-orders/"): WorkOrdersUpdateHandler,
+    }
+
     # WebSocket paths
     WS_HANDLERS: dict[str, Any] = {}
 
@@ -136,15 +152,28 @@ class ApiRouter:
         self.server_instance = server_instance
         self.motion_service = motion_service
 
+    @classmethod
+    def resolve_handler(cls, method: str, path: str) -> Optional[type[BaseHandler]]:
+        """Resolve a handler using the HTTP method and path without ambiguity."""
+        clean_path = path.split("?", 1)[0]
+        exact = cls.METHOD_HANDLERS.get((method.upper(), clean_path))
+        if exact is not None:
+            return exact
+        for (route_method, prefix), handler_class in cls.METHOD_HANDLERS.items():
+            if route_method == method.upper() and prefix.endswith("/") and clean_path.startswith(prefix):
+                return handler_class
+
+        handler_class = cls.HANDLERS.get(clean_path)
+        if handler_class is not None:
+            return handler_class
+        for prefix, candidate in cls.HANDLERS.items():
+            if clean_path.startswith(prefix):
+                return candidate
+        return None
+
     def route(self, handler: BaseHandler) -> None:
         """Route the request to the appropriate handler."""
-        handler_class = self.HANDLERS.get(handler.path)
-        if handler_class is None:
-            # Try prefix matching
-            for prefix, cls in self.HANDLERS.items():
-                if handler.path.startswith(prefix):
-                    handler_class = cls
-                    break
+        handler_class = self.resolve_handler(handler.command, handler.path)
 
         if handler_class is None:
             handler.send_error_response(404, "Not found")

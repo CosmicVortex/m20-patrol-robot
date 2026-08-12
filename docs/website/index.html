@@ -3,194 +3,270 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>M20 Pro 巡检监控中心</title>
+<title>中升之星奔驰 · M20 Pro 机器狗巡检平台</title>
 <style>
 :root{
-  /* Mercedes-Benz brand colors */
-  --bg:#060a12;
-  --panel:#0d1520;
-  --panel2:#111c2e;
-  --card:#141e2e;
-  --line:rgba(192,192,192,.12);
-  --line2:rgba(192,192,192,.08);
-  --text:#e8edf5;
-  --muted:#8a9bbf;
-  --accent:#c0c0c0;
-  --accent2:#1e3a5f;
-  --success:#4a9fd4;
-  --warn:#d4a84b;
-  --error:#c44d4d;
-  --cyan:#c0c0c0;
-  --green:#4a9fd4;
-  --blue:#5ba8db;
-  --red:#c44d4d;
-  --orange:#d4a84b;
-  --yellow:#d4b84b;
-  --r:9px;
+  /* 中升之星奔驰 M20 Pro 巡检平台界面 */
+  /* 色彩体系：深色背景、蓝色操作色、状态色 */
+  --color-bg-deep: #050810;
+  --color-bg-primary: #0a0f1a;
+  --color-bg-secondary: #0f1623;
+  --color-bg-card: #141c2e;
+  --color-bg-elevated: #1a2438;
+  --color-border: rgba(180,190,210,.12);
+  --color-border-hover: rgba(180,190,210,.25);
+  --color-text-primary: #f0f4f8;
+  --color-text-secondary: #a8b8d0;
+  --color-text-muted: #687890;
+  --color-accent: #4a90d9;
+  --color-accent-light: #5ba0e9;
+  --color-accent-dim: rgba(74,144,217,.12);
+  --color-success: #22c55e;
+  --color-success-dim: rgba(34,197,94,.12);
+  --color-warning: #f59e0b;
+  --color-warning-dim: rgba(245,158,11,.12);
+  --color-error: #ef4444;
+  --color-error-dim: rgba(239,68,68,.12);
+  --color-info: #3b82f6;
+  --color-info-dim: rgba(59,130,246,.12);
+
+
+  --mercedes-star: #e8eef6;
+
+  /* 字体系统 */
+  --font-sans: "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+  --fs-xs: .75rem;
+  --fs-sm: .8125rem;
+  --fs-base: .875rem;
+  --fs-md: .9375rem;
+  --fs-lg: 1.0625rem;
+  --fs-xl: 1.25rem;
+  --fs-2xl: 1.5rem;
+
+  /* 间距系统 (4px 基准) */
+  --space-1: .25rem;
+  --space-2: .5rem;
+  --space-3: .75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* 圆角系统 */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 10px;
+  --r-xl: 16px;
+
+  /* 阴影系统 */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.3);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,.4);
+  --shadow-glow: 0 0 20px rgba(74,159,212,.2);
+
+  /* 过渡动效 */
+  --transition-fast: 150ms cubic-bezier(.4,0,.2,1);
+  --transition-base: 200ms cubic-bezier(.4,0,.2,1);
+  --transition-slow: 300ms cubic-bezier(.4,0,.2,1);
+
+  /* 布局常量 */
+  --sidebar-width: 224px;
+  --topbar-height: 64px;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 "Microsoft YaHei","PingFang SC","Noto Sans SC",Arial,sans-serif;font-variant-numeric:tabular-nums}
-.app{min-height:100vh;display:flex;background:radial-gradient(circle at 55% 0,rgba(30,67,116,.18),transparent 50%),var(--bg)}
+html,body{height:100%;overflow:hidden}
+body{margin:0;background:var(--color-bg-deep);color:var(--color-text-primary);font:var(--fs-base)/1.5 var(--font-sans);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+button,input,select,textarea{font-family:inherit;font-size:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--color-accent);outline-offset:2px;border-radius:var(--r-sm)}
+::selection{background:var(--color-accent-dim);color:var(--color-accent-light)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(100,140,200,.3);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(100,140,200,.5)}
+.app{min-height:100vh;display:flex;background:var(--color-bg-deep);position:relative;overflow:hidden}
+.app::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(74,159,212,.08),transparent 60%);pointer-events:none}
 
 /* Login overlay */
-.login-overlay{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center}
-.login-box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:32px;width:360px;max-width:90vw}
-.login-box h2{margin:0 0 6px;font-size:20px;color:#fff;text-align:center}
-.login-box p{margin:0 0 24px;font-size:12px;color:var(--muted);text-align:center}
-.login-box label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
-.login-box input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel2);color:var(--text);font-size:14px;margin-bottom:16px}
-.login-box input:focus{outline:none;border-color:var(--cyan)}
-.login-box button{width:100%;padding:12px;border:none;border-radius:6px;background:linear-gradient(135deg,var(--accent2),#0e2540);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
-.login-box button:hover{opacity:.9;transform:translateY(-1px)}
-.login-error{color:var(--red);font-size:12px;margin-bottom:12px;text-align:center}
-.login-footer{margin-top:16px;font-size:11px;color:var(--muted);text-align:center}
+.login-overlay{position:fixed;inset:0;background:var(--color-bg-deep);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.login-box{background:var(--color-bg-card);border:1px solid var(--color-border);border-radius:var(--r-xl);padding:var(--space-10);width:380px;max-width:90vw;box-shadow:var(--shadow-lg),0 0 60px rgba(74,159,212,.1);animation:slideUp .3s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.login-box h2{margin:0 0 var(--space-2);font-size:var(--fs-2xl);color:var(--color-text-primary);text-align:center;font-weight:600;letter-spacing:-.01em}
+.login-box p{margin:0 0 var(--space-6);font-size:var(--fs-sm);color:var(--color-text-muted);text-align:center}
+.login-box label{display:block;font-size:var(--fs-xs);color:var(--color-text-secondary);margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:.08em;font-weight:500}
+.login-box input{width:100%;padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);border-radius:var(--r-md);background:var(--color-bg-secondary);color:var(--color-text-primary);font-size:var(--fs-base);margin-bottom:var(--space-4);transition:all var(--transition-fast)}
+.login-box input:focus{outline:none;border-color:var(--color-accent);box-shadow:0 0 0 3px var(--color-accent-dim);background:var(--color-bg-card)}
+.login-box button{width:100%;padding:var(--space-3) var(--space-6);border:none;border-radius:var(--r-md);background:linear-gradient(135deg,var(--color-accent),#3578a5);color:#fff;font-size:var(--fs-base);font-weight:600;cursor:pointer;transition:all var(--transition-fast);margin-top:var(--space-2)}
+.login-box button:hover{transform:translateY(-1px);box-shadow:var(--shadow-md),0 0 20px rgba(74,159,212,.3)}
+.login-box button:active{transform:translateY(0)}
+.login-error{color:var(--color-error);font-size:var(--fs-sm);margin-bottom:var(--space-4);text-align:center;min-height:1.5em}
+.login-footer{margin-top:var(--space-6);font-size:var(--fs-xs);color:var(--color-text-muted);text-align:center;padding-top:var(--space-4);border-top:1px solid var(--color-border)}
 
 /* Sidebar */
-.sidebar{width:218px;flex:0 0 218px;background:#080f1e;border-right:1px solid var(--line);display:flex;flex-direction:column}
-.brand{height:78px;padding:17px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(192,192,192,.15)}
-.brand-star{width:38px;height:38px;flex:0 0 38px}
-.brand-star polygon{stroke:rgba(192,192,192,.8);fill:none;stroke-width:1.5}
-.brand strong{display:block;font-size:14px;color:#fff}
-.brand small{display:block;color:#6f84a8;font-size:9px;letter-spacing:.08em;margin-top:2px}
-.nav{padding:17px 11px;flex:1}
-.nav button{height:43px;width:100%;border:1px solid transparent;border-radius:7px;background:transparent;color:#9bacca;text-align:left;padding:0 14px;display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:5px}
-.nav button:hover,.nav button.active{background:linear-gradient(90deg,#1a3a5c,#152e4a);border-color:rgba(192,192,192,.3);color:#fff;box-shadow:0 0 14px rgba(192,192,192,.08)}
-.nav i{font-style:normal;width:18px;text-align:center;font-size:17px;color:#8a9bbf}
-.side-foot{padding:15px 18px;border-top:1px solid rgba(192,192,192,.12);color:#5a6f8a;font-size:10px}
+.sidebar{width:var(--sidebar-width);flex:0 0 var(--sidebar-width);background:var(--color-bg-primary);border-right:1px solid var(--color-border);display:flex;flex-direction:column;position:relative;z-index:10}
+.sidebar::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 0%,rgba(74,159,212,.03) 50%,transparent 100%);pointer-events:none}
+.brand{height:64px;padding:var(--space-5) var(--space-5);display:flex;align-items:center;gap:var(--space-3);border-bottom:1px solid var(--color-border)}
+.brand-star{width:32px;height:32px;flex:0 0 32px}
+.brand-star circle,.brand-star path{stroke:var(--color-accent);fill:none;stroke-width:1.5}
+.brand strong{display:block;font-size:var(--fs-md);color:var(--color-text-primary);font-weight:600}
+.brand small{display:block;color:var(--color-text-muted);font-size:var(--fs-xs);letter-spacing:.08em;margin-top:2px}
+.nav{padding:var(--space-3) var(--space-3);flex:1;overflow-y:auto}
+.nav button{height:40px;width:100%;border:1px solid transparent;border-radius:var(--r-md);background:transparent;color:var(--color-text-secondary);text-align:left;padding:0 var(--space-4);display:flex;align-items:center;gap:var(--space-3);cursor:pointer;margin-bottom:var(--space-1);transition:all var(--transition-fast);font-size:var(--fs-sm)}
+.nav button:hover{background:var(--color-bg-card);border-color:var(--color-border-hover);color:var(--color-text-primary)}
+.nav button.active{background:var(--color-accent-dim);border-color:rgba(74,159,212,.3);color:var(--color-accent-light);font-weight:500}
+.nav i{font-style:normal;width:20px;text-align:center;font-size:var(--fs-lg);color:var(--color-text-muted);transition:color var(--transition-fast)}
+.nav button:hover i,.nav button.active i{color:var(--color-accent)}
+.side-foot{padding:var(--space-4) var(--space-5);border-top:1px solid var(--color-border);color:var(--color-text-muted);font-size:var(--fs-xs);line-height:1.6}
 
 /* Main */
-.main{min-width:0;flex:1}
-.topbar{height:69px;background:rgba(9,23,45,.88);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 23px}
-.topbar h1{margin:0;font-size:19px;color:#fff}
-.topbar p{margin:3px 0 0;color:#7185a7;font-size:11px}
-.top-right{margin-left:auto;display:flex;align-items:center;gap:14px}
-.status-badge{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid var(--line);color:var(--muted);background:var(--panel)}
-.status-badge.ok{border-color:rgba(74,159,212,.4);color:var(--success);background:rgba(74,159,212,.08)}
-.status-badge.warn{border-color:rgba(212,168,75,.4);color:var(--warn);background:rgba(212,168,75,.08)}
-.status-badge.blocked{border-color:rgba(196,77,77,.4);color:var(--error);background:rgba(196,77,77,.08)}
-.time{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-.user{display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:20px;background:var(--panel);border:1px solid var(--line)}
-.avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent2),#0e2540);display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff}
+.main{min-width:0;flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.topbar{height:var(--topbar-height);background:rgba(10,22,40,.95);border-bottom:1px solid var(--color-border);display:flex;align-items:center;padding:0 var(--space-6);backdrop-filter:blur(12px);position:relative;z-index:5;flex-shrink:0}
+.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--color-accent),transparent);opacity:.3}
+.topbar h1{margin:0;font-size:var(--fs-xl);color:var(--color-text-primary);font-weight:600;letter-spacing:-.01em}
+.topbar p{margin:2px 0 0;color:var(--color-text-muted);font-size:var(--fs-xs)}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:var(--space-4)}
+.status-badge{padding:var(--space-1) var(--space-3);border-radius:20px;font-size:var(--fs-xs);font-weight:500;border:1px solid var(--color-border);color:var(--color-text-secondary);background:var(--color-bg-card);transition:all var(--transition-fast)}
+.status-badge.ok{border-color:rgba(52,211,153,.3);color:var(--color-success);background:var(--color-success-dim)}
+.status-badge.warn{border-color:rgba(251,191,36,.3);color:var(--color-warning);background:var(--color-warning-dim)}
+.status-badge.blocked{border-color:rgba(248,113,113,.3);color:var(--color-error);background:var(--color-error-dim)}
+.time{font-size:var(--fs-sm);color:var(--color-text-muted);font-variant-numeric:tabular-nums;font-family:var(--font-mono);padding:var(--space-1) var(--space-2);background:var(--color-bg-card);border-radius:var(--r-sm);border:1px solid var(--color-border)}
+.user{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);border-radius:var(--r-lg);background:var(--color-bg-card);border:1px solid var(--color-border);transition:all var(--transition-fast)}
+.user:hover{border-color:var(--color-border-hover)}
+.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--color-accent),#3578a5);display:grid;place-items:center;font-size:var(--fs-sm);font-weight:600;color:#fff;box-shadow:var(--shadow-sm)}
 
 /* Content */
-.content{padding:20px 23px}
+.content{padding:var(--space-5) var(--space-6);flex:1;overflow-y:auto}
 
 /* Metrics */
-.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
-.metric{background:linear-gradient(145deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;display:flex;align-items:center;gap:14px}
-.metric-icon{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,rgba(192,192,192,.12),rgba(192,192,192,.04));display:grid;place-items:center;font-size:22px;color:var(--accent)}
-.metric label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px}
-.metric strong{font-size:22px;font-weight:700;color:#fff;display:block}
-.metric span{font-size:11px;color:var(--muted)}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-4);margin-bottom:var(--space-5)}
+.metric{background:var(--color-bg-card);border:1px solid var(--color-border);border-radius:var(--r-lg);padding:var(--space-5) var(--space-6);display:flex;align-items:center;gap:var(--space-4);transition:all var(--transition-base);position:relative;overflow:hidden}
+.metric::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--color-bg-elevated),transparent);opacity:0;transition:opacity var(--transition-base)}
+.metric:hover{border-color:var(--color-border-hover);transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.metric:hover::before{opacity:1}
+.metric-icon{width:48px;height:48px;border-radius:var(--r-md);background:var(--color-accent-dim);display:grid;place-items:center;font-size:var(--fs-xl);color:var(--color-accent);transition:all var(--transition-base);flex-shrink:0}
+.metric:hover .metric-icon{background:var(--color-accent);color:#fff;transform:scale(1.05)}
+.metric label{font-size:var(--fs-xs);color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:var(--space-1);font-weight:500}
+.metric strong{font-size:var(--fs-2xl);font-weight:700;color:var(--color-text-primary);display:block;line-height:1.2}
+.metric span{font-size:var(--fs-xs);color:var(--color-text-muted);margin-top:var(--space-1);display:block}
 
 /* Monitor grid */
-.monitor-grid{display:grid;grid-template-columns:1fr 320px;gap:16px}
-.camera-wall{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.camera{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;position:relative}
-.camera-title{padding:10px 14px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--line);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
-.camera-title b{color:var(--accent);font-size:13px}
-.camera-watermark{padding:12px 14px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--line);line-height:1.6}
-.camera-watermark small{display:block;color:#5a6f8a;margin-top:4px}
-.media-state{padding:20px;text-align:center;font-size:13px;color:var(--muted)}
-.media-state strong{display:block;font-size:15px;margin-bottom:6px}
-.media-state.ok strong{color:var(--green)}
-.media-state.blocked strong{color:var(--red)}
-.media-state.unverified strong{color:var(--orange)}
+.monitor-grid{display:grid;grid-template-columns:1fr 320px;gap:var(--space-4)}
+.camera-wall{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)}
+.camera{background:var(--color-bg-card);border:1px solid var(--color-border);border-radius:var(--r-lg);overflow:hidden;position:relative;transition:all var(--transition-base)}
+.camera:hover{border-color:var(--color-border-hover);box-shadow:var(--shadow-md)}
+.camera-title{padding:var(--space-3) var(--space-4);background:rgba(0,0,0,.3);border-bottom:1px solid var(--color-border);font-size:var(--fs-sm);color:var(--color-text-secondary);display:flex;align-items:center;gap:var(--space-2);font-weight:500}
+.camera-title b{color:var(--color-accent);font-size:var(--fs-sm);font-weight:600}
+.camera-watermark{padding:var(--space-3) var(--space-4);font-size:var(--fs-xs);color:var(--color-text-muted);border-bottom:1px solid var(--color-border);line-height:1.6}
+.camera-watermark small{display:block;color:var(--color-text-muted);margin-top:var(--space-1);opacity:.7}
+.media-state{padding:var(--space-6);text-align:center;font-size:var(--fs-sm);color:var(--color-text-muted)}
+.media-state strong{display:block;font-size:var(--fs-md);margin-bottom:var(--space-2)}
+.media-state.ok strong{color:var(--color-success)}
+.media-state.blocked strong{color:var(--color-error)}
+.media-state.unverified strong{color:var(--color-warning)}
 /* Video element styling */
-.camera-video{width:100%;height:180px;background:#000;display:none;object-fit:cover}
+.camera-video{width:100%;height:180px;background:#000;display:none;object-fit:cover;transition:opacity var(--transition-fast)}
 .camera-video.active{display:block}
 .camera.unverified .camera-video{display:none}
 .camera.unverified .media-state{display:block}
 .camera.connected .camera-video{display:block}
 .camera.connected .media-state{display:none}
-.camera-tools{padding:10px 14px;display:flex;gap:8px;border-top:1px solid var(--line)}
-.camera-tools button{flex:1;padding:7px;border:1px solid var(--line);border-radius:6px;background:var(--panel2);color:var(--muted);font-size:11px;cursor:pointer}
-.camera-tools button:hover:not(:disabled){background:var(--line);color:var(--text)}
-button:active{transform:scale(0.96);transition:transform 0.1s ease}
+.camera-tools{padding:var(--space-3) var(--space-4);display:flex;gap:var(--space-2);border-top:1px solid var(--color-border)}
+.camera-tools button{flex:1;padding:var(--space-2) var(--space-3);border:1px solid var(--color-border);border-radius:var(--r-sm);background:var(--color-bg-secondary);color:var(--color-text-secondary);font-size:var(--fs-xs);cursor:pointer;transition:all var(--transition-fast)}
+.camera-tools button:hover:not(:disabled){background:var(--color-bg-card);color:var(--color-text-primary);border-color:var(--color-border-hover)}
+button:active{transform:scale(.97);transition:transform 0.1s ease}
 .camera-tools button:disabled{opacity:.4;cursor:not-allowed}
-.detection{padding:8px 14px;font-size:11px;color:var(--muted);background:rgba(0,0,0,.2)}
-.detection span{color:var(--orange)}
+.detection{padding:var(--space-2) var(--space-4);font-size:var(--fs-xs);color:var(--color-text-muted);background:rgba(0,0,0,.2)}
+.detection span{color:var(--color-warning)}
 
 /* Map card (right panel) */
-.map-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column}
-.map-head{padding:14px 16px;border-bottom:1px solid var(--line);background:rgba(0,0,0,.2)}
-.map-head h2{margin:0;font-size:14px;color:#fff;font-weight:600}
-.map-head small{display:block;font-size:11px;color:var(--muted);margin-top:4px}
-.map-canvas{flex:1;min-height:200px;position:relative;background:linear-gradient(145deg,#0d1a2d,#0a1424)}
+.map-card{background:var(--color-bg-card);border:1px solid var(--color-border);border-radius:var(--r-lg);overflow:hidden;display:flex;flex-direction:column;transition:all var(--transition-base)}
+.map-card:hover{border-color:var(--color-border-hover);box-shadow:var(--shadow-md)}
+.map-head{padding:var(--space-4) var(--space-5);border-bottom:1px solid var(--color-border);background:rgba(0,0,0,.2)}
+.map-head h2{margin:0;font-size:var(--fs-md);color:var(--color-text-primary);font-weight:600}
+.map-head small{display:block;font-size:var(--fs-xs);color:var(--color-text-muted);margin-top:var(--space-1)}
+.map-canvas{flex:1;min-height:240px;position:relative;background:linear-gradient(145deg,var(--color-bg-secondary),var(--color-bg-deep))}
 .map-canvas canvas{width:100%;height:100%;display:block}
-.map-legend{padding:12px 16px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
-.map-legend div{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.map-legend{padding:var(--space-4) var(--space-5);border-top:1px solid var(--color-border);font-size:var(--fs-xs);color:var(--color-text-muted)}
+.map-legend div{display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-1)}
 .map-legend span{width:10px;height:10px;border-radius:50%;display:inline-block}
-.map-legend .green{background:var(--green)}
-.map-legend .blue{background:var(--blue)}
-.map-legend .red{background:var(--red)}
+.map-legend .green{background:var(--color-success)}
+.map-legend .blue{background:var(--color-info)}
+.map-legend .red{background:var(--color-error)}
 
 /* Robot info panel */
-.robot-panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:16px}
-.robot-header{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
-.robot-img{width:64px;height:48px;background:#fff;border-radius:6px;object-fit:contain}
-.robot-info{flex:1}
-.robot-info strong{font-size:15px;color:#fff;display:block}
-.robot-info span{font-size:11px;color:var(--muted)}
-.robot-status{padding:12px 16px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.robot-stat{background:var(--panel2);border-radius:8px;padding:10px 12px}
-.robot-stat label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px}
-.robot-stat .val{font-size:16px;font-weight:600;color:#fff}
-.robot-stat .val.ok{color:var(--green)}
-.robot-stat .val.warn{color:var(--orange)}
-.robot-stat .val.err{color:var(--red)}
+.robot-panel{background:var(--color-bg-card);border:1px solid var(--color-border);border-radius:var(--r-lg);overflow:hidden;margin-top:var(--space-4);transition:all var(--transition-base)}
+.robot-panel:hover{border-color:var(--color-border-hover);box-shadow:var(--shadow-md)}
+.robot-header{padding:var(--space-4) var(--space-5);border-bottom:1px solid var(--color-border);display:flex;align-items:center;gap:var(--space-4)}
+.robot-img{width:64px;height:48px;background:#fff;border-radius:var(--r-md);object-fit:contain;box-shadow:var(--shadow-sm)}
+.robot-info{flex:1;min-width:0}
+.robot-info strong{font-size:var(--fs-md);color:var(--color-text-primary);display:block;font-weight:600}
+.robot-info span{font-size:var(--fs-xs);color:var(--color-text-muted);display:block;margin-top:var(--space-1)}
+.robot-status{padding:var(--space-4) var(--space-5);border-bottom:1px solid var(--color-border);display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)}
+.robot-stat{background:var(--color-bg-secondary);border-radius:var(--r-md);padding:var(--space-3) var(--space-4);border:1px solid var(--color-border)}
+.robot-stat label{font-size:var(--fs-xs);color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:var(--space-1);font-weight:500}
+.robot-stat .val{font-size:var(--fs-lg);font-weight:600;color:var(--color-text-primary)}
+.robot-stat .val.ok{color:var(--color-success)}
+.robot-stat .val.warn{color:var(--color-warning)}
+.robot-stat .val.err{color:var(--color-error)}
 
 /* Timeline */
-.timeline{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-top:16px}
-.timeline h3{margin:0 0 14px;font-size:14px;color:#fff;font-weight:600}
-.timeline-laps{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
-.lap{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;border:2px solid var(--line);color:var(--muted)}
-.lap.done{background:rgba(104,221,122,.15);border-color:var(--green);color:var(--green)}
-.lap.current{background:rgba(112,200,242,.15);border-color:var(--blue);color:var(--blue);animation:pulse 1.5s infinite}
+.timeline{background:var(--color-bg-card);border:1px solid var(--color-border);border-radius:var(--r-lg);padding:var(--space-5);margin-top:var(--space-4);transition:all var(--transition-base)}
+.timeline:hover{border-color:var(--color-border-hover);box-shadow:var(--shadow-md)}
+.timeline h3{margin:0 0 var(--space-4);font-size:var(--fs-md);color:var(--color-text-primary);font-weight:600}
+.timeline-laps{display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap;margin-bottom:var(--space-4)}
+.lap{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:var(--fs-sm);font-weight:600;border:2px solid var(--color-border);color:var(--color-text-muted);transition:all var(--transition-fast);cursor:default}
+.lap.done{background:var(--color-success-dim);border-color:var(--color-success);color:var(--color-success)}
+.lap.current{background:var(--color-accent-dim);border-color:var(--color-accent);color:var(--color-accent-light);animation:pulse 1.5s infinite}
 .lap.pending{opacity:.4}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(112,200,242,.4)}50%{box-shadow:0 0 0 8px rgba(112,200,242,0)}}
-.timeline-stats{display:flex;gap:20px;font-size:12px;color:var(--muted)}
-.timeline-stats strong{color:var(--text)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(74,159,212,.4)}50%{box-shadow:0 0 0 8px rgba(74,159,212,0)}}
+.timeline-stats{display:flex;gap:var(--space-5);font-size:var(--fs-xs);color:var(--color-text-muted);flex-wrap:wrap}
+.timeline-stats strong{color:var(--color-text-primary)}
 
 /* Emergency button */
-.emergency-btn{position:fixed;bottom:24px;right:24px;padding:14px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;border:1px solid rgba(196,77,77,.3);background:linear-gradient(135deg,#c44d4d,#8b2e2e);color:#fff;box-shadow:0 4px 20px rgba(196,77,77,.25);transition:all .2s}
-.emergency-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 24px rgba(196,77,77,.35)}
-.emergency-btn:disabled{background:var(--line);color:var(--muted);cursor:not-allowed;box-shadow:none}
-.emergency-btn small{display:block;font-size:10px;font-weight:400;opacity:.7;margin-top:2px}
+.emergency-btn{position:fixed;bottom:var(--space-6);right:var(--space-6);padding:var(--space-4) var(--space-6);border-radius:var(--r-lg);font-size:var(--fs-sm);font-weight:600;cursor:pointer;border:1px solid rgba(248,113,113,.3);background:linear-gradient(135deg,var(--color-error),#dc2626);color:#fff;box-shadow:var(--shadow-lg),0 0 30px rgba(248,113,113,.2);transition:all var(--transition-base);z-index:100;display:flex;flex-direction:column;align-items:center;gap:2px}
+.emergency-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:var(--shadow-lg),0 0 40px rgba(248,113,113,.35)}
+.emergency-btn:active:not(:disabled){transform:translateY(0)}
+.emergency-btn:disabled{background:var(--color-bg-card);color:var(--color-text-muted);border-color:var(--color-border);cursor:not-allowed;box-shadow:none}
+.emergency-btn small{display:block;font-size:var(--fs-xs);font-weight:400;opacity:.8}
 
 /* Cloud connection panel */
-.gimbal-panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:16px}
-.gimbal-panel .gimbal-status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)}
-.gimbal-panel .gimbal-status.connected{color:var(--green)}
-.gimbal-panel .gimbal-status.disconnected{color:var(--orange)}
-.gimbal-panel .gimbal-ip{font-family:monospace;font-size:12px;color:var(--muted);margin-left:8px}
-.gimbal-panel button{padding:8px 16px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:12px;cursor:pointer}
-.gimbal-panel button:hover:not(:disabled){background:var(--line)}
+.gimbal-panel{background:var(--color-bg-card);border:1px solid var(--color-border);border-radius:var(--r-lg);padding:var(--space-4) var(--space-5);margin-bottom:var(--space-5);display:flex;align-items:center;gap:var(--space-4);transition:all var(--transition-base)}
+.gimbal-panel:hover{border-color:var(--color-border-hover)}
+.gimbal-panel .gimbal-status{display:flex;align-items:center;gap:var(--space-2);font-size:var(--fs-sm);color:var(--color-text-primary)}
+.gimbal-panel .gimbal-status.connected{color:var(--color-success)}
+.gimbal-panel .gimbal-status.disconnected{color:var(--color-warning)}
+.gimbal-panel .gimbal-ip{font-family:var(--font-mono);font-size:var(--fs-xs);color:var(--color-text-muted);margin-left:var(--space-2)}
+.gimbal-panel button{padding:var(--space-2) var(--space-4);border-radius:var(--r-md);border:1px solid var(--color-border);background:var(--color-bg-secondary);color:var(--color-text-secondary);font-size:var(--fs-xs);cursor:pointer;transition:all var(--transition-fast)}
+.gimbal-panel button:hover:not(:disabled){background:var(--color-bg-card);color:var(--color-text-primary);border-color:var(--color-border-hover)}
 .gimbal-panel button:disabled{opacity:.4;cursor:not-allowed}
 
 /* Modal */
-.alert-critical{color:var(--error);background:rgba(196,77,77,.1)}
-.alert-major{color:#d4784b;background:rgba(212,120,75,.1)}
-.alert-minor{color:var(--warn);background:rgba(212,168,75,.1)}
-.alert-info{color:var(--accent);background:rgba(192,192,192,.1)}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;display:none;align-items:center;justify-content:center}
+.alert-critical{color:var(--color-error);background:var(--color-error-dim)}
+.alert-major{color:#f97316;background:rgba(249,115,22,.12)}
+.alert-minor{color:var(--color-warning);background:var(--color-warning-dim)}
+.alert-info{color:var(--color-info);background:var(--color-info-dim)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:2000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 .modal-overlay.active{display:flex;animation:fadeIn .2s ease}
-.modal-box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px;width:420px;max-width:90vw;animation:scaleIn .2s ease}
+.modal-box{background:var(--color-bg-card);border:1px solid var(--color-border);border-radius:var(--r-xl);padding:var(--space-6);width:420px;max-width:90vw;box-shadow:var(--shadow-lg);animation:scaleIn .2s ease}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes scaleIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
-.modal-box h3{margin:0 0 16px;font-size:16px;color:#fff}
-.modal-box label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
-.modal-box input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel2);color:var(--text);font-size:14px;margin-bottom:12px}
-.modal-box input:focus{outline:none;border-color:var(--cyan)}
-.modal-box .modal-actions{display:flex;gap:12px;margin-top:16px}
-.modal-box .modal-actions button{flex:1;padding:10px;border-radius:6px;border:none;font-size:13px;font-weight:600;cursor:pointer}
-.modal-box .btn-primary{background:linear-gradient(135deg,var(--cyan),#1c5e90);color:#fff}
-.modal-box .btn-secondary{background:var(--panel2);border:1px solid var(--line);color:var(--text)}
-.modal-box .btn-primary:hover{opacity:.9}
-.modal-error{color:var(--red);font-size:12px;margin-top:8px;text-align:center}
+.modal-box h3{margin:0 0 var(--space-4);font-size:var(--fs-lg);color:var(--color-text-primary);font-weight:600}
+.modal-box label{display:block;font-size:var(--fs-xs);color:var(--color-text-secondary);margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:.05em;font-weight:500}
+.modal-box input{width:100%;padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);border-radius:var(--r-md);background:var(--color-bg-secondary);color:var(--color-text-primary);font-size:var(--fs-base);margin-bottom:var(--space-3);transition:all var(--transition-fast)}
+.modal-box input:focus{outline:none;border-color:var(--color-accent);box-shadow:0 0 0 3px var(--color-accent-dim)}
+.modal-box .modal-actions{display:flex;gap:var(--space-3);margin-top:var(--space-5)}
+.modal-box .modal-actions button{flex:1;padding:var(--space-3) var(--space-4);border-radius:var(--r-md);border:none;font-size:var(--fs-sm);font-weight:600;cursor:pointer;transition:all var(--transition-fast)}
+.modal-box .btn-primary{background:linear-gradient(135deg,var(--color-accent),#3578a5);color:#fff}
+.modal-box .btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+.modal-box .btn-secondary{background:var(--color-bg-secondary);border:1px solid var(--color-border);color:var(--color-text-secondary)}
+.modal-box .btn-secondary:hover{background:var(--color-bg-card);color:var(--color-text-primary);border-color:var(--color-border-hover)}
+.modal-error{color:var(--color-error);font-size:var(--fs-xs);margin-top:var(--space-3);text-align:center}
 
 /* Foot */
-.foot{padding:12px 23px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);background:rgba(9,23,45,.5)}
+.foot{padding:var(--space-3) var(--space-6);border-top:1px solid var(--color-border);font-size:var(--fs-xs);color:var(--color-text-muted);background:rgba(10,22,40,.5);flex-shrink:0}
 
 /* Responsive */
 @media(max-width:1200px){
@@ -205,23 +281,178 @@ button:active{transform:scale(0.96);transition:transform 0.1s ease}
   .sidebar{display:none}
   .metrics{grid-template-columns:1fr}
 }
+
+/* Loading skeleton animation */
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.skeleton{background:linear-gradient(90deg,var(--color-bg-secondary) 25%,var(--color-bg-elevated) 50%,var(--color-bg-secondary) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+
+
+/* Camera wall enhanced */
+.camera-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  background: rgba(0,0,0,.4);
+  border-bottom: 1px solid var(--color-border);
+}
+.camera-label {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+.camera-status {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+.camera-status.online { color: var(--color-success); }
+.camera-status.offline { color: var(--color-warning); }
+.camera-view {
+  position: relative;
+  height: 180px;
+  background: #000;
+}
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+.camera-video.active { display: block; }
+.camera-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  background: linear-gradient(145deg, var(--color-bg-secondary), var(--color-bg-deep));
+}
+.placeholder-icon { font-size: 2rem; opacity: .5; }
+.placeholder-text { font-size: var(--fs-xs); color: var(--color-text-muted); }
+.camera-controls {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+.camera-controls button {
+  flex: 1;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-sm);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.camera-controls button:hover:not(:disabled) {
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-hover);
+}
+.camera-controls button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+/* Control panel floating */
+.control-panel {
+  position: fixed;
+  bottom: var(--space-6);
+  right: var(--space-6);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-lg);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  min-width: 200px;
+}
+.control-panel h4 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.control-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-md);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.control-btn:hover:not(:disabled) {
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-hover);
+}
+.control-btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+.control-btn.danger {
+  border-color: rgba(239,68,68,.3);
+  color: var(--color-error);
+}
+.control-btn.danger:hover:not(:disabled) {
+  background: rgba(239,68,68,.1);
+  border-color: rgba(239,68,68,.5);
+}
+
+/* Alert badge pulse */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
+.alert-pulse { animation: pulse 1s ease-in-out infinite; }
+
+/* View container */
+.view-container {
+  animation: fadeIn .2s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* View transition */
 </style>
 </head>
 <body>
+<!-- P0: Module scripts -->
+<script src="js/state-manager.js"></script>
+<script src="js/api-service.js"></script>
+<script src="js/ws-service.js"></script>
+<script src="js/view-router.js"></script>
+<script src="js/views/dashboard.js"></script>
+<script src="js/views/patrol.js"></script>
+<script src="js/views/settings.js"></script>
 <!-- Login overlay -->
 <div class="login-overlay" id="login-overlay">
   <div class="login-box">
-    <h2>M20 Pro 巡检系统</h2>
-    <p>东莞中升奔驰 · 仅限授权人员访问</p>
+    <h2>机器狗巡逻平台</h2>
+    <p>中升之星奔驰 · 管理员操作</p>
     <div class="login-error" id="login-error"></div>
-    <form id="login-form" onsubmit="return handleLogin(event)">
+    <form id="login-form">
       <label>用户名</label>
       <input type="text" id="login-username" placeholder="请输入用户名" required autocomplete="username">
       <label>密码</label>
       <input type="password" id="login-password" placeholder="请输入密码" required autocomplete="current-password">
       <button type="submit">登录</button>
     </form>
-    <div class="login-footer">默认账号: admin / 123456</div>
+    <div class="login-footer">管理员账号：admin；密码使用部署时配置的值</div>
   </div>
 </div>
 
@@ -229,22 +460,19 @@ button:active{transform:scale(0.96);transition:transform 0.1s ease}
 <div class="app" id="main-app" style="display:none">
   <aside class="sidebar">
     <div class="brand">
-      <svg class="brand-star" viewBox="0 0 100 100">
-        <polygon points="50,5 61,35 95,35 68,57 79,90 50,70 21,90 32,57 5,35 39,35" />
+      <svg class="brand-star" viewBox="0 0 100 100" aria-label="Mercedes-Benz 三叉星徽" role="img">
+        <circle cx="50" cy="50" r="45" />
+        <path d="M50 50 L50 8 M50 50 L14 71 M50 50 L86 71" />
       </svg>
-      <div><strong>奔驰 · 巡检系统</strong><small>M20 PRO · 东莞中升奔驰</small></div>
+      <div><strong>中升之星奔驰</strong><small>M20 Pro 机器狗巡检平台</small></div>
     </div>
     <nav class="nav" aria-label="主导航">
-      <button class="active" aria-current="page">⌂<span>巡检总览</span></button>
-      <button>◉<span>实时监控</span></button>
-      <button>◇<span>AI告警</span></button>
-      <button>▣<span>工单管理</span></button>
-      <button>⌁<span>轨迹回放</span></button>
-      <button>◈<span>数字孪生</span></button>
-      <button>▤<span>设备档案</span></button>
-      <button>⚙<span>系统设置</span></button>
+      <button class="active" aria-current="page" data-view="dashboard">⌂<span>实时监控</span></button>
+      <button data-view="patrol">◉<span>巡逻管理</span></button>
+      <button data-view="settings">⚙<span>系统设置</span></button>
+
     </nav>
-    <div class="side-foot">东莞中升奔驰<br>M20 Pro 巡检系统<br>视频流/地图现场配置中</div>
+    <div class="side-foot">中升之星奔驰 · M20 Pro</div>
   </aside>
 
   <main class="main">
@@ -260,7 +488,7 @@ button:active{transform:scale(0.96);transition:transform 0.1s ease}
         <div class="user">
           <div class="avatar">管</div>
           <span>管理员</span>
-          <span style="cursor:pointer;color:var(--red);margin-left:4px" onclick="handleLogout()" title="退出登录">✕</span>
+          <button id="logout-btn" type="button" title="退出登录">✕</button>
         </div>
       </div>
     </header>
@@ -272,8 +500,9 @@ button:active{transform:scale(0.96);transition:transform 0.1s ease}
         <span id="gimbal-status-text">云台未连接</span>
         <span class="gimbal-ip" id="gimbal-ip-display"></span>
       </div>
-      <button id="gimbal-connect-btn" onclick="showGimbalModal()">手动连接云台</button>
-      <button id="gimbal-scan-btn" onclick="scanGimbal()">扫描云台</button>
+      <button id="gimbal-connect-btn" type="button">手动连接云台</button>
+      <button id="gimbal-scan-btn" type="button">扫描云台</button>
+      <button id="video-config-btn" type="button">视频配置</button>
     </div>
 
     <div class="content">
@@ -315,44 +544,76 @@ button:active{transform:scale(0.96);transition:transform 0.1s ease}
       <section class="monitor-grid">
         <div>
           <div class="camera-wall" id="camera-wall">
-            <div class="camera">
-              <div class="camera-title"><b>可见光主码流</b></div>
-              <div class="camera-watermark">设备标识配置中<small>现场 RTSP/WebRTC 探测中</small></div>
-              <video id="video-front" class="camera-video" autoplay muted playsinline></video>
-              <div class="media-state blocked" id="state-front"><strong>UNVERIFIED</strong>需要现场 RTSP 探测</div>
-              <div class="camera-tools">
-                <button onclick="toggleFullscreen('front')" id="btn-fullscreen-front">⛶ 全屏</button>
-                <button onclick="captureFrame('front')" id="btn-capture-front">▣ 截图</button>
+            <div class="camera" data-source="front">
+              <div class="camera-header">
+                <span class="camera-label">📹 前向本体相机</span>
+                <span class="camera-status" id="status-front">● 未连接</span>
+              </div>
+              <div class="camera-view">
+                <video id="video-front" class="camera-video" autoplay muted playsinline></video>
+                <div class="camera-placeholder" id="placeholder-front">
+                  <div class="placeholder-icon">📷</div>
+                  <div class="placeholder-text">配置 RTSP 地址后显示视频</div>
+                </div>
+              </div>
+              <div class="camera-controls">
+                <button data-camera-action="fullscreen" data-camera="front" title="全屏">⛶</button>
+                <button data-video-action="start" title="启动视频">启动</button>
+                <button data-camera-action="capture" data-camera="front" title="截图">📸</button>
               </div>
             </div>
-            <div class="camera">
-              <div class="camera-title"><b>热成像</b></div>
-              <div class="camera-watermark">热成像媒体未接入<small>设备标识配置中 · 编码格式配置中</small></div>
-              <video id="video-thermal" class="camera-video" autoplay muted playsinline></video>
-              <div class="media-state blocked" id="state-thermal"><strong>BLOCKED</strong>编码、分辨率、帧率配置中</div>
-              <div class="camera-tools">
-                <button onclick="toggleFullscreen('thermal')" id="btn-fullscreen-thermal">⛶ 全屏</button>
-                <button onclick="captureFrame('thermal')" id="btn-capture-thermal">▣ 截图</button>
+            <div class="camera" data-source="thermal">
+              <div class="camera-header">
+                <span class="camera-label">🌡️ 热成像相机</span>
+                <span class="camera-status" id="status-thermal">● 未连接</span>
+              </div>
+              <div class="camera-view">
+                <video id="video-thermal" class="camera-video" autoplay muted playsinline></video>
+                <div class="camera-placeholder" id="placeholder-thermal">
+                  <div class="placeholder-icon">🌡️</div>
+                  <div class="placeholder-text">热成像相机状态未接入</div>
+                </div>
+              </div>
+              <div class="camera-controls">
+                <button data-camera-action="fullscreen" data-camera="thermal" title="全屏">⛶</button>
+                <button data-video-action="probe" title="探测视频">探测</button>
+                <button data-camera-action="capture" data-camera="thermal" title="截图">📸</button>
               </div>
             </div>
-            <div class="camera">
-              <div class="camera-title"><b>机身前视角</b></div>
-              <div class="camera-watermark">机身前视角媒体未接入<small>前广角通道 · 现场可达性配置中</small></div>
-              <video id="video-body_front" class="camera-video" autoplay muted playsinline></video>
-              <div class="media-state blocked" id="state-body_front"><strong>UNVERIFIED</strong>不能显示在线或首帧</div>
-              <div class="camera-tools">
-                <button onclick="toggleFullscreen('body_front')" id="btn-fullscreen-body_front">⛶ 全屏</button>
-                <button onclick="captureFrame('body_front')" id="btn-capture-body_front">▣ 截图</button>
+            <div class="camera" data-source="body_front">
+              <div class="camera-header">
+                <span class="camera-label">🔭 车身前视相机</span>
+                <span class="camera-status" id="status-body_front">● 未连接</span>
+              </div>
+              <div class="camera-view">
+                <video id="video-body_front" class="camera-video" autoplay muted playsinline></video>
+                <div class="camera-placeholder" id="placeholder-body_front">
+                  <div class="placeholder-icon">🔭</div>
+                  <div class="placeholder-text">车身前视角</div>
+                </div>
+              </div>
+              <div class="camera-controls">
+                <button data-camera-action="fullscreen" data-camera="body_front" title="全屏">⛶</button>
+                <button data-video-action="probe" title="探测视频">探测</button>
+                <button data-camera-action="capture" data-camera="body_front" title="截图">📸</button>
               </div>
             </div>
-            <div class="camera">
-              <div class="camera-title"><b>机身后视角</b></div>
-              <div class="camera-watermark">机身后视角媒体未接入<small>后广角通道 · 现场可达性配置中</small></div>
-              <video id="video-rear" class="camera-video" autoplay muted playsinline></video>
-              <div class="media-state blocked" id="state-rear"><strong>UNVERIFIED</strong>不能显示在线或首帧</div>
-              <div class="camera-tools">
-                <button onclick="toggleFullscreen('rear')" id="btn-fullscreen-rear">⛶ 全屏</button>
-                <button onclick="captureFrame('rear')" id="btn-capture-rear">▣ 截图</button>
+            <div class="camera" data-source="rear">
+              <div class="camera-header">
+                <span class="camera-label">🔙 后向本体相机</span>
+                <span class="camera-status" id="status-rear">● 未连接</span>
+              </div>
+              <div class="camera-view">
+                <video id="video-rear" class="camera-video" autoplay muted playsinline></video>
+                <div class="camera-placeholder" id="placeholder-rear">
+                  <div class="placeholder-icon">🔙</div>
+                  <div class="placeholder-text">机身后视角</div>
+                </div>
+              </div>
+              <div class="camera-controls">
+                <button data-camera-action="fullscreen" data-camera="rear" title="全屏">⛶</button>
+                <button data-video-action="stop" title="停止视频">停止</button>
+                <button data-camera-action="capture" data-camera="rear" title="截图">📸</button>
               </div>
             </div>
           </div>
@@ -397,8 +658,10 @@ button:active{transform:scale(0.96);transition:transform 0.1s ease}
             <div class="robot-header">
               <img src="robot-dog.jpg" alt="M20 Pro" class="robot-img">
               <div class="robot-info">
-                <strong>M20 Pro #02</strong>
+                <strong>M20 Pro</strong>
                 <span id="robot-state">状态: 未连接</span>
+                <span id="robot-pos" style="font-size:10px;color:var(--muted);margin-top:2px;display:block"></span>
+                <span id="robot-location" style="font-size:10px;color:var(--muted);margin-top:1px;display:block"></span>
               </div>
               <div style="text-align:right">
                 <div id="battery-pct" style="font-size:20px;font-weight:700;color:var(--green)">--%</div>
@@ -443,682 +706,69 @@ button:active{transform:scale(0.96);transition:transform 0.1s ease}
 </div>
 
 <!-- Emergency stop button -->
-<button class="emergency-btn" id="emergency-btn" onclick="handleEmergencyStop()" disabled title="需先授权导航控制">
+<button class="emergency-btn" id="emergency-btn" disabled title="需先授权导航控制">
   ⚠ 紧急停止
   <small>需授权后启用</small>
 </button>
+
+<section class="control-panel" aria-label="管理员控制">
+  <h4>管理员控制</h4>
+  <button class="control-btn" id="nav-authorize-btn" type="button">授权导航</button>
+  <button class="control-btn" id="nav-deauthorize-btn" type="button" disabled>撤销导航授权</button>
+  <button class="control-btn" id="motion-stand-btn" type="button" disabled>站立</button>
+  <button class="control-btn" id="motion-lie-btn" type="button" disabled>趴下</button>
+  <button class="control-btn danger" id="motion-estop-btn" type="button" disabled>软急停</button>
+  <div class="modal-error" id="control-message"></div>
+</section>
 
 <!-- Gimbal connection modal -->
 <div class="modal-overlay" id="gimbal-modal">
   <div class="modal-box">
     <h3>连接云台设备</h3>
     <label>云台 IP 地址</label>
-    <input type="text" id="gimbal-host" placeholder="例如: 192.168.1.108" value="192.168.1.108">
+    <input type="text" id="gimbal-host" placeholder="例如: 192.168.1.108">
     <label>用户名</label>
-    <input type="text" id="gimbal-username" placeholder="admin" value="admin">
+    <input type="text" id="gimbal-username" placeholder="admin">
     <label>密码</label>
-    <input type="password" id="gimbal-password" placeholder="123456" value="123456">
+    <input type="password" id="gimbal-password" placeholder="请输入云台密码">
     <div class="modal-error" id="gimbal-modal-error"></div>
     <div class="modal-actions">
-      <button class="btn-secondary" onclick="hideGimbalModal()">取消</button>
-      <button class="btn-primary" id="gimbal-connect-submit" onclick="connectGimbal()">连接</button>
+      <button class="btn-secondary" id="gimbal-modal-close">取消</button>
+      <button class="btn-primary" id="gimbal-connect-submit">连接</button>
     </div>
   </div>
 </div>
 
-<script>
-const API_BASE = '/api/v1';
-let authToken = null;
-let currentUser = null;
-
-// Check existing session
-(function checkSession() {
-  fetch(API_BASE + '/auth/me')
-    .then(r => { if (r.ok) return r.json(); throw new Error(); })
-    .then(v => { currentUser = v.data; showApp(); })
-    .catch(() => { showLogin(); });
-})();
-
-function showLogin() {
-  document.getElementById('login-overlay').style.display = 'flex';
-  document.getElementById('main-app').style.display = 'none';
-}
-
-function showApp() {
-  document.getElementById('login-overlay').style.display = 'none';
-  document.getElementById('main-app').style.display = 'block';
-  if (currentUser) {
-    document.querySelector('.user span').textContent = currentUser.username;
-    document.querySelector('.avatar').textContent = currentUser.username[0];
-  }
-  fetchStatus();
-  fetchVideo();
-  fetchNavStatus();
-}
-
-function handleLogin(e) {
-  e.preventDefault();
-  const username = document.getElementById('login-username').value.trim();
-  const password = document.getElementById('login-password').value;
-  const errEl = document.getElementById('login-error');
-  errEl.textContent = '';
-  fetch(API_BASE + '/auth/login', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({username, password})
-  })
-  .then(r => r.json().then(v => ({ok: r.ok, data: v})))
-  .then(({ok, data}) => {
-    if (ok) {
-      authToken = data.token;
-      currentUser = data.user;
-      showApp();
-      initWebSocket(); // Initialize WebSocket after login
-    } else {
-      errEl.textContent = data.message || '用户名或密码错误';
-    }
-  })
-  .catch(() => { errEl.textContent = '登录请求失败'; });
-  return false;
-}
-
-function handleLogout() {
-  fetch(API_BASE + '/auth/logout', {method: 'POST'}).catch(() => {});
-  authToken = null;
-  currentUser = null;
-  showLogin();
-}
-
-const clock = document.getElementById('clock');
-
-function tick() {
-  const d = new Date();
-  const p = n => String(n).padStart(2, '0');
-  clock.textContent = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-}
-tick();
-setInterval(tick, 1000);
-
-function htmlEscape(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function _motion(s) { const m = {0:'静止',1:'站立',2:'行走',3:'慢跑',4:'上下楼',5:'摔倒'}; return m[s] ?? String(s ?? 0); }
-function _charge(c) { const m = {0:'未充电',1:'充电中',2:'已充满',3:'充电异常'}; return m[c] ?? String(c ?? 0); }
-function _navLabel(s) { const m = {0:'待命',1:'导航中',2:'已到达',3:'异常',4:'取消'}; return m[s] ?? String(s ?? 0); }
-
-async function fetchStatus() {
-  try {
-    const r = await fetch(API_BASE + '/status/latest');
-    const v = await r.json();
-    updateDashboard(v);
-  } catch(e) { console.log('Status fetch error:', e); }
-}
-
-async function fetchVideo() {
-  try {
-    const r = await fetch(API_BASE + '/video');
-    const v = await r.json();
-    updateVideoStatus(v);
-  } catch(e) { console.log('Video fetch error:', e); }
-}
-
-async function fetchNavStatus() {
-  try {
-    const r = await fetch(API_BASE + '/navigation/status');
-    const v = await r.json();
-    updateEmergencyBtn(v);
-  } catch(e) { console.log('Nav status fetch error:', e); }
-}
-
-// ── WebSocket connection ───────────────────────────────────────────────────────
-let wsVideo = null;
-let wsNav = null;
-let wsReconnectTimer = null;
-
-function getWsUrl(path) {
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${proto}//${location.host}${path}`;
-}
-
-function connectVideoWebSocket() {
-  if (wsVideo && wsVideo.readyState === WebSocket.OPEN) return;
-  try {
-    wsVideo = new WebSocket(getWsUrl('/ws/video'));
-    wsVideo.onopen = () => { console.log('Video WS connected'); };
-    wsVideo.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'video_states') {
-          updateVideoStatusFromWS(data.data);
-        }
-      } catch(e) {}
-    };
-    wsVideo.onclose = () => {
-      console.log('Video WS disconnected');
-      wsVideo = null;
-      scheduleWsReconnect();
-    };
-    wsVideo.onerror = () => { console.log('Video WS error'); };
-  } catch(e) { console.log('Video WS init error:', e); }
-}
-
-function connectNavWebSocket() {
-  if (wsNav && wsNav.readyState === WebSocket.OPEN) return;
-  try {
-    wsNav = new WebSocket(getWsUrl('/ws/navigation'));
-    wsNav.onopen = () => { console.log('Navigation WS connected'); };
-    wsNav.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'error') {
-          console.error('WS Error:', data.message);
-        }
-      } catch(e) {}
-    };
-    wsNav.onclose = () => {
-      console.log('Nav WS disconnected');
-      wsNav = null;
-      scheduleWsReconnect();
-    };
-    wsNav.onerror = () => { console.log('Nav WS error'); };
-  } catch(e) { console.log('Nav WS init error:', e); }
-}
-
-function scheduleWsReconnect() {
-  if (wsReconnectTimer) clearTimeout(wsReconnectTimer);
-  wsReconnectTimer = setTimeout(() => {
-    connectVideoWebSocket();
-    connectNavWebSocket();
-  }, 3000);
-}
-
-function sendWsVideo(action, params = {}) {
-  if (!wsVideo || wsVideo.readyState !== WebSocket.OPEN) return null;
-  wsVideo.send(JSON.stringify({ action, ...params }));
-  return true;
-}
-
-function sendWsNav(action, params = {}) {
-  if (!wsNav || wsNav.readyState !== WebSocket.OPEN) return null;
-  wsNav.send(JSON.stringify({ action, ...params }));
-  return true;
-}
-
-// Call on login success
-function initWebSocket() {
-  connectVideoWebSocket();
-  connectNavWebSocket();
-}
-
-function updateDashboard(v) {
-  const d = v.data || {};
-  const b = d.basic || {};
-  const dev = d.device || {};
-  const nav = d.nav_status || {};
-  const pos = d.position || {};
-  const errs = d.errors || [];
-  const stats = v.inspection_stats || {};
-
-  // Connection badge
-  const badge = document.getElementById('conn-badge');
-  if (v.source === 'REAL' && v.connected) {
-    badge.className = 'status-badge ok';
-    badge.textContent = 'REAL / CONTROL OFF';
-  } else if (v.source === 'REAL') {
-    badge.className = 'status-badge warn';
-    badge.textContent = 'REAL / RECONNECTING';
-  } else {
-    badge.className = 'status-badge';
-    badge.textContent = 'SIMULATED / CONTROL OFF';
-  }
-
-  // Robot count
-  const rc = document.getElementById('robot-count');
-  const rs = document.getElementById('robot-status');
-  if (v.connected) {
-    rc.textContent = '1 台';
-    rs.textContent = '已连接';
-    rs.style.color = 'var(--green)';
-  } else {
-    rc.textContent = '0 台';
-    rs.textContent = '未连接';
-    rs.style.color = 'var(--muted)';
-  }
-
-  // Laps
-  document.getElementById('laps-count').textContent = nav.loop_count || 0;
-
-  // Coverage
-  const cov = stats.coverage_rate || 0;
-  document.getElementById('coverage-rate').textContent = cov.toFixed(1) + '%';
-
-  // Work orders (error count)
-  const errCount = errs.length;
-  document.getElementById('work-orders').textContent = errCount;
-  const alertEl = document.getElementById('alert-count');
-  alertEl.textContent = '告警: ' + errCount;
-  alertEl.className = 'status-badge' + (errCount > 0 ? ' blocked' : ' ok');
-  document.getElementById('timeline-errors').textContent = errCount;
-
-  // Robot state
-  document.getElementById('robot-state').textContent = '状态: ' + _motion(b.motion_state || 0);
-  document.getElementById('motion-state').textContent = _motion(b.motion_state || 0);
-
-  // Speed (from telemetry)
-  const speed = b.speed || 0;
-  document.getElementById('speed-state').textContent = speed > 0 ? speed.toFixed(1) + ' m/s' : '—';
-
-  // Gait
-  const gaitMap = {0x1001: '标准步态', 0x1002: '高台标准', 0x3002: '敏捷步态', 0x3003: '楼梯敏捷'};
-  const gaitVal = b.gait;
-  document.getElementById('gait-state').textContent = gaitMap[gaitVal] || (gaitVal ? '0x' + gaitVal.toString(16).toUpperCase() : '—');
-
-  // Battery
-  const bat = (dev.BatteryStatus || {});
-  const leftP = bat.Left?.BatteryLevel ?? 0;
-  const bp = document.getElementById('battery-pct');
-  bp.textContent = leftP + '%';
-  bp.className = 'val' + (leftP < 20 ? ' err' : leftP < 40 ? ' warn' : ' ok');
-
-  // Navigation state
-  const navStatus = nav.status || 0;
-  document.getElementById('nav-state').textContent = _navLabel(navStatus);
-
-  // Position
-  const px = pos.pos_x ?? '—';
-  const py = pos.pos_y ?? '—';
-  document.getElementById('robot-pos').textContent =
-    px === '—' ? '等待定位...' : parseFloat(px).toFixed(2) + ', ' + parseFloat(py).toFixed(2);
-  document.getElementById('robot-location').textContent = pos.location || '';
-
-  // Update map
-  updateMap(pos);
-
-  // Last inspection (from errors)
-  const tempErr = errs.find(e => e.error_code && String(e.error_code).includes('TEMP'));
-  if (tempErr) {
-    document.getElementById('last-inspection').textContent = '温度异常: ' + (tempErr.error_code || '?');
-    document.getElementById('last-inspection').style.color = 'var(--red)';
-  } else {
-    document.getElementById('last-inspection').textContent = '正常巡检中';
-    document.getElementById('last-inspection').style.color = 'var(--green)';
-  }
-
-  // Total distance from navigation
-  const totalDist = nav.total_distance || 0;
-  updateTotalDistance(totalDist);
-
-  // Timeline laps
-  const lapCount = nav.loop_count || 0;
-  const laps = document.querySelectorAll('#timeline-laps .lap');
-  laps.forEach((lap, i) => {
-    lap.className = 'lap';
-    if (i < lapCount) lap.classList.add('done');
-    else if (i === lapCount) lap.classList.add('current');
-    else lap.classList.add('pending');
-  });
-}
-
-function updateVideoStatus(v) {
-  const sources = v.sources || {};
-  const cameras = document.querySelectorAll('#camera-wall .camera');
-  const keys = ['front', 'thermal', 'body_front', 'rear'];
-  cameras.forEach((cam, i) => {
-    const key = keys[i];
-    const src = sources[key] || {};
-    const stateEl = cam.querySelector('.media-state');
-    const noteEl = cam.querySelector('.camera-watermark small');
-    const videoEl = cam.querySelector('.camera-video');
-    const tools = cam.querySelectorAll('.camera-tools button');
-    
-    // Update state display
-    if (src.state === 'connected') {
-      stateEl.className = 'media-state ok';
-      stateEl.innerHTML = '<strong>ONLINE</strong>实时视频流';
-      if (noteEl) noteEl.textContent = src.label || '';
-      cam.classList.add('connected');
-      cam.classList.remove('unverified');
-      // Enable tools
-      tools.forEach(btn => btn.disabled = false);
-      // Update video source if URL available
-      if (src.rtsp_url && videoEl) {
-        videoEl.src = src.rtsp_url;
-        videoEl.classList.add('active');
-      }
-    } else if (src.state === 'blocked') {
-      stateEl.className = 'media-state blocked';
-      stateEl.innerHTML = '<strong>BLOCKED</strong>' + (src.note || '视频流已禁用');
-      if (noteEl) noteEl.textContent = src.label || '';
-      cam.classList.remove('connected');
-      cam.classList.add('unverified');
-      if (videoEl) videoEl.classList.remove('active');
-      // Disable tools
-      tools.forEach(btn => btn.disabled = true);
-    } else {
-      stateEl.className = 'media-state unverified';
-      stateEl.innerHTML = '<strong>UNVERIFIED</strong>' + (src.note || '待配置');
-      if (noteEl) noteEl.textContent = src.label || '';
-      cam.classList.remove('connected');
-      cam.classList.add('unverified');
-      if (videoEl) videoEl.classList.remove('active');
-      // Disable tools
-      tools.forEach(btn => btn.disabled = true);
-    }
-  });
-}
-
-function updateEmergencyBtn(nav) {
-  // Emergency stop button handling
-  const btn = document.getElementById('emergency-btn');
-  if (btn) {
-    if (nav.authorized && nav.control_enabled) {
-      btn.disabled = false;
-      btn.textContent = '⚠ 紧急停止';
-      btn.title = '点击立即停止机器人';
-    } else {
-      btn.disabled = true;
-      btn.textContent = '紧急停止 (需授权)';
-      btn.title = '需要先进行导航授权';
-    }
-  }
-}
-
-// Initial load
-fetchStatus();
-fetchVideo();
-fetchNavStatus();
-
-// Update total distance from navigation stats
-function updateTotalDistance(dist) {
-  const el = document.getElementById('total-dist');
-  if (el && dist !== undefined) {
-    el.textContent = parseFloat(dist).toFixed(1);
-  }
-}
-
-// ── Map rendering ────────────────────────────────────────────────────────────
-
-function drawMap(position, checkpoints) {
-  const canvas = document.getElementById('map-canvas');
-  if (!canvas) return;
-  
-  const ctx = canvas.getContext('2d');
-  const rect = canvas.parentElement.getBoundingClientRect();
-  canvas.width = rect.width;
-  canvas.height = rect.height;
-  
-  // Clear canvas
-  ctx.fillStyle = '#0a1424';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
-  // Draw grid
-  ctx.strokeStyle = 'rgba(42, 61, 96, 0.3)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i < canvas.width; i += 20) {
-    ctx.beginPath();
-    ctx.moveTo(i, 0);
-    ctx.lineTo(i, canvas.height);
-    ctx.stroke();
-  }
-  for (let i = 0; i < canvas.height; i += 20) {
-    ctx.beginPath();
-    ctx.moveTo(0, i);
-    ctx.lineTo(canvas.width, i);
-    ctx.stroke();
-  }
-  
-  // Draw checkpoints
-  if (checkpoints && checkpoints.length > 0) {
-    checkpoints.forEach((cp, i) => {
-      const x = 50 + (i % 4) * 80;
-      const y = 50 + Math.floor(i / 4) * 60;
-      ctx.beginPath();
-      ctx.arc(x, y, 6, 0, Math.PI * 2);
-      ctx.fillStyle = '#68dd7a';
-      ctx.fill();
-      ctx.strokeStyle = '#0c1830';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      
-      // Label
-      ctx.fillStyle = '#8d9bb8';
-      ctx.font = '10px Microsoft YaHei';
-      ctx.textAlign = 'center';
-      ctx.fillText(cp.name || `PT-${i+1}`, x, y + 16);
-    });
-  }
-  
-  // Draw robot position
-  if (position && position.pos_x !== undefined) {
-    const x = canvas.width / 2 + (position.pos_x || 0) * 50;
-    const y = canvas.height / 2 + (position.pos_y || 0) * 50;
-    
-    // Robot icon
-    ctx.beginPath();
-    ctx.arc(x, y, 10, 0, Math.PI * 2);
-    ctx.fillStyle = '#70c8f2';
-    ctx.fill();
-    ctx.strokeStyle = '#5bc8ed';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    
-    // Direction indicator
-    const yaw = position.yaw || 0;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + Math.sin(yaw) * 15, y - Math.cos(yaw) * 15);
-    ctx.strokeStyle = '#5bc8ed';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    
-    // Position text
-    ctx.fillStyle = '#e2e7ee';
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(`${(position.pos_x || 0).toFixed(1)}, ${(position.pos_y || 0).toFixed(1)}`, x, y + 25);
-  }
-}
-
-// Update map when position changes
-function updateMap(position) {
-  const checkpointsEl = document.getElementById('inspection-points');
-  let checkpoints = [];
-  if (checkpointsEl) {
-    try {
-      checkpoints = JSON.parse(checkpointsEl.textContent || '[]');
-    } catch (e) {
-      checkpoints = [];
-    }
-  }
-  drawMap(position, checkpoints);
-}
-
-function updateGimbalStatus(connected, host) {
-  const statusEl = document.getElementById('gimbal-status');
-  const textEl = document.getElementById('gimbal-status-text');
-  const ipEl = document.getElementById('gimbal-ip-display');
-  const connectBtn = document.getElementById('gimbal-connect-btn');
-
-  if (connected) {
-    statusEl.className = 'gimbal-status connected';
-    textEl.textContent = '云台已连接';
-    ipEl.textContent = host || '';
-    connectBtn.textContent = '重新连接';
-  } else {
-    statusEl.className = 'gimbal-status disconnected';
-    textEl.textContent = '云台未连接';
-    ipEl.textContent = '';
-    connectBtn.textContent = '手动连接云台';
-  }
-}
-
-function showGimbalModal() {
-  document.getElementById('gimbal-modal').classList.add('active');
-  document.getElementById('gimbal-modal-error').textContent = '';
-}
-
-function hideGimbalModal() {
-  document.getElementById('gimbal-modal').classList.remove('active');
-}
-
-async function connectGimbal() {
-  const host = document.getElementById('gimbal-host').value.trim();
-  const username = document.getElementById('gimbal-username').value.trim() || 'admin';
-  const password = document.getElementById('gimbal-password').value || '123456';
-  const errorEl = document.getElementById('gimbal-modal-error');
-  const submitBtn = document.getElementById('gimbal-connect-submit');
-
-  errorEl.textContent = '';
-  submitBtn.disabled = true;
-  submitBtn.textContent = '连接中...';
-
-  try {
-    const r = await fetch(API_BASE + '/gimbal/connect', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({host, username, password}),
-    });
-    const data = await r.json();
-
-    if (r.ok && data.success) {
-      gimbalConnected = true;
-      updateGimbalStatus(true, host);
-      hideGimbalModal();
-      fetchVideo(); // Refresh video status
-    } else {
-      errorEl.textContent = data.message || '连接失败';
-    }
-  } catch (e) {
-    errorEl.textContent = '请求失败: ' + e.message;
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = '连接';
-  }
-}
-
-async function scanGimbal() {
-  try {
-    const r = await fetch(API_BASE + '/gimbal/scan');
-    const data = await r.json();
-    if (data.configured_host) {
-      document.getElementById('gimbal-host').value = data.configured_host;
-      showGimbalModal();
-    } else {
-      alert('未找到已配置的设备，请在设置中配置云台地址');
-    }
-  } catch (e) {
-    alert('扫描失败: ' + e.message);
-  }
-}
-
-// Poll gimbal status
-const gimbalInterval = setInterval(async () => {
-  try {
-    const r = await fetch(API_BASE + '/gimbal/state');
-    const data = await r.json();
-    if (data.connected !== undefined) {
-      gimbalConnected = data.connected;
-      updateGimbalStatus(data.connected, data.host || '');
-    }
-  } catch (e) {
-    // Ignore errors
-  }
-}, 10000);
-
-// Initial check
-fetch(API_BASE + '/gimbal/state')
-  .then(r => r.json())
-  .then(data => {
-    updateGimbalStatus(data.connected || false, data.host || '');
-  })
-  .catch(() => {});
-
-// Initial load
-fetchStatus();
-fetchVideo();
-fetchNavStatus();
-const pollingIntervals = {
-  status: setInterval(fetchStatus, 2000),
-  video: setInterval(fetchVideo, 5000),
-  nav: setInterval(fetchNavStatus, 10000),
-  gimbal: setInterval(async () => {
-    try {
-      const r = await fetch(API_BASE + '/gimbal/state');
-      const data = await r.json();
-      if (data.connected !== undefined) {
-        gimbalConnected = data.connected;
-        updateGimbalStatus(data.connected, data.host || '');
-      }
-    } catch (e) {
-      // Ignore errors
-    }
-  }, 10000),
-  clock: setInterval(tick, 1000)
-};
-
-// Cleanup on page unload
-window.addEventListener('beforeunload', () => {
-  Object.values(pollingIntervals).forEach(id => clearInterval(id));
-});
-
-// Nav buttons
-document.querySelectorAll('.nav button').forEach(b => {
-  b.addEventListener('click', () => {
-    document.querySelectorAll('.nav button').forEach(x => {
-      x.classList.remove('active');
-      x.removeAttribute('aria-current');
-    });
-    b.classList.add('active');
-    b.setAttribute('aria-current', 'page');
-  });
-});
-
-// ── Video controls ───────────────────────────────────────────────────────────
-
-function toggleFullscreen(source) {
-  const video = document.getElementById('video-' + source);
-  if (video) {
-    if (video.requestFullscreen) {
-      video.requestFullscreen();
-    } else if (video.webkitRequestFullscreen) {
-      video.webkitRequestFullscreen();
-    }
-  }
-}
-
-function captureFrame(source) {
-  const video = document.getElementById('video-' + source);
-  if (!video || !video.src) {
-    alert('视频源不可用');
-    return;
-  }
-  const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0);
-  const link = document.createElement('a');
-  link.download = `capture-${source}-${Date.now()}.png`;
-  link.href = canvas.toDataURL('image/png');
-  link.click();
-}
-
-// ── Emergency stop ───────────────────────────────────────────────────────────
-
-async function handleEmergencyStop() {
-  if (!confirm('确定要执行紧急停止吗？此操作将立即停止机器人运动。')) {
-    return;
-  }
-  try {
-    const r = await fetch(API_BASE + '/emergency/stop', { method: 'POST' });
-    const data = await r.json();
-    if (r.ok && data.authorized) {
-      alert('紧急停止命令已发送');
-    } else {
-      alert('紧急停止失败: ' + (data.message || '未知错误'));
-    }
-  } catch (e) {
-    alert('请求失败: ' + e.message);
-  }
-}
-</script>
+<!-- Video RTSP config modal -->
+<div class="modal-overlay" id="video-config-modal">
+  <div class="modal-box" style="width:560px">
+    <h3>视频流配置</h3>
+    <p style="font-size:var(--fs-sm);color:var(--color-text-muted);margin:0 0 var(--space-4)">输入各相机 RTSP 地址，保存后刷新页面生效</p>
+    <div style="display:grid;gap:var(--space-3)">
+      <div>
+        <label>前向本体相机</label>
+        <input type="text" id="rtsp-front" placeholder="rtsp://10.21.31.103:8554/video1">
+      </div>
+      <div>
+        <label>后向本体相机</label>
+        <input type="text" id="rtsp-rear" placeholder="rtsp://10.21.31.103:8554/video2">
+      </div>
+      <div>
+        <label>热成像相机</label>
+        <input type="text" id="rtsp-thermal" placeholder="rtsp://192.168.1.108:554/id=2&type=0">
+      </div>
+      <div>
+        <label>机身前视角</label>
+        <input type="text" id="rtsp-body_front" placeholder="rtsp://10.21.31.103:8554/body_front">
+      </div>
+    </div>
+    <div class="modal-error" id="video-config-error"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="video-config-modal-close">取消</button>
+      <button class="btn-primary" id="video-config-submit">保存</button>
+    </div>
+  </div>
+</div>
+<script src="js/app.js"></script>
 </body>
 </html>

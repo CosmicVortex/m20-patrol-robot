@@ -1,18 +1,20 @@
 [Unit]
-Description=M20 Patrol Robot real-time status
+Description=M20 Patrol Robot real-time read-only status (legacy alias)
 After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/m20-patrol-robot/current
-Environment=PYTHONPATH=%h/m20-patrol-robot/current
+WorkingDirectory=%h/m20-patrol-robot
+Environment=PYTHONPATH=%h/m20-patrol-robot
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=%h/.config/m20-patrol/passwords.env
 Environment=M20_RUNTIME_MODE=realtime_readonly
 Environment=M20_READ_ONLY_MODE=true
 Environment=M20_CONTROL_ENABLED=false
 Environment=M20_TELEMETRY_TX_ENABLED=false
 Environment=M20_TARGET_HOST=10.21.31.103
 Environment=M20_TARGET_PORT=30001
-ExecStart=%h/m20-patrol-robot/current/python3 -m backend.app.server --manifest %h/m20-patrol-robot/current/deploy/readonly-manifest.json
+ExecStart=/usr/bin/python3 -m backend.app.server --manifest %h/m20-patrol-robot/deploy/readonly-manifest.json
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true

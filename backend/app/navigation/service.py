@@ -19,6 +19,7 @@ from backend.app.navigation.v010 import (
     SinglePointNavigation,
     NavigationSafetySnapshot,
     NavigationInterlockError,
+    build_cancel_navigation_message,
 )
 from backend.app.robot.basic_client import BasicServerClient, BasicServerConfig
 from backend.app.protocol.messages import PatrolMessage
@@ -78,7 +79,7 @@ class NavigationService:
             obstacle_avoidance_active=perception.get("obstacle_state") == 0,
             hard_estop_active=basic.get("hes") == 1,
             protective_fault_active=detect_protective_fault(errors),
-            battery_percent=telemetry_data.get("battery_percent", 100),
+            battery_percent=telemetry_data.get("battery_percent", 0),
             active_task=nav_status.get("status") in (2, 3, 4),  # processing/navigating/done
         )
 
@@ -169,7 +170,6 @@ class NavigationService:
             return {"status": "error", "message": "Not connected to AOS"}
 
         try:
-            from backend.app.navigation.v010 import build_cancel_navigation_message
             msg = build_cancel_navigation_message(self._safety, datetime.now(UTC).isoformat())
             
             self._client.send_control(msg)

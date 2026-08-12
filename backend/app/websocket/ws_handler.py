@@ -85,12 +85,24 @@ class NavigationWebSocketHandler(WebSocketHandler):
         super().__init__("/ws/navigation")
         self._nav_service = nav_service
 
-        self.on("authorize", self._authorize)
-        self.on("deauthorize", self._deauthorize)
-        self.on("send_navigation", self._send_navigation)
-        self.on("cancel_navigation", self._cancel_navigation)
         self.on("get_status", self._get_status)
         self.on("get_audit_log", self._get_audit_log)
+
+    async def handle_message(self, message: str) -> Optional[dict[str, Any]]:
+        """Keep navigation WebSocket read-only; control uses authenticated HTTP."""
+        try:
+            data = json.loads(message)
+        except json.JSONDecodeError:
+            return {"type": "error", "message": "Invalid JSON"}
+        if data.get("action") in {
+            "authorize", "deauthorize", "send_navigation", "cancel_navigation"
+        }:
+            return {
+                "type": "error",
+                "code": "control_over_websocket_disabled",
+                "message": "控制操作必须通过经过认证的 HTTP API 执行",
+            }
+        return await super().handle_message(message)
 
     async def _authorize(self, message: dict[str, Any]) -> dict[str, Any]:
         """Authorize navigation control."""

@@ -12,6 +12,9 @@ import signal
 import sys
 import threading
 import os
+import traceback
+import mimetypes
+import socket
 from dataclasses import replace
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -28,14 +31,15 @@ from backend.app.auth.store import UserStore
 from backend.app.config import ConfigLoader, WebServiceConfig
 from backend.app.robot.telemetry import TelemetryAdapter, ConnectionConfig
 from backend.app.api.router import ApiRouter
-from backend.app.api.handlers import BaseHandler
+from backend.app.api.base_handler import BaseHandler
 from backend.app.navigation.service import NavigationService
 from backend.app.motion.service import MotionControlService, MotionSafetySnapshot
 from backend.app.navigation.v010 import NavigationSafetySnapshot
 from backend.app.robot.basic_client import BasicServerConfig
 from backend.app.gimbal.adapter import SoarGimbalAdapter, GimbalConfig
+from backend.app.robot.basic_client import BasicServerClient
 from backend.app.video.stream_manager import VideoStreamManager
-from backend.app.websocket.ws_handler import init_ws_handlers, video_ws_handler, navigation_ws_handler
+from backend.app.websocket import ws_handler
 from backend.app.websocket.upgrade import WebSocketUpgradeHandler
 
 logger = logging.getLogger(__name__)
@@ -62,14 +66,16 @@ class M20WebServer:
         db_path = Path(self.config.auth_db_path or (Path(__file__).parent / "data" / "m20_auth.db"))
         self.user_store = UserStore(db_path, session_ttl_s=self.config.session_ttl_s)
 
-        # Never ship a known default password. Provision an admin explicitly
-        # through M20_ADMIN_PASSWORD on the target host, then remove the env.
+        # Never ship a known default password in production. For demo/演示
+        # deployments the project owner has confirmed 123456 as the admin
+        # default; mark it explicitly so operators know it must be changed
+        # before any production handover.
         self._ensure_admin_user()
 
         # Setup auth middleware
         self.auth_middleware = AuthMiddleware(
             self.user_store,
-            allow_anonymous=self.config.allow_anonymous,
+            allow_anonymous=(not self.config.auth_enabled) or self.config.allow_anonymous,
         )
 
         # Always create the adapter. In simulated mode it provides an explicit
@@ -94,6 +100,7 @@ class M20WebServer:
             host=self.config.aos_host,
             tcp_port=self.config.aos_port,
             control_enabled=self.config.control_enabled,
+            transmit_enabled=self.config.control_enabled,
             stale_after_seconds=self.config.stale_after_s,
         )
         safety_snapshot = NavigationSafetySnapshot(
@@ -104,10 +111,9 @@ class M20WebServer:
             obstacle_avoidance_active=True,
             hard_estop_active=False,
             protective_fault_active=False,
-            battery_percent=100,  # 初始值，后续由遥测数据更新
+            battery_percent=0,  # 未收到真实电量前按失效安全状态处理
             active_task=False,
         )
-        from backend.app.robot.basic_client import BasicServerClient
         basic_client = BasicServerClient(basic_config)
         self.nav_service = NavigationService(basic_client, safety_snapshot)
 
@@ -117,7 +123,7 @@ class M20WebServer:
             tcp_connected=False,
             hard_estop_active=False,
             protective_fault_active=False,
-            battery_percent=100,
+            battery_percent=0,
             motion_state=0,
         )
         self.motion_service = MotionControlService(basic_client, motion_safety_snapshot)
@@ -161,10 +167,11 @@ class M20WebServer:
 
         # Initialize WebSocket handlers
         if self.video_manager and self.nav_service:
-            init_ws_handlers(self.video_manager, self.nav_service)
+            ws_handler.init_ws_handlers(self.video_manager, self.nav_service)
             self.ws_upgrade_handler = WebSocketUpgradeHandler(
-                video_handler=video_ws_handler,
-                nav_handler=navigation_ws_handler,
+                video_handler=ws_handler.video_ws_handler,
+                nav_handler=ws_handler.navigation_ws_handler,
+                auth_middleware=self.auth_middleware,
             )
             logger.info("WebSocket handlers initialized")
         else:
@@ -188,21 +195,45 @@ class M20WebServer:
             except Exception as exc:
                 logger.warning("Failed to provision administrator: %s", exc)
 
+    def _register_safety_callbacks(self) -> None:
+        """Synchronize transport and fail-safe telemetry into control services."""
+        if self.telemetry_adapter and self.nav_service:
+            nav_service = self.nav_service
+
+            def _sync_nav(payload: dict[str, Any]) -> None:
+                safety_data = dict(payload.get("data", {}))
+                safety_data["tcp_connected"] = payload.get("tcp_connected", False)
+                safety_data["battery_percent"] = payload.get("battery_percent", 0)
+                nav_service.update_safety_from_telemetry(safety_data)
+
+            self.telemetry_adapter.set_navigation_sync_callback(_sync_nav)
+
+        if self.telemetry_adapter and self.motion_service:
+            motion_service = self.motion_service
+
+            def _sync_motion(payload: dict[str, Any]) -> None:
+                safety_data = dict(payload.get("data", {}))
+                safety_data["tcp_connected"] = payload.get("tcp_connected", False)
+                safety_data["battery_percent"] = payload.get("battery_percent", 0)
+                motion_service.update_safety(safety_data)
+
+            self.telemetry_adapter.set_motion_sync_callback(_sync_motion)
+
+        if self.telemetry_adapter and self.nav_service and self.motion_service:
+            def _sync_client(client: BasicServerClient) -> None:
+                nav_service = self.nav_service
+                motion_service = self.motion_service
+                if nav_service is not None:
+                    nav_service._client = client
+                if motion_service is not None:
+                    motion_service._client = client
+            self.telemetry_adapter.set_client_callback(_sync_client)
+
     def start(self) -> None:
         """Start the web server."""
         self.setup()
 
-        # Setup navigation sync callback
-        if self.telemetry_adapter and self.nav_service:
-            def _sync_nav(data: dict[str, Any]) -> None:
-                self.nav_service.update_safety_from_telemetry(data.get("data", {}))
-            self.telemetry_adapter.set_navigation_sync_callback(_sync_nav)
-
-        # Setup motion sync callback (separate from nav callback)
-        if self.telemetry_adapter and self.motion_service:
-            def _sync_motion(data: dict[str, Any]) -> None:
-                self.motion_service.update_safety(data.get("data", {}))
-            self.telemetry_adapter.set_motion_sync_callback(_sync_motion)
+        self._register_safety_callbacks()
 
         if self.telemetry_adapter:
             self.telemetry_adapter.start()
@@ -260,7 +291,6 @@ class M20WebServer:
             logger.info("收到中断信号，正在关闭...")
         except Exception as e:
             logger.error("服务运行异常: %s", e)
-            import traceback
             traceback.print_exc()
         finally:
             self.stop()
@@ -285,6 +315,22 @@ class M20WebServer:
             def log_message(self, format: str, *args: object) -> None:
                 logger.info("%s %s - %s", self.command, self.path, format % args)
 
+            def finish(self) -> None:
+                if getattr(self, "_ws_handoff", False):
+                    # The WebSocket handler owns the underlying socket now.
+                    # Close only the buffered I/O wrappers so the HTTP server
+                    # does not also close the raw socket.
+                    if not self.wfile.closed:
+                        try:
+                            self.wfile.flush()
+                        except OSError:
+                            pass
+                        self.wfile.close()
+                    if not self.rfile.closed:
+                        self.rfile.close()
+                    return
+                super().finish()
+
             def do_GET(self) -> None:
                 self._handle_request()
 
@@ -298,15 +344,24 @@ class M20WebServer:
                 self._handle_request()
 
             def _handle_request(self) -> None:
-                if self.path in ("/", "/index.html"):
-                    root = Path(config.static_root)
-                    index = root / "index.html"
-                    if not index.is_file():
+                request_path = self.path.split("?", 1)[0]
+                if request_path == "/":
+                    request_path = "/index.html"
+                if not request_path.startswith("/api/") and not request_path.startswith("/ws/"):
+                    root = Path(config.static_root).resolve()
+                    asset = (root / request_path.lstrip("/")).resolve()
+                    if root not in asset.parents and asset != root:
+                        self.send_error_response(403, "invalid static asset path")
+                        return
+                    if not asset.is_file():
                         self.send_error_response(503, "web asset is not installed")
                         return
-                    body = index.read_bytes()
+                    body = asset.read_bytes()
+                    content_type = mimetypes.guess_type(asset.name)[0] or "application/octet-stream"
                     self.send_response(200)
-                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    if content_type.startswith("text/") or content_type in {"application/javascript", "application/json"}:
+                        content_type += "; charset=utf-8"
+                    self.send_header("Content-Type", content_type)
                     self.send_header("Content-Length", str(len(body)))
                     self.send_header("Cache-Control", "no-store")
                     self.end_headers()
@@ -317,10 +372,21 @@ class M20WebServer:
                     upgrade_header = self.headers.get("Upgrade", "").lower()
                     if upgrade_header == "websocket":
                         if server_instance and server_instance.ws_upgrade_handler:
-                            import socket
-                            # Get the underlying socket
-                            sock = self.request
-                            server_instance.ws_upgrade_handler.handle_request(sock)
+                            # Mark that this request will be handled as WebSocket.
+                            # Override finish() to avoid closing the underlying
+                            # socket, which the WebSocket handler owns after this
+                            # request returns.
+                            self._ws_handoff = True
+                            # WebSocket sessions are long-lived. Run each session outside
+                            # the HTTP request worker so a connected client cannot occupy
+                            # a request thread indefinitely.
+                            ws_thread = threading.Thread(
+                                target=server_instance.ws_upgrade_handler.handle_request,
+                                args=(self.request,),
+                                name="m20-websocket-client",
+                                daemon=True,
+                            )
+                            ws_thread.start()
                             return
                         else:
                             self.send_error_response(503, "WebSocket not available")
@@ -329,7 +395,7 @@ class M20WebServer:
                     # Inject dependencies for handlers
                     self._gimbal = router.gimbal_adapter
                     self._video_manager = router.video_manager
-                    self.server_instance = self.server  # Reference to M20WebServer
+                    self.server_instance = server_instance  # Reference to M20WebServer instance
                     router.route(self)  # type: ignore[arg-type]
                 else:
                     self.send_error_response(503, "Service not ready")
@@ -348,6 +414,11 @@ class M20WebServer:
         """Stop the web server."""
         if self.telemetry_adapter:
             self.telemetry_adapter.stop()
+        if self.video_manager:
+            try:
+                self.video_manager.shutdown_sync()
+            except Exception as exc:
+                logger.warning("关闭视频管理器失败: %s", exc)
         if self.gimbal_adapter:
             self.gimbal_adapter.close()
         if self.server:

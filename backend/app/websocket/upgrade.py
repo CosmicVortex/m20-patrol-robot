@@ -11,6 +11,7 @@ import hashlib
 import json
 import logging
 import socket
+from http.cookies import SimpleCookie
 from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -21,9 +22,10 @@ _WEBSOCKET_GUID = "258EAFA5-E914-47DA-95CA-5AB5DC99A3BE"
 class WebSocketUpgradeHandler:
     """Handles WebSocket upgrade requests in the main HTTP server."""
     
-    def __init__(self, video_handler: Any = None, nav_handler: Any = None) -> None:
+    def __init__(self, video_handler: Any = None, nav_handler: Any = None, auth_middleware: Any = None) -> None:
         self._video_handler = video_handler
         self._nav_handler = nav_handler
+        self._auth_middleware = auth_middleware
         self._connections: list[tuple[str, Any]] = []
     
     def set_handlers(self, video: Any = None, nav: Any = None) -> None:
@@ -36,6 +38,7 @@ class WebSocketUpgradeHandler:
     def handle_request(self, conn: socket.socket) -> None:
         """Handle a WebSocket upgrade request."""
         try:
+            conn.settimeout(10.0)
             request = b""
             while b"\r\n\r\n" not in request:
                 chunk = conn.recv(4096)
@@ -55,14 +58,14 @@ class WebSocketUpgradeHandler:
                     break
                 if ":" in line:
                     key, value = line.split(":", 1)
-                    headers[key.strip()] = value.strip()
+                    headers[key.strip().lower()] = value.strip()
             
-            if headers.get("Upgrade", "").lower() != "websocket":
+            if headers.get("upgrade", "").lower() != "websocket":
                 return
-            if headers.get("Connection", "").lower() != "upgrade":
+            if "upgrade" not in {item.strip().lower() for item in headers.get("connection", "").split(",")}:
                 return
             
-            key = headers.get("Sec-WebSocket-Key", "")
+            key = headers.get("sec-websocket-key", "")
             if not key:
                 return
             
@@ -70,6 +73,22 @@ class WebSocketUpgradeHandler:
                 hashlib.sha1((key + _WEBSOCKET_GUID).encode()).digest()
             ).decode()
             
+            ws_path = lines[0].split(" ")[1]
+            if self._auth_middleware is not None:
+                token = headers.get("x-m20-token", "")
+                bearer = headers.get("authorization", "")
+                if not token and bearer.lower().startswith("bearer "):
+                    token = bearer[7:].strip()
+                if not token:
+                    cookie = SimpleCookie()
+                    cookie.load(headers.get("cookie", ""))
+                    morsel = cookie.get("m20_session")
+                    token = morsel.value if morsel is not None else ""
+                session = self._auth_middleware.store.resolve_session(token) if token else None
+                if session is None:
+                    conn.sendall(b"HTTP/1.1 401 Unauthorized\r\nConnection: close\r\nContent-Length: 0\r\n\r\n")
+                    conn.close()
+                    return
             response = (
                 b"HTTP/1.1 101 Switching Protocols\r\n"
                 b"Upgrade: websocket\r\n"
@@ -79,11 +98,11 @@ class WebSocketUpgradeHandler:
             )
             conn.sendall(response)
             
-            ws_path = lines[0].split(" ")[1]
             handler = self._get_handler(ws_path)
             
             if handler:
                 logger.info("WebSocket connection established: %s", ws_path)
+                conn.settimeout(60.0)
                 self._handle_client(conn, ws_path, handler)
             else:
                 logger.warning("No handler for WebSocket path: %s", ws_path)
@@ -167,6 +186,16 @@ class WebSocketUpgradeHandler:
                     return None
                 length = int.from_bytes(length_bytes, 'big')
             
+            if length > 1024 * 1024:
+                logger.warning("WebSocket frame exceeds 1 MiB limit")
+                return None
+            if opcode >= 0x8 and (header[0] & 0x80) == 0 or opcode >= 0x8 and length > 125:
+                logger.warning("WebSocket control frame is invalid")
+                return None
+            if not masked:
+                logger.warning("WebSocket client frame is not masked")
+                return None
+
             mask_key = None
             if masked:
                 mask_key = conn.recv(4)
@@ -189,7 +218,7 @@ class WebSocketUpgradeHandler:
             if opcode == 0x8:
                 return b""
             elif opcode == 0x9:
-                pong_header = bytes([0x8A, 0x80 | len(payload)])
+                pong_header = bytes([0x8A, len(payload)])
                 conn.sendall(pong_header + payload)
                 return None
             elif opcode == 0xA:
@@ -211,11 +240,11 @@ class WebSocketUpgradeHandler:
             length = len(body)
             
             if length < 126:
-                header = bytes([0x81, 0x80 | length])
+                header = bytes([0x81, length])
             elif length < 65536:
-                header = bytes([0x81, 0xFE, (length >> 8) & 0xFF, length & 0xFF])
+                header = bytes([0x81, 0x7E, (length >> 8) & 0xFF, length & 0xFF])
             else:
-                header = bytes([0x81, 0xFF]) + length.to_bytes(8, 'big')
+                header = bytes([0x81, 0x7F]) + length.to_bytes(8, 'big')
             
             conn.sendall(header + body)
         except Exception as e:

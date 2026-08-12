@@ -117,7 +117,7 @@ class MotionControlService:
             tcp_connected=telemetry_data.get("tcp_connected", False),
             hard_estop_active=basic.get("hes") == 1,
             protective_fault_active=detect_protective_fault(errors),
-            battery_percent=telemetry_data.get("battery_percent", 100),
+            battery_percent=telemetry_data.get("battery_percent", 0),
             motion_state=basic.get("motion_state", 0),
         )
     

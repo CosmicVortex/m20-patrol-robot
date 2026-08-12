@@ -1,9 +1,9 @@
 {
   "manifest_version": "1.0.0",
   "project": "m20-patrol-robot",
-  "runtime_mode": "realtime",
-  "read_only_mode": false,
-  "control_enabled": true,
+  "runtime_mode": "realtime_readonly",
+  "read_only_mode": true,
+  "control_enabled": false,
   "telemetry_rx_enabled": true,
   "telemetry_tx_enabled": false,
   "web_realtime_enabled": true,
@@ -16,8 +16,7 @@
     "aos_host": "10.21.31.103",
     "nos_host": "10.21.31.106",
     "gimbal_host": "192.168.1.108",
-    "gimbal_username": "admin",
-    "gimbal_password": "123456"
+    "gimbal_username": "admin"
   },
   "ports": {
     "aos_tcp": 30001,
@@ -28,5 +27,5 @@
   "target_source": "PROJECT_OWNER_CONFIRMED_FIXED_FACT",
   "target_confirmed_by": "PROJECT_OWNER",
   "target_confirmed_at": "2026-08-11",
-  "credentials_included": true
+  "credentials_included": false
 }

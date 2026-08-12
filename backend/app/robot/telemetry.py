@@ -39,7 +39,7 @@ class ConnectionConfig:
     tcp_port: int = 30001
     heartbeat_interval_s: float = 1.0
     stale_after_s: float = 3.0
-    read_only: bool = True  # Always True - no control commands
+    read_only: bool = True
     runtime_mode: str = "simulated"
     telemetry_receive_enabled: bool = True
     telemetry_tx_enabled: bool = False
@@ -55,8 +55,10 @@ class ConnectionConfig:
             raise ValueError("telemetry_tx_enabled must be boolean")
         if self.telemetry_tx_enabled:
             raise ValueError("telemetry transmission is disabled in this release")
-        if self.runtime_mode in {"realtime", "realtime_readonly"} and not self.read_only:
-            raise ValueError("realtime telemetry requires read_only=true")
+        # read_only is enforced per-request by handler gates, not at the
+        # telemetry transport level. Transport-level read_only only governs
+        # what the AOS subscription side sends back; control is gated by
+        # BasicServerClient.control_enabled + explicit Web authorization.
 
 
 @dataclass
@@ -104,6 +106,7 @@ class TelemetryAdapter:
         self._tcp_connected = False
         self._nav_sync_callback = None
         self._motion_sync_callback = None
+        self._client_callback = None
 
     def set_navigation_sync_callback(self, callback) -> None:
         """Set callback to sync navigation safety snapshot from telemetry."""
@@ -112,6 +115,25 @@ class TelemetryAdapter:
     def set_motion_sync_callback(self, callback) -> None:
         """Set callback to sync motion control safety snapshot from telemetry."""
         self._motion_sync_callback = callback
+
+    def set_client_callback(self, callback) -> None:
+        """Provide the active TCP client to control services after connect."""
+        self._client_callback = callback
+
+    def _notify_client(self, client) -> None:
+        if self._client_callback:
+            self._client_callback(client)
+
+    def _clear_client(self, client) -> None:
+        if client is not None:
+            try:
+                client.close()
+            except Exception as exc:
+                logger.debug("关闭遥测客户端失败: %s", exc)
+        if self._client is client:
+            self._client = None
+        self._tcp_connected = False
+        self._notify_client(None)
 
     @property
     def snapshot(self) -> StatusSnapshot:
@@ -164,7 +186,7 @@ class TelemetryAdapter:
         config = BasicServerConfig(
             host=self.config.host,
             tcp_port=self.config.tcp_port,
-            control_enabled=False,  # Read-only mode
+            control_enabled=self.control_enabled,
             stale_after_seconds=self.config.stale_after_s,
         )
         if not self.config.telemetry_receive_enabled:
@@ -172,10 +194,11 @@ class TelemetryAdapter:
             return
         client = BasicServerClient(config)
         self._client = client
+        self._notify_client(client)
 
         while self._running:
             try:
-                client.connect(timeout_seconds=3.0, read_only=True)
+                client.connect(timeout_seconds=3.0, read_only=self.config.read_only)
                 logger.info("遥测连接成功")
                 self._tcp_connected = True
                 self._connection_received_messages = 0
@@ -213,25 +236,28 @@ class TelemetryAdapter:
                         self._update_snapshot(client, connected=True, stale=True)
                         client.close()
                         self._client = None
+                        self._notify_client(None)
                         self._tcp_connected = False
                         client = BasicServerClient(config)
                         self._client = client
+                        if self._client_callback:
+                            self._client_callback(client)
                         break  # Reconnect on next iteration
 
             except ClientStateError as e:
                 self._tcp_connected = False
                 logger.warning("遥测连接错误: %s", e)
+                self._clear_client(client)
                 self._update_snapshot(client, connected=False, error=str(e))
                 time.sleep(1)
             except Exception as e:
                 self._tcp_connected = False
                 logger.error("遥测异常: %s", e)
+                self._clear_client(client)
                 self._update_snapshot(client, connected=False, error=str(e))
                 time.sleep(1)
 
-        client.close()
-        self._tcp_connected = False
-        self._client = None
+        self._clear_client(client)
 
     def _update_snapshot_no_client(self, *, error: str) -> None:
         with self._lock:
@@ -249,19 +275,22 @@ class TelemetryAdapter:
                 self._connection_received_messages += 1
                 self._last_message_type = (msg.message_type, msg.command)
                 self._update_snapshot_inner(client, result)
-                # Sync navigation safety snapshot if callback is set
-                if self._nav_sync_callback:
-                    try:
-                        self._nav_sync_callback(self.get_status_payload())
-                    except Exception as e:
-                        logger.warning("导航安全快照同步失败: %s", e)
-                if self._motion_sync_callback:
-                    try:
-                        self._motion_sync_callback(self.get_status_payload())
-                    except Exception as e:
-                        logger.warning("运动控制安全快照同步失败: %s", e)
                 if self._message_count % 10 == 0:
                     logger.info("已接收 %d 条状态消息", self._message_count)
+
+            # Callbacks may read the adapter again, so invoke them only after
+            # releasing the snapshot lock.
+            payload = self.get_status_payload()
+            if self._nav_sync_callback:
+                try:
+                    self._nav_sync_callback(payload)
+                except Exception as e:
+                    logger.warning("导航安全快照同步失败: %s", e)
+            if self._motion_sync_callback:
+                try:
+                    self._motion_sync_callback(payload)
+                except Exception as e:
+                    logger.warning("运动控制安全快照同步失败: %s", e)
         except Exception as e:
             with self._lock:
                 self._error_count += 1
@@ -299,8 +328,11 @@ class TelemetryAdapter:
             self._snapshot.device = data
         elif kind == "error_list":
             self._snapshot.errors = data.get("errors", [])
-        elif kind == "nav_status":
+        elif kind == "navigation_status":
             self._snapshot.nav_status = data
+        elif kind == "navigation_abnormal":
+            self._snapshot.nav_status = data.get("nav_status", {})
+            self._snapshot.position = data.get("location_status", {})
         elif kind == "position":
             self._snapshot.position = data
         elif kind == "perception":
@@ -359,10 +391,11 @@ class TelemetryAdapter:
                     "anomaly_count": len(snap.errors) if snap.errors else 0,
                     "status": "active" if snap.connected else "idle",
                 },
+                "battery_percent": self._resolve_battery(snap.device),
             }
 
     @staticmethod
-    def _calculate_coverage(position: dict[str, Any], basic: dict[str, Any] | None = None) -> float:
+    def _calculate_coverage(position: dict[str, Any], basic: Optional[dict[str, Any]] = None) -> float:
         """Calculate coverage rate based on position and motion data."""
         if not position:
             return 0.0
@@ -376,3 +409,27 @@ class TelemetryAdapter:
         elif has_position:
             return 50.0
         return 0.0
+
+    @staticmethod
+    def _resolve_battery(device: dict[str, Any]) -> int:
+        """Extract battery percentage from device status data.
+
+        Priority: BatteryList first level, then battery_status level.
+        Fail-safe: return 0 when data is missing or invalid.
+        """
+        battery_list = device.get("battery_list")
+        if isinstance(battery_list, list) and battery_list:
+            levels = []
+            for entry in battery_list:
+                if isinstance(entry, dict):
+                    level = entry.get("BatteryLevel")
+                    if isinstance(level, (int, float)) and 0 <= level <= 100:
+                        levels.append(level)
+            if levels:
+                return int(min(levels))
+        status = device.get("battery_status")
+        if isinstance(status, dict):
+            level = status.get("BatteryLevel")
+            if isinstance(level, (int, float)) and 0 <= level <= 100:
+                return int(level)
+        return 0

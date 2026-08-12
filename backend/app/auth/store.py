@@ -13,7 +13,7 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 try:
     from datetime import UTC
@@ -47,7 +47,7 @@ class Session:
 class UserStore:
     """SQLite-backed user and session store."""
 
-    def __init__(self, path: str | Path, *, session_ttl_s: int = 1800) -> None:
+    def __init__(self, path: Union[str, Path], *, session_ttl_s: int = 1800) -> None:
         if type(session_ttl_s) is not int or session_ttl_s <= 0:
             raise ValueError("session_ttl_s must be a positive integer")
         self.path = str(path)
@@ -92,9 +92,9 @@ class UserStore:
         return datetime.now(UTC)
 
     @staticmethod
-    def _hash_password(password: str, *, salt: bytes | None = None) -> str:
-        if not isinstance(password, str) or len(password) < 12:
-            raise AuthenticationError("password must contain at least 12 characters")
+    def _hash_password(password: str, *, salt: Optional[bytes] = None) -> str:
+        if not isinstance(password, str) or len(password) < 6:
+            raise AuthenticationError("password must contain at least 6 characters")
         salt = salt or secrets.token_bytes(16)
         digest = hashlib.pbkdf2_hmac(
             "sha256", password.encode("utf-8"), salt, _PASSWORD_ITERATIONS

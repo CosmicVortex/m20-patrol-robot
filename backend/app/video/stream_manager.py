@@ -11,6 +11,7 @@ import contextlib
 import json
 import logging
 import threading
+import concurrent.futures
 from dataclasses import dataclass
 import dataclasses
 from datetime import datetime, timezone
@@ -52,6 +53,7 @@ class VideoStreamManager:
             "front": CameraConfig("front", "前向本体相机", "rtsp://10.21.31.103:8554/video1"),
             "rear": CameraConfig("rear", "后向本体相机", "rtsp://10.21.31.103:8554/video2"),
             "thermal": CameraConfig("thermal", "热成像相机", ""),
+            "body_front": CameraConfig("body_front", "车身前视相机", ""),
         }
         self._stream_states: Dict[str, StreamState] = {
             source: StreamState.DISCONNECTED for source in self._streams
@@ -73,6 +75,35 @@ class VideoStreamManager:
         }
         self._selected_source: Optional[str] = None
         self._lock = threading.Lock()
+        self._sync_loop: Optional[asyncio.AbstractEventLoop] = None
+        self._sync_loop_thread: Optional[threading.Thread] = None
+        self._sync_loop_init_lock = threading.Lock()
+        self._playback_processes: Set[Any] = set()
+
+    def run_sync(self, operation: Any, source: str) -> Dict[str, Any]:
+        """Run one stream coroutine on a persistent manager-owned event loop."""
+        with self._sync_loop_init_lock:
+            if self._sync_loop is None or self._sync_loop.is_closed():
+                ready = threading.Event()
+                def loop_worker() -> None:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    self._sync_loop = loop
+                    ready.set()
+                    loop.run_forever()
+                    loop.close()
+                self._sync_loop_thread = threading.Thread(target=loop_worker, daemon=True)
+                self._sync_loop_thread.start()
+                if not ready.wait(timeout=2):
+                    raise RuntimeError("视频事件循环初始化超时")
+        if self._sync_loop is None:
+            raise RuntimeError("视频事件循环初始化失败")
+        future = asyncio.run_coroutine_threadsafe(operation(source), self._sync_loop)
+        try:
+            return future.result(timeout=self.PROBE_TIMEOUT_S + self.PROCESS_WAIT_TIMEOUT_S + 5)
+        except concurrent.futures.TimeoutError as exc:
+            future.cancel()
+            raise RuntimeError("视频操作超时") from exc
 
     @contextlib.asynccontextmanager
     async def _get_process_lock(self, source: str):
@@ -110,6 +141,11 @@ class VideoStreamManager:
                 if self._last_update[source]
                 else None,
                 "rtsp_url": self._streams[source].rtsp_url,
+                "playback_url": (
+                    f"/api/v1/video/playback/{source}"
+                    if self.allow_real_io and self._streams[source].rtsp_url
+                    else None
+                ),
                 "label": self._streams[source].name,
             }
             for source, state in self._stream_states.items()
@@ -387,6 +423,34 @@ class VideoStreamManager:
                 self._stream_states[source] = StreamState.ERROR
         return stopped
 
+    def register_playback_process(self, process: Any) -> None:
+        with self._lock:
+            self._playback_processes.add(process)
+
+    def unregister_playback_process(self, process: Any) -> None:
+        with self._lock:
+            self._playback_processes.discard(process)
+
+    def cleanup_playback_processes(self) -> None:
+        with self._lock:
+            processes = list(self._playback_processes)
+            self._playback_processes.clear()
+        for process in processes:
+            try:
+                if process.poll() is None:
+                    process.terminate()
+                    process.wait(timeout=self.PROCESS_WAIT_TIMEOUT_S)
+            except Exception as terminate_error:
+                try:
+                    process.kill()
+                    process.wait(timeout=self.PROCESS_WAIT_TIMEOUT_S)
+                except Exception as kill_error:
+                    logger.error(
+                        "视频播放进程无法确认退出 terminate=%s kill=%s",
+                        terminate_error,
+                        kill_error,
+                    )
+
     async def cleanup(self) -> None:
         """Stop all streams and await cleanup completion."""
         if self._owner_loop is not None:
@@ -401,3 +465,17 @@ class VideoStreamManager:
                 await self.stop_stream(source)
             else:
                 await self._cancel_tasks(source)
+
+    def shutdown_sync(self) -> None:
+        """Synchronously stop streams and the manager-owned event loop."""
+        self.cleanup_playback_processes()
+        loop = self._sync_loop
+        if loop is None or loop.is_closed():
+            return
+        future = asyncio.run_coroutine_threadsafe(self.cleanup(), loop)
+        future.result(timeout=self.PROCESS_WAIT_TIMEOUT_S * 2 + 5)
+        loop.call_soon_threadsafe(loop.stop)
+        if self._sync_loop_thread is not None:
+            self._sync_loop_thread.join(timeout=5)
+        self._sync_loop = None
+        self._sync_loop_thread = None

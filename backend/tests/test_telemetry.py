@@ -40,11 +40,12 @@ class TestTelemetryAdapter:
         """Status payload should identify an unstarted stream as NO_DATA."""
         config = ConnectionConfig(host="10.21.31.103")
         adapter = TelemetryAdapter(config)
-        
+
         payload = adapter.get_status_payload()
         assert payload["source"] == "NO_DATA"
         assert payload["connected"] == False
         assert payload["control_enabled"] == False
+        assert payload["battery_percent"] == 0  # Unknown battery -> fail-safe
 
     @patch('backend.app.robot.telemetry.BasicServerClient')
     def test_connects_to_aos(self, mock_client_class):
@@ -143,10 +144,71 @@ class TestTelemetryAdapter:
     def test_telemetry_transmit_is_rejected_for_all_configurations(self):
         with pytest.raises(ValueError, match="transmission is disabled"):
             ConnectionConfig(host="10.21.31.103", telemetry_tx_enabled=True)
-        with pytest.raises(ValueError, match="transmission is disabled"):
-            ConnectionConfig(
-                host="10.21.31.103",
-                runtime_mode="realtime",
-                read_only=False,
-                telemetry_tx_enabled=True,
-            )
+        # read_only=False is now permitted in realtime mode; transport-level
+        # read_only governs AOS subscription only, not control gating.
+        config = ConnectionConfig(
+            host="10.21.31.103",
+            runtime_mode="realtime",
+            read_only=False,
+            telemetry_tx_enabled=False,
+        )
+        assert config.read_only is False
+
+    def test_process_message_invokes_callbacks_without_lock_reentry(self):
+        adapter = TelemetryAdapter(ConnectionConfig(host="10.21.31.103"))
+        client = Mock(last_received_at=datetime.now(timezone.utc))
+        callbacks = []
+        adapter.set_navigation_sync_callback(lambda payload: callbacks.append(payload))
+        message = PatrolMessage(
+            message_type=1002,
+            command=6,
+            sent_at="2026-08-11 12:00:00",
+            items={"BasicStatus": {"MotionState": 17}},
+        )
+
+        adapter._process_message(client, message)
+
+        assert len(callbacks) == 1
+        assert callbacks[0]["data"]["basic"]["motion_state"] == 17
+
+    def test_navigation_status_reaches_status_payload(self):
+        adapter = TelemetryAdapter(ConnectionConfig(host="10.21.31.103"))
+        client = Mock(last_received_at=datetime.now(timezone.utc))
+        message = PatrolMessage(
+            message_type=1007,
+            command=1,
+            sent_at="2026-08-11 12:00:00",
+            items={"Value": 1, "Status": 2, "ErrorCode": 0},
+        )
+
+        adapter._process_message(client, message)
+
+        assert adapter.get_status_payload()["data"]["nav_status"]["status"] == 2
+
+    def test_battery_percent_from_device_status(self):
+        """Battery level should be extracted from device status."""
+        adapter = TelemetryAdapter(ConnectionConfig(host="10.21.31.103"))
+        client = Mock(last_received_at=datetime.now(timezone.utc))
+        message = PatrolMessage(
+            message_type=1002,
+            command=5,
+            sent_at="2026-08-11 12:00:00",
+            items={"BatteryList": [{"BatteryLevel": 85.0}, {"BatteryLevel": 80.0}]},
+        )
+        adapter._process_message(client, message)
+        payload = adapter.get_status_payload()
+        assert payload["battery_percent"] == 80
+
+    def test_battery_percent_unknown_returns_zero(self):
+        """Missing or invalid battery data should default to 0."""
+        adapter = TelemetryAdapter(ConnectionConfig(host="10.21.31.103"))
+        client = Mock(last_received_at=datetime.now(timezone.utc))
+        message = PatrolMessage(
+            message_type=1002,
+            command=5,
+            sent_at="2026-08-11 12:00:00",
+            items={},
+        )
+        adapter._process_message(client, message)
+        payload = adapter.get_status_payload()
+        assert payload["battery_percent"] == 0

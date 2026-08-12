@@ -11,7 +11,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from http.server import BaseHTTPRequestHandler
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 try:
     from datetime import UTC
@@ -49,7 +49,7 @@ class ApiFormatter:
     """Formats API responses consistently."""
 
     @staticmethod
-    def success(data: dict[str, Any] | None = None, code: str = "ok") -> dict[str, Any]:
+    def success(data: Optional[dict[str, Any]] = None, code: str = "ok") -> dict[str, Any]:
         response = ApiResponse(status="success", data=data, code=code)
         return asdict(response)
 
@@ -101,7 +101,7 @@ class RequestContext:
         method: str,
         path: str,
         client_address: tuple[str, int],
-        timestamp: datetime | None = None,
+        timestamp: Optional[datetime] = None,
         user: Any = None,
     ) -> None:
         self.method = method
