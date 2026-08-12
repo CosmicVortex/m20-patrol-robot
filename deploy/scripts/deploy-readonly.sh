@@ -78,7 +78,7 @@ check_ffmpeg() {
     echo "错误: 未找到ffprobe。请安装完整FFmpeg离线包，不要只复制ffmpeg单个文件。"
     exit 1
   fi
-  if ! "$FFMPEG_BIN" -hide_banner -protocols 2>/dev/null | grep -qw rtsp; then
+  if ! "$FFMPEG_BIN" -hide_banner -protocols 2>/dev/null | grep -qwE "(^|\\s)rtsp(\\s|$)"; then
     echo "错误: FFmpeg不支持RTSP协议"
     exit 1
   fi
