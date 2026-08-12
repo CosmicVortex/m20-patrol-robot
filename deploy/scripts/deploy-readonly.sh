@@ -95,18 +95,19 @@ check_ffmpeg() {
     fi
   done
 
+  # RTSP 检测失败时给出警告，但不阻止部署（流功能将不可用）
   if [ -z "$_selected_bin" ]; then
-    echo "错误: 所有已安装的 FFmpeg 均不支持 RTSP"
-    echo "  请执行: bash deploy/offline/ffmpeg/install-ffmpeg-offline.sh"
-    exit 1
+    echo "警告: 未找到支持 RTSP 的 FFmpeg"
+    echo "  视频流功能将不可用，请执行: bash deploy/offline/ffmpeg/install-ffmpeg-offline.sh"
+    FFMPEG_BIN=""
+    return 0
   fi
 
   # 验证 ffprobe 存在（与选中的 ffmpeg 同目录）
   local _ffprobe_bin
   _ffprobe_bin="$(dirname "$_selected_bin")/ffprobe"
   if [ ! -x "$_ffprobe_bin" ] && ! command -v ffprobe >/dev/null 2>&1; then
-    echo "错误: 未找到 ffprobe。请安装完整 FFmpeg 离线包"
-    exit 1
+    echo "警告: 未找到 ffprobe，视频分析功能可能受限"
   fi
 
   # 输出选中的版本信息
