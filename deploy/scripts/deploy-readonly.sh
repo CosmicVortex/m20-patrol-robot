@@ -77,7 +77,10 @@ check_ffmpeg() {
     # 测试 RTSP 能力：demuxer 含 rtsp + 传输层含 tcp/udp
     _has_demux=false
     _has_proto=false
-    "$_candidate" -hide_banner -demuxers 2>/dev/null | grep -qw rtsp && _has_demux=true
+    # 用 tr 将输出转换为每行一个词，再用 grep -qx 精确匹配 rtsp
+    if "$_candidate" -hide_banner -demuxers 2>/dev/null | tr -s ' \t\n' '\n' | grep -qx rtsp; then
+      _has_demux=true
+    fi
     "$_candidate" -hide_banner -protocols 2>/dev/null | grep -qwE 'tcp|udp' && _has_proto=true
 
     echo "    demuxer: $([ "$_has_demux" = true ] && echo 'rtsp ✓' || echo 'rtsp ✗')"
