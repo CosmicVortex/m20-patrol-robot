@@ -27,6 +27,11 @@ class ViewRouter {
     if (!this._views.has(name)) {
       name = 'dashboard';
     }
+    // Hide all view containers
+    document.querySelectorAll('.view-container').forEach(el => {
+      el.classList.add('hidden');
+    });
+    
     // Unload current view
     if (this._currentView && this._views.has(this._currentView)) {
       const prev = this._views.get(this._currentView);
@@ -41,6 +46,12 @@ class ViewRouter {
     
     // Update nav active state
     this._updateNavActive(name);
+    
+    // Show the target view container
+    const targetView = document.getElementById(`view-${name}`);
+    if (targetView) {
+      targetView.classList.remove('hidden');
+    }
     
     // Render new view
     const component = this._views.get(name);

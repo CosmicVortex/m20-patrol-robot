@@ -30,6 +30,8 @@ class DashboardView {
     this._initEventListeners();
     this._initMap();
     await this._fetchInitialData();
+    // 视频自动启动：当RTSP地址已配置时自动开始流
+    setTimeout(() => this._autoStartVideo(), 1500);
   }
   
   destroy() {
@@ -700,6 +702,21 @@ class DashboardView {
       el.style.color = 'var(--color-error)';
       setTimeout(() => { el.textContent = ''; }, 5000);
     }
+  }
+
+  // ========== 视频自动启动 ==========
+
+  _autoStartVideo() {
+    const video = window._state.get('video') || {};
+    const sources = video.sources || {};
+    
+    ['front', 'rear'].forEach(source => {
+      const config = sources[source];
+      if (config && config.rtsp_url && config.state !== 'online') {
+        console.log(`[Dashboard] Auto-starting video for ${source}`);
+        this._startVideo(source);
+      }
+    });
   }
 }
 
