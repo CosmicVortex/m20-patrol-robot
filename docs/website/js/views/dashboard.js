@@ -169,16 +169,39 @@ class DashboardView {
   }
 
   _updateMetrics(robot) {
-    // 机器狗状态
-    const robotStatus = document.getElementById('robot-status');
-    if (robotStatus) {
-      const motionMap = {0:'静止',1:'站立',2:'行走',3:'慢跑',4:'上下楼',5:'摔倒'};
-      robotStatus.textContent = motionMap[robot.motion_state] || '未知';
-      robotStatus.style.color = robot.motion_state === 5 ? 'var(--color-error)' : 
-                                 robot.motion_state === 2 || robot.motion_state === 3 ? 'var(--color-success)' : 
-                                 'var(--color-text-muted)';
+    // 在线机器狗数量
+    const robotCountEl = document.getElementById('robot-count');
+    const robotStatusEl = document.getElementById('robot-status');
+    if (robotCountEl) {
+      const connected = robot.connected || false;
+      const source = robot.source || 'NO_DATA';
+      robotCountEl.textContent = connected ? '1 台' : '0 台';
     }
-    
+    if (robotStatusEl) {
+      const connected = robot.connected || false;
+      const source = robot.source || 'NO_DATA';
+      if (source === 'REAL' && connected) {
+        robotStatusEl.textContent = '正常运行';
+        robotStatusEl.style.color = 'var(--color-success)';
+      } else if (source === 'NO_DATA') {
+        robotStatusEl.textContent = '等待连接';
+        robotStatusEl.style.color = 'var(--color-text-muted)';
+      } else if (source === 'STALE') {
+        robotStatusEl.textContent = '数据过时';
+        robotStatusEl.style.color = 'var(--color-warning)';
+      } else {
+        robotStatusEl.textContent = '通信异常';
+        robotStatusEl.style.color = 'var(--color-error)';
+      }
+    }
+
+    // 机器狗运动状态
+    const motionStateEl = document.getElementById('motion-state');
+    if (motionStateEl) {
+      const motionMap = {0:'静止',1:'站立',2:'行走',3:'慢跑',4:'上下楼',5:'摔倒'};
+      motionStateEl.textContent = motionMap[robot.motion_state] || '—';
+    }
+
     // 电量 - 双电池显示
     const batteryEl = document.getElementById('battery-pct');
     const batteryBar = document.getElementById('battery-bar');

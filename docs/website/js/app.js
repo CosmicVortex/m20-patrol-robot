@@ -77,9 +77,9 @@
       // 会话无效，尝试匿名访问
     }
 
-    // 如果认证已禁用，自动创建匿名会话
+    // 如果认证已禁用，自动创建admin会话
     if (window._state.get('authEnabled') === false) {
-      window._state.set('user', { username: 'anonymous', role: 'admin' });
+      window._state.set('user', { username: 'admin', role: 'admin' });
       window._state.set('isAuthenticated', true);
       return true;
     }
