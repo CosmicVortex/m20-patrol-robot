@@ -2103,8 +2103,7 @@ tbody tr:last-child td {
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
-  }
-  
+
   .control-btn-group {
     flex-direction: column;
   }
@@ -2113,4 +2112,3 @@ tbody tr:last-child td {
     width: 100%;
     justify-content: center;
   }
-}
