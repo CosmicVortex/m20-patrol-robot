@@ -15,14 +15,16 @@ class DevicesView {
   async init() {
     this._content = document.querySelector('#view-devices');
     if (!this._content) return;
-    
+
+    // 加载初始数据
+    await window._api.fetchDevices();
     await this._loadDevices();
   }
-  
+
   destroy() {
     this._content = null;
   }
-  
+
   render() {
     this._loadDevices();
   }

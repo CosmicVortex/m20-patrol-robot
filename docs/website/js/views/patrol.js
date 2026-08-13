@@ -16,15 +16,19 @@ class PatrolView {
   async init() {
     this._content = document.querySelector('#view-patrol #patrol-content');
     if (!this._content) return;
-    
+
+    // 加载初始数据
+    await window._api.fetchWorkOrders();
+    await window._api.fetchInspectionPoints();
+
     this._renderTabs();
     await this._loadTabData(this._currentTab);
   }
-  
+
   destroy() {
     this._content = null;
   }
-  
+
   render() {
     this._loadTabData(this._currentTab);
   }
