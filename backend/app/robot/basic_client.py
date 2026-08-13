@@ -61,7 +61,7 @@ class BasicServerConfig:
     protocol_evidence: Optional[DeploymentEvidence] = None
     firmware_evidence: Optional[DeploymentEvidence] = None
     permission_evidence: Optional[DeploymentEvidence] = None
-    transmit_enabled: bool = False
+    transmit_enabled: bool = True  # 必须启用发送以支持心跳保活
 
     def __post_init__(self) -> None:
         try:

@@ -185,6 +185,7 @@ class TelemetryAdapter:
             tcp_port=self.config.tcp_port,
             control_enabled=self.control_enabled,
             stale_after_seconds=self.config.stale_after_s,
+            transmit_enabled=True,  # 必须启用心跳发送
         )
         if not self.config.telemetry_receive_enabled:
             self._update_snapshot_no_client(error="telemetry receive disabled")
