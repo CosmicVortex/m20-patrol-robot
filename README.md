@@ -2,10 +2,14 @@
 
 面向中升之星奔驰的机器狗安保巡逻系统，基于山猫 M20 Pro 机器狗二次开发。
 
-**机型**: 山猫 M20 Pro
-**部署位置**: GOS 主机（10.21.31.104）
-**通信协议**: basic_server（TCP 30001）
-**官方文档**: 山猫M20软件开发指南V1.2.1
+[![Version](https://img.shields.io/badge/version-V1.1.3-blue.svg)](./CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/tests-235%20passed-green.svg)](./backend/tests/)
+[![License](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
+
+**机型**: 山猫 M20 Pro  
+**部署位置**: GOS 主机（10.21.31.104）  
+**通信协议**: basic_server（TCP 30001）  
+**官方文档**: [山猫M20软件开发指南V1.2.1](./docs/官方文档/机器狗本体/山猫M20软件开发指南V1.2.1.md)
 
 ---
 
@@ -35,7 +39,7 @@ http://10.21.31.104:8080/
 
 # 登录账号
 用户名: admin
-密码: 123456（首次登录后请修改）
+密码: 见部署配置文件（默认123456）
 ```
 
 ### 3. 验证服务状态
