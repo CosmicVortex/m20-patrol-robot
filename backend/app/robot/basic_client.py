@@ -137,9 +137,9 @@ class BasicServerClient:
         """Connect only to the configured, validated basic_server TCP endpoint.
 
         V1.2.1:
-        - control_enabled=True allows full control with evidence
-        - read_only=True allows status subscription only (no control)
-        - Default: raises error if control is disabled
+        - control_enabled=True with read_only=True allows status subscription only
+        - control_enabled=True with read_only=False requires evidence for full control
+        - control_enabled=False always requires read_only=True
         """
         if self._socket is not None:
             raise ClientStateError("client is already connected")
@@ -152,6 +152,7 @@ class BasicServerClient:
             connection.settimeout(timeout_seconds)
             self._socket = connection
             return
+        
         # Full control mode: requires evidence and authorization
         if not self.config.control_enabled:
             raise ClientStateError("control is disabled; cannot connect to real device")

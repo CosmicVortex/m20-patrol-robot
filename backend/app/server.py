@@ -85,7 +85,7 @@ class M20WebServer:
             host=self.config.aos_host,
             tcp_port=self.config.aos_port,
             runtime_mode=self.config.runtime_mode,
-            read_only=self.config.read_only_mode,
+            read_only=True,  # Telemetry is always read-only; control is gated separately
             telemetry_tx_enabled=self.config.telemetry_tx_enabled,
             telemetry_receive_enabled=self.config.telemetry_receive_enabled,
             stale_after_s=self.config.stale_after_s,
