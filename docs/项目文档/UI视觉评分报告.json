@@ -1,0 +1,40 @@
+{
+  "total_score": 61.0,
+  "total_max": 100,
+  "percentage": 61.0,
+  "grade": "C - 及格",
+  "dimensions": {
+    "配色体系": {
+      "score": 15.0,
+      "max": 20,
+      "issues": []
+    },
+    "布局比例": {
+      "score": 8,
+      "max": 20,
+      "issues": []
+    },
+    "字体排版": {
+      "score": 13,
+      "max": 15,
+      "issues": []
+    },
+    "交互体验": {
+      "score": 8,
+      "max": 20,
+      "issues": [
+        "残留 2 处原生对话框"
+      ]
+    },
+    "数据展示": {
+      "score": 7,
+      "max": 15,
+      "issues": []
+    },
+    "无障碍访问": {
+      "score": 10,
+      "max": 10,
+      "issues": []
+    }
+  }
+}

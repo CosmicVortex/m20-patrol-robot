@@ -1,56 +1,82 @@
 /*
- * M20 Pro 巡检机器狗 Web 仪表盘 — 奔驰品牌视觉规范
- * 
+ * M20 Pro 巡检机器狗 Web 仪表盘 — 奔驰品牌视觉规范 V2.0
+ *
  * 设计原则: 高端、精密、克制、科技感
  * 品牌: 中升之星奔驰
  * 适用分辨率: 1920x1080 基准
+ * 升级: 深色奢华配色、分层阴影、玻璃态效果
  */
 
-/* ========== 配色体系 ========== */
+/* ========== 配色体系 V2.0 ========== */
 :root {
-  /* 品牌色 - 奔驰银/蓝体系 */
-  --color-brand-silver: #C0C0C0;
-  --color-brand-silver-light: #E8E8E8;
-  --color-brand-blue: #00A0E9;
-  --color-brand-blue-dark: #0077B6;
-  --color-brand-blue-dim: rgba(0, 160, 233, 0.12);
+  /* 品牌色 - 奔驰银/蓝体系 (升级饱和度和深度) */
+  --color-brand-silver: #C8C8C8;
+  --color-brand-silver-light: #F0F0F0;
+  --color-brand-blue: #00AEEF;  /* 更明亮的奔驰蓝 */
+  --color-brand-blue-dark: #008ABF;
+  --color-brand-blue-dim: rgba(0, 174, 239, 0.15);
+  --color-brand-blue-glow: rgba(0, 174, 239, 0.4);
 
-  /* 背景层级 */
-  --color-bg-deep: #080C14;
-  --color-bg-primary: #0D1220;
-  --color-bg-secondary: #141C2E;
-  --color-bg-card: #1A2340;
-  --color-bg-elevated: #1F2948;
-  --color-bg-input: #0F1623;
+  /* 背景层级 - 更深邃的层次感 */
+  --color-bg-deep: #050810;      /* 更深邃的深蓝黑 */
+  --color-bg-primary: #0A0F1C;   /* 主背景 - 深空蓝 */
+  --color-bg-secondary: #0F1629; /* 次级背景 */
+  --color-bg-card: #141D32;      /* 卡片背景 */
+  --color-bg-elevated: #1A2540;  /* 悬浮层 */
+  --color-bg-input: #0D1321;     /* 输入框背景 */
 
-  /* 边框 */
-  --color-border: rgba(192, 192, 192, 0.15);
-  --color-border-hover: rgba(192, 192, 192, 0.35);
-  --color-border-active: rgba(0, 160, 233, 0.5);
+  /* 边框 - 更精致的半透明质感 */
+  --color-border: rgba(100, 140, 200, 0.12);
+  --color-border-hover: rgba(100, 140, 200, 0.25);
+  --color-border-active: rgba(0, 174, 239, 0.5);
+  --color-border-subtle: rgba(255, 255, 255, 0.05);
 
-  /* 文字 */
-  --color-text-primary: #F0F4F8;
-  --color-text-secondary: #A8B8D0;
-  --color-text-muted: #687890;
-  --color-text-disabled: #5A6B80;  /* WCAG AA compliant (≥3:1) */
+  /* 文字 - 更丰富的层次 */
+  --color-text-primary: #F5F7FA;    /* 主文字 - 略带蓝调的白 */
+  --color-text-secondary: #B8C4D8;  /* 次要文字 */
+  --color-text-muted: #6B7F99;      /* 弱化文字 */
+  --color-text-disabled: #4A5568;   /* 禁用文字 */
 
-  /* 状态色 */
-  --color-success: #22C55E;
-  --color-success-dim: rgba(34, 197, 94, 0.12);
-  --color-warning: #F59E0B;
-  --color-warning-dim: rgba(245, 158, 11, 0.12);
-  --color-error: #EF4444;
-  --color-error-dim: rgba(239, 68, 68, 0.12);
-  --color-info: #3B82F6;
-  --color-info-dim: rgba(59, 130, 246, 0.12);
-  --color-brand-accent: #00A0E9;
-  --color-brand-accent-dim: rgba(0, 160, 233, 0.15);
-  
+  /* 状态色 - 更精致的饱和度 */
+  --color-success: #34D399;
+  --color-success-dim: rgba(52, 211, 153, 0.12);
+  --color-success-glow: rgba(52, 211, 153, 0.3);
+  --color-warning: #FBBF24;
+  --color-warning-dim: rgba(251, 191, 36, 0.12);
+  --color-warning-glow: rgba(251, 191, 36, 0.3);
+  --color-error: #F87171;
+  --color-error-dim: rgba(248, 113, 113, 0.12);
+  --color-error-glow: rgba(248, 113, 113, 0.3);
+  --color-info: #60A5FA;
+  --color-info-dim: rgba(96, 165, 250, 0.12);
+  --color-info-glow: rgba(96, 165, 250, 0.3);
+
+  /* 品牌强调色 */
+  --color-brand-accent: #00AEEF;
+  --color-brand-accent-dim: rgba(0, 174, 239, 0.15);
+  --color-brand-accent-glow: rgba(0, 174, 239, 0.4);
+
+  /* ========== 分层阴影系统 V2.0 ========== */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3), 0 4px 6px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.3), 0 10px 10px rgba(0, 0, 0, 0.2);
+  --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-glow: 0 0 20px rgba(0, 174, 239, 0.15), 0 0 40px rgba(0, 174, 239, 0.05);
+  --shadow-brand: 0 0 30px rgba(0, 174, 239, 0.2);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --shadow-card-hover: 0 8px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  /* ========== 玻璃态效果 ========== */
+  --glass-bg: rgba(20, 29, 50, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+
   /* 字体系统 */
   --font-sans: "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
-  --font-display: "Playfair Display", "Noto Serif SC", serif;
-  
+  --font-display: "Inter", system-ui, sans-serif;
+
   /* 字号系统 */
   --fs-xs: 0.75rem;    /* 12px */
   --fs-sm: 0.8125rem;  /* 13px */
@@ -60,12 +86,13 @@
   --fs-xl: 1.25rem;    /* 20px */
   --fs-2xl: 1.5rem;    /* 24px */
   --fs-3xl: 1.875rem;  /* 30px */
-  
+  --fs-4xl: 2.25rem;   /* 36px */
+
   /* 行高系统 */
   --lh-tight: 1.2;
   --lh-base: 1.5;
   --lh-relaxed: 1.75;
-  
+
   /* 间距系统 (4px 基准) */
   --space-1: 0.25rem;   /* 4px */
   --space-2: 0.5rem;    /* 8px */
@@ -77,7 +104,7 @@
   --space-10: 2.5rem;   /* 40px */
   --space-12: 3rem;     /* 48px */
   --space-16: 4rem;     /* 64px */
-  
+
   /* 圆角系统 */
   --r-sm: 4px;
   --r-md: 6px;
@@ -85,26 +112,13 @@
   --r-xl: 16px;
   --r-2xl: 24px;
   --r-full: 9999px;
-  
-  /* 阴影系统 */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
-  --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(0, 160, 233, 0.25);
-  --shadow-brand: 0 0 30px rgba(0, 160, 233, 0.15);
-  
-  /* 过渡动效 */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-spring: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* 动画时长 */
-  --duration-fast: 150ms;
-  --duration-base: 250ms;
-  --duration-slow: 400ms;
-  
+  /* 过渡动效 - 更自然的曲线 */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
   /* 布局常量 */
   --sidebar-width: 260px;
   --topbar-height: 60px;
@@ -467,13 +481,14 @@ button:focus-visible {
   flex-direction: column;
   position: relative;
   z-index: 10;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
 }
 
 .sidebar::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 0%, rgba(0, 160, 233, 0.03) 50%, transparent 100%);
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 174, 239, 0.05) 50%, transparent 100%);
   pointer-events: none;
 }
 
@@ -566,13 +581,15 @@ button:focus-visible {
 
 .nav button.active {
   background: var(--color-brand-blue-dim);
-  border-color: rgba(0, 160, 233, 0.3);
+  border-color: rgba(0, 174, 239, 0.3);
   color: var(--color-brand-blue);
   font-weight: 500;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .nav button.active::before {
   opacity: 1;
+  background: linear-gradient(180deg, var(--color-brand-blue), var(--color-brand-blue-dark));
 }
 
 .nav i {
@@ -698,18 +715,21 @@ button:focus-visible {
   color: var(--color-text-secondary);
   background: var(--color-bg-card);
   transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
 }
 
 .status-badge.ok {
-  border-color: rgba(34, 197, 94, 0.3);
+  border-color: rgba(52, 211, 153, 0.3);
   color: var(--color-success);
   background: var(--color-success-dim);
+  box-shadow: 0 0 12px var(--color-success-glow);
 }
 
 .status-badge.warn {
-  border-color: rgba(245, 158, 11, 0.3);
+  border-color: rgba(251, 191, 36, 0.3);
   color: var(--color-warning);
   background: var(--color-warning-dim);
+  box-shadow: 0 0 12px var(--color-warning-glow);
 }
 
 .status-badge.blocked {
@@ -1233,9 +1253,23 @@ button:focus-visible {
 .control-panel {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
-  border-radius: var(--r-lg);
-  padding: var(--space-4);
+  border-radius: var(--r-xl);
+  padding: var(--space-5);
   margin-top: var(--space-4);
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+}
+
+.control-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  pointer-events: none;
 }
 
 .control-panel h4 {
@@ -1271,7 +1305,9 @@ button:focus-visible {
   margin-bottom: var(--space-4);
   background: var(--color-bg-input);
   padding: var(--space-2);
-  border-radius: var(--r-md);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: inset var(--shadow-inner);
 }
 
 .mode-btn {
@@ -1282,9 +1318,9 @@ button:focus-visible {
   color: var(--color-text-muted);
   font-size: var(--fs-sm);
   font-weight: 500;
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
 }
 
 .mode-btn:hover {
@@ -1295,6 +1331,8 @@ button:focus-visible {
 .mode-btn.active {
   color: var(--color-brand-blue);
   background: var(--color-brand-blue-dim);
+  box-shadow: 0 2px 8px rgba(0, 174, 239, 0.15);
+  font-weight: 600;
 }
 
 /* 游戏手柄方向控制 */
@@ -1318,18 +1356,19 @@ button:focus-visible {
 }
 
 .joystick-btn {
-  width: 52px;
-  height: 52px;
-  border: 2px solid var(--color-border);
-  background: var(--color-bg-card);
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
   color: var(--color-text-primary);
-  border-radius: var(--r-md);
+  border-radius: var(--r-lg);
   cursor: pointer;
   display: grid;
   place-items: center;
   font-size: var(--fs-xl);
-  transition: all 0.15s ease;
+  transition: all var(--transition-fast);
   position: relative;
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .joystick-btn small {
@@ -1951,8 +1990,10 @@ button:focus-visible {
 /* ========== 表格 ========== */
 .table-wrap {
   overflow-x: auto;
-  border-radius: var(--r-lg);
+  border-radius: var(--r-xl);
   border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  background: var(--color-bg-card);
 }
 
 table {
@@ -1994,14 +2035,29 @@ tbody tr:last-child td {
 .card {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-xl);
   padding: var(--space-5);
   transition: all var(--transition-base);
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  pointer-events: none;
 }
 
 .card:hover {
   border-color: var(--color-border-hover);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
 }
 
 .card h3 {
