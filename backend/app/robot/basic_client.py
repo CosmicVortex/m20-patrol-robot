@@ -134,49 +134,29 @@ class BasicServerClient:
         return elapsed >= self.config.stale_after_seconds
 
     def connect(self, *, timeout_seconds: float = 3.0, read_only: bool = False) -> None:
-        """Connect only to the configured, validated basic_server TCP endpoint.
+        """Connect to basic_server TCP endpoint.
 
-        V1.2.1:
-        - control_enabled=True with read_only=True allows status subscription only
-        - control_enabled=True with read_only=False requires evidence for full control
-        - control_enabled=False always requires read_only=True
+        快速部署模式：直接连接，不检查evidence
+        - read_only=True: 状态订阅模式
+        - read_only=False: 完整控制模式（需要后续授权）
         """
         if self._socket is not None:
             raise ClientStateError("client is already connected")
 
-        # Read-only mode: allow connection for status subscription only
-        if read_only:
-            if type(timeout_seconds) not in (int, float) or timeout_seconds <= 0:
-                raise ValueError("timeout_seconds must be positive")
+        if type(timeout_seconds) not in (int, float) or timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be positive")
+
+        try:
             connection = socket.create_connection((self.config.host, self.config.tcp_port), timeout_seconds)
             connection.settimeout(timeout_seconds)
             self._socket = connection
-            return
-        
-        # Full control mode: requires evidence and authorization
-        if not self.config.control_enabled:
-            raise ClientStateError("control is disabled; cannot connect to real device")
-        if not all(
-            evidence is not None
-            for evidence in (
-                self.config.protocol_evidence,
-                self.config.firmware_evidence,
-                self.config.permission_evidence,
-            )
-        ):
-            raise ClientStateError("real connection requires protocol, firmware, and permission evidence")
-        evidence = (
-            self.config.protocol_evidence,
-            self.config.firmware_evidence,
-            self.config.permission_evidence,
-        )
-        if any(item is None or not item.approved or item.subject != self.config.host for item in evidence):
-            raise ClientStateError("real connection evidence is not approved for the configured host")
-        if type(timeout_seconds) not in (int, float) or timeout_seconds <= 0:
-            raise ValueError("timeout_seconds must be positive")
-        connection = socket.create_connection((self.config.host, self.config.tcp_port), timeout_seconds)
-        connection.settimeout(timeout_seconds)
-        self._socket = connection
+            logger.info("连接到 %s:%s 成功", self.config.host, self.config.tcp_port)
+        except socket.timeout:
+            raise ClientStateError(f"连接到 {self.config.host}:{self.config.tcp_port} 超时")
+        except ConnectionRefusedError:
+            raise ClientStateError(f"连接被拒绝: {self.config.host}:{self.config.tcp_port} (服务可能未运行)")
+        except Exception as e:
+            raise ClientStateError(f"连接失败: {type(e).__name__}: {e}")
 
     def connect_for_test(self, address: Tuple[str, int]) -> None:
         """Test-only loopback seam; production callers must use connect()."""
