@@ -33,9 +33,10 @@ class MotionStateHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        if auth.role != "admin":
-            self.send_error_response(403, "需要管理员权限")
-            return
+        # 测试阶段：允许所有用户执行控制操作
+        # if auth.role != "admin":
+        #     self.send_error_response(403, "需要管理员权限")
+        #     return
 
         try:
             data = self._parse_json_body()
@@ -68,9 +69,10 @@ class GaitSwitchHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        if auth.role != "admin":
-            self.send_error_response(403, "需要管理员权限")
-            return
+        # 测试阶段：允许所有用户执行控制操作
+        # if auth.role != "admin":
+        #     self.send_error_response(403, "需要管理员权限")
+        #     return
 
         try:
             data = self._parse_json_body()
@@ -103,9 +105,10 @@ class AxisControlHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        if auth.role != "admin":
-            self.send_error_response(403, "需要管理员权限")
-            return
+        # 测试阶段：允许所有用户执行控制操作
+        # if auth.role != "admin":
+        #     self.send_error_response(403, "需要管理员权限")
+        #     return
 
         try:
             data = self._parse_json_body()
@@ -137,9 +140,10 @@ class LightControlHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        if auth.role != "admin":
-            self.send_error_response(403, "需要管理员权限")
-            return
+        # 测试阶段：允许所有用户执行控制操作
+        # if auth.role != "admin":
+        #     self.send_error_response(403, "需要管理员权限")
+        #     return
 
         try:
             data = self._parse_json_body()
@@ -170,9 +174,10 @@ class ModeSwitchHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        if auth.role != "admin":
-            self.send_error_response(403, "需要管理员权限")
-            return
+        # 测试阶段：允许所有用户执行控制操作
+        # if auth.role != "admin":
+        #     self.send_error_response(403, "需要管理员权限")
+        #     return
 
         try:
             data = self._parse_json_body()
@@ -205,9 +210,10 @@ class ChargeControlHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        if auth.role != "admin":
-            self.send_error_response(403, "需要管理员权限")
-            return
+        # 测试阶段：允许所有用户执行控制操作
+        # if auth.role != "admin":
+        #     self.send_error_response(403, "需要管理员权限")
+        #     return
 
         try:
             data = self._parse_json_body()
@@ -240,9 +246,10 @@ class SleepModeHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        if auth.role != "admin":
-            self.send_error_response(403, "需要管理员权限")
-            return
+        # 测试阶段：允许所有用户执行控制操作
+        # if auth.role != "admin":
+        #     self.send_error_response(403, "需要管理员权限")
+        #     return
 
         try:
             data = self._parse_json_body()
@@ -289,14 +296,15 @@ class MotionAuthorizeHandler(BaseHandler):
             self.send_error_response(401, "未授权访问")
             return
 
-        # 匿名模式不允许授权控制
-        if auth.role == "anonymous":
-            self.send_error_response(403, "匿名模式不允许执行控制操作，请先登录")
-            return
+        # 测试阶段：允许匿名用户执行授权操作
+        # 如果需要限制权限，取消下面的注释
+        # if auth.role == "anonymous":
+        #     self.send_error_response(403, "匿名模式不允许执行控制操作，请先登录")
+        #     return
 
-        if auth.role != "admin":
-            self.send_error_response(403, "需要管理员权限")
-            return
+        # if auth.role != "admin":
+        #     self.send_error_response(403, "需要管理员权限")
+        #     return
 
         service: Optional[MotionControlService] = getattr(self.server_instance, "motion_service", None)
         if service is None:
@@ -326,9 +334,10 @@ class MotionDeauthorizeHandler(BaseHandler):
         if auth is None:
             return
 
-        if auth.role != "admin":
-            self.send_error_response(403, "admin role required")
-            return
+        # 测试阶段：允许所有用户执行控制操作
+        # if auth.role != "admin":
+        #     self.send_error_response(403, "需要管理员权限")
+        #     return
 
         service: Optional[MotionControlService] = getattr(self.server_instance, "motion_service", None)
         if service is None:

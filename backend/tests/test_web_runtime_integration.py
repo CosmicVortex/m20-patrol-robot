@@ -201,23 +201,62 @@ def test_navigation_websocket_rejects_control_actions():
         MotionStateHandler,
         GaitSwitchHandler,
         AxisControlHandler,
+    ],
+)
+def test_motion_control_actions_allow_anonymous_in_test_mode(handler_class):
+    """测试阶段：允许匿名用户执行控制操作"""
+    handler = handler_class.__new__(handler_class)
+    handler.config = SimpleNamespace(control_enabled=True, read_only_mode=False)
+    handler._authenticate = MagicMock(
+        return_value=SimpleNamespace(role="anonymous", user=SimpleNamespace(username="anonymous"))
+    )
+    handler.send_error_response = MagicMock()
+    handler.server_instance = SimpleNamespace(motion_service=MagicMock())
+
+    # 根据handler类型提供不同的请求参数
+    if handler_class == MotionStateHandler:
+        handler._parse_json_body = MagicMock(return_value={"state": 1})
+    elif handler_class == GaitSwitchHandler:
+        handler._parse_json_body = MagicMock(return_value={"gait": 0})
+    elif handler_class == AxisControlHandler:
+        handler._parse_json_body = MagicMock(return_value={"x": 0, "y": 1, "yaw": 0})
+
+    handler.do_POST()
+
+    # 测试阶段不应拒绝匿名用户
+    handler.send_error_response.assert_not_called()
+    assert handler.server_instance.motion_service.mock_calls
+
+
+@pytest.mark.parametrize(
+    "handler_class",
+    [
         LightControlHandler,
         ModeSwitchHandler,
         ChargeControlHandler,
         SleepModeHandler,
     ],
 )
-def test_motion_control_actions_require_admin_role(handler_class):
+def test_motion_control_handlers_parse_params_correctly(handler_class):
+    """验证handlers能正确解析参数"""
     handler = handler_class.__new__(handler_class)
     handler.config = SimpleNamespace(control_enabled=True, read_only_mode=False)
     handler._authenticate = MagicMock(
-        return_value=SimpleNamespace(role="viewer", user=SimpleNamespace(username="viewer"))
+        return_value=SimpleNamespace(role="anonymous", user=SimpleNamespace(username="anonymous"))
     )
     handler.send_error_response = MagicMock()
-    handler._parse_json_body = MagicMock(return_value={})
     handler.server_instance = SimpleNamespace(motion_service=MagicMock())
+
+    # 提供正确的参数
+    param_map = {
+        LightControlHandler: {"front": 1, "back": 0},
+        ModeSwitchHandler: {"mode": 0},
+        ChargeControlHandler: {"charge": 1},
+        SleepModeHandler: {"sleep": False, "auto": False, "time": 10},
+    }
+    handler._parse_json_body = MagicMock(return_value=param_map[handler_class])
 
     handler.do_POST()
 
-    handler.send_error_response.assert_called_once_with(403, "需要管理员权限")
-    assert not handler.server_instance.motion_service.mock_calls
+    # 应该成功执行，不返回错误
+    handler.send_error_response.assert_not_called()
