@@ -1,4 +1,4 @@
-from backend.app.navigation.v010 import (
+from backend.app.navigation.protocol import (
     NavigationSafetySnapshot,
     build_cancel_navigation_message,
     build_navigation_status_query,

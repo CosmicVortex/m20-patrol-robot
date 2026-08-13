@@ -1,6 +1,6 @@
 import pytest
 
-from backend.app.navigation.v010 import NavigationSafetySnapshot, SinglePointNavigation, NavigationInterlockError
+from backend.app.navigation.protocol import NavigationSafetySnapshot, SinglePointNavigation, NavigationInterlockError
 
 
 def valid_snapshot() -> NavigationSafetySnapshot:

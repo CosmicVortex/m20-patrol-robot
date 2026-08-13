@@ -15,7 +15,7 @@ except ImportError:
     UTC = timezone.utc
 from typing import Any
 
-from backend.app.navigation.v010 import (
+from backend.app.navigation.protocol import (
     SinglePointNavigation,
     NavigationSafetySnapshot,
     NavigationInterlockError,

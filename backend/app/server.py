@@ -34,7 +34,7 @@ from backend.app.api.router import ApiRouter
 from backend.app.api.base_handler import BaseHandler
 from backend.app.navigation.service import NavigationService
 from backend.app.motion.service import MotionControlService, MotionSafetySnapshot
-from backend.app.navigation.v010 import NavigationSafetySnapshot
+from backend.app.navigation.protocol import NavigationSafetySnapshot
 from backend.app.robot.basic_client import BasicServerConfig
 from backend.app.gimbal.adapter import SoarGimbalAdapter, GimbalConfig
 from backend.app.robot.basic_client import BasicServerClient

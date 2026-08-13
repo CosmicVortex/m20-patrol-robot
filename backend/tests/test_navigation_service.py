@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 from datetime import datetime
 
 from backend.app.navigation.service import NavigationService, NavigationAuthorization
-from backend.app.navigation.v010 import NavigationSafetySnapshot
+from backend.app.navigation.protocol import NavigationSafetySnapshot
 from backend.app.robot.basic_client import BasicServerClient
 
 
