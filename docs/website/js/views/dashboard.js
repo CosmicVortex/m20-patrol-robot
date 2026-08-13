@@ -178,17 +178,44 @@ class DashboardView {
                                  'var(--color-text-muted)';
     }
     
-    // 电量
+    // 电量 - 双电池显示
     const batteryEl = document.getElementById('battery-pct');
     const batteryBar = document.getElementById('battery-bar');
+    const batteryLeftEl = document.getElementById('battery-pct-left');
+    const batteryRightEl = document.getElementById('battery-pct-right');
+    const batteryBarLeft = document.getElementById('battery-bar-left');
+    const batteryBarRight = document.getElementById('battery-bar-right');
+
     if (batteryEl) {
       const batt = robot.battery;
       batteryEl.textContent = batt == null ? '—' : `${batt}%`;
-      batteryEl.className = 'battery-value' + (batt < 20 ? ' low' : batt < 40 ? ' medium' : '');
+      batteryEl.className = 'battery-total' + (batt < 20 ? ' low' : batt < 40 ? ' medium' : '');
     }
     if (batteryBar && robot.battery != null) {
       batteryBar.style.width = `${robot.battery}%`;
       batteryBar.className = 'battery-bar-fill' + (robot.battery < 20 ? ' low' : robot.battery < 40 ? ' medium' : '');
+    }
+
+    // 前电池（左）
+    if (batteryLeftEl) {
+      const leftBatt = robot.battery_left;
+      batteryLeftEl.textContent = leftBatt == null ? '—' : `${leftBatt}%`;
+      batteryLeftEl.className = 'battery-value' + (leftBatt < 20 ? ' low' : leftBatt < 40 ? ' medium' : '');
+    }
+    if (batteryBarLeft && robot.battery_left != null) {
+      batteryBarLeft.style.width = `${robot.battery_left}%`;
+      batteryBarLeft.className = 'battery-bar-fill' + (robot.battery_left < 20 ? ' low' : robot.battery_left < 40 ? ' medium' : '');
+    }
+
+    // 后电池（右）
+    if (batteryRightEl) {
+      const rightBatt = robot.battery_right;
+      batteryRightEl.textContent = rightBatt == null ? '—' : `${rightBatt}%`;
+      batteryRightEl.className = 'battery-value' + (rightBatt < 20 ? ' low' : rightBatt < 40 ? ' medium' : '');
+    }
+    if (batteryBarRight && robot.battery_right != null) {
+      batteryBarRight.style.width = `${robot.battery_right}%`;
+      batteryBarRight.className = 'battery-bar-fill' + (robot.battery_right < 20 ? ' low' : robot.battery_right < 40 ? ' medium' : '');
     }
     
     // 圈数

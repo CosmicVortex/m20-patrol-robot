@@ -308,8 +308,16 @@ class TelemetryAdapter:
                 }
                 
                 self._snapshot.device = {
-                    "battery_list": [{"BatteryLevel": 92}],
-                    "battery_status": {"BatteryLevel": 92},
+                    "battery_list": [
+                        {"BatteryLevel": 92, "Voltage": 25.5, "serial": "B001"},
+                        {"BatteryLevel": 88, "Voltage": 25.2, "serial": "B002"}
+                    ],
+                    "battery_status": {
+                        "BatteryLevelLeft": 92,
+                        "BatteryLevelRight": 88,
+                        "VoltageLeft": 25.5,
+                        "VoltageRight": 25.2
+                    },
                     "device_temperature": 35.2,
                     "led": 1,
                     "gps": {"latitude": 0.0, "longitude": 0.0},
@@ -417,8 +425,16 @@ class TelemetryAdapter:
         }
         
         self._snapshot.device = {
-            "battery_list": [{"BatteryLevel": 92}],
-            "battery_status": {"BatteryLevel": 92},
+            "battery_list": [
+                {"BatteryLevel": 92, "Voltage": 25.5, "serial": "B001"},
+                {"BatteryLevel": 88, "Voltage": 25.2, "serial": "B002"}
+            ],
+            "battery_status": {
+                "BatteryLevelLeft": 92,
+                "BatteryLevelRight": 88,
+                "VoltageLeft": 25.5,
+                "VoltageRight": 25.2
+            },
             "device_temperature": 35.2,
             "led": 1,
             "gps": {"latitude": 0.0, "longitude": 0.0},

@@ -14,9 +14,13 @@ class StateManager {
       robot: {
         connected: false,
         source: 'NO_DATA',
-        battery: null,
+        battery: null,  // 主电池（取两块中较低值）
+        battery_left: null,  // 左电池电量
+        battery_right: null,  // 右电池电量
+        battery_list: [],  // 电池列表 [{BatteryLevel, Voltage, serial}]
+        battery_status: {},  // 电池状态 {BatteryLevelLeft, BatteryLevelRight...}
         motion_state: 0,
-        gait: 0,
+        gait: 'flat',
         speed: 0,
         nav_status: 0,
         loop_count: 0,
@@ -123,12 +127,31 @@ class StateManager {
    */
   updateTelemetry(data) {
     const d = data.data || {};
-    
+
     this.set('robot.connected', data.connected);
     this.set('robot.source', data.source);
-    // 修复：模拟模式下也显示电池数据（用于演示）
-    const battery = data.battery_percent != null ? data.battery_percent : null;
-    this.set('robot.battery', battery);
+
+    // 电池数据 - 支持双电池显示
+    const batteryPercent = data.battery_percent != null ? data.battery_percent : null;
+    this.set('robot.battery', batteryPercent);
+
+    // 解析电池列表和状态
+    const device = d.device || {};
+    const batteryList = device.battery_list || [];
+    const batteryStatus = device.battery_status || {};
+
+    this.set('robot.battery_list', batteryList);
+    this.set('robot.battery_status', batteryStatus);
+
+    // 提取左/右电池电量
+    if (batteryList.length >= 2) {
+      this.set('robot.battery_left', batteryList[0].BatteryLevel ?? null);
+      this.set('robot.battery_right', batteryList[1].BatteryLevel ?? null);
+    } else if (batteryStatus.BatteryLevelLeft != null) {
+      this.set('robot.battery_left', batteryStatus.BatteryLevelLeft);
+      this.set('robot.battery_right', batteryStatus.BatteryLevelRight);
+    }
+
     this.set('robot.motion_state', d.basic?.motion_state ?? 0);
     this.set('robot.gait', d.basic?.gait ?? 'flat');
     this.set('robot.nav_status', d.nav_status?.status ?? 0);
@@ -138,17 +161,17 @@ class StateManager {
     this.set('robot.location', d.position?.location ?? null);
     this.set('robot.errors', d.errors || []);
     this.set('robot.coverage_rate', data.inspection_stats?.coverage_rate ?? 0);
-    
+
     // Update motion speed
     const m = d.motion || {};
     const speed = Math.sqrt((m.linear_x || 0) ** 2 + (m.linear_y || 0) ** 2);
     this.set('robot.speed', speed);
-    
+
     // Update alerts
     const errorCount = (d.errors || []).length;
     this.set('alerts', d.errors || []);
     this.set('unreadAlerts', errorCount);
-    
+
     this._notify('robot');
   }
   

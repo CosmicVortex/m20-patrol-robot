@@ -277,9 +277,22 @@
                   <span id="robot-location" style="font-size:10px;color:var(--color-text-muted);margin-top:1px;display:block"></span>
                 </div>
                 <div class="robot-battery">
-                  <div class="battery-value" id="battery-pct">--%</div>
-                  <div class="battery-bar"><div class="battery-bar-fill" id="battery-bar" style="width:0%"></div></div>
-                  <div class="battery-label">电量</div>
+                  <div class="battery-dual">
+                    <div class="battery-item">
+                      <span class="battery-name">前电池</span>
+                      <span class="battery-value" id="battery-pct-left">--%</span>
+                      <div class="battery-bar mini"><div class="battery-bar-fill" id="battery-bar-left" style="width:0%"></div></div>
+                    </div>
+                    <div class="battery-item">
+                      <span class="battery-name">后电池</span>
+                      <span class="battery-value" id="battery-pct-right">--%</span>
+                      <div class="battery-bar mini"><div class="battery-bar-fill" id="battery-bar-right" style="width:0%"></div></div>
+                    </div>
+                  </div>
+                  <div class="battery-main">
+                    <span class="battery-total" id="battery-pct">--%</span>
+                    <span class="battery-label">主电量</span>
+                  </div>
                 </div>
               </div>
               <div class="robot-status">

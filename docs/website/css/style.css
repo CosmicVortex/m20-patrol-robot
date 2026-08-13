@@ -1021,17 +1021,59 @@ button {
   text-align: right;
 }
 
+.robot-battery .battery-dual {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.robot-battery .battery-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.robot-battery .battery-name {
+  color: var(--color-text-muted);
+  width: 32px;
+  text-align: left;
+}
+
 .robot-battery .battery-value {
-  font-size: var(--fs-2xl);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-success);
+  width: 36px;
+  text-align: right;
+}
+
+.robot-battery .battery-bar.mini {
+  flex: 1;
+  height: 4px;
+  background: var(--color-bg-input);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.robot-battery .battery-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.robot-battery .battery-total {
+  font-size: 24px;
   font-weight: 700;
   color: var(--color-success);
   line-height: 1;
 }
 
 .robot-battery .battery-label {
-  font-size: var(--fs-xs);
+  font-size: 11px;
   color: var(--color-text-muted);
-  margin-top: 4px;
 }
 
 .robot-status {
