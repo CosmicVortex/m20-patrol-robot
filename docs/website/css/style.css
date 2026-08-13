@@ -869,8 +869,21 @@ button:focus-visible {
 /* ========== 监控网格 ========== */
 .monitor-grid {
   display: grid;
-  grid-template-columns: 1fr 460px;
+  grid-template-columns: 1fr 380px;
   gap: var(--space-4);
+  align-items: start;
+}
+
+/* 右侧面板 - 固定宽度 */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  position: sticky;
+  top: var(--topbar-height);
+  max-height: calc(100vh - var(--topbar-height));
+  overflow-y: auto;
+  padding-right: var(--space-2);
 }
 
 /* ========== 视频墙 ========== */
@@ -1214,41 +1227,61 @@ button:focus-visible {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: var(--r-lg);
-  padding: var(--space-5);
+  padding: var(--space-4);
   margin-top: var(--space-4);
 }
 
 .control-panel h4 {
-  margin: 0 0 var(--space-4);
-  font-size: var(--fs-sm);
+  margin: 0 0 var(--space-3);
+  font-size: var(--fs-xs);
   color: var(--color-text-secondary);
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.control-btn-group {
-  display: flex;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
-
-.control-btn {
-  padding: var(--space-2) var(--space-5);
-  border: 1px solid var(--color-border);
-  border-radius: var(--r-md);
-  background: var(--color-bg-secondary);
-  color: var(--color-text-secondary);
-  font-size: var(--fs-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
+  letter-spacing: 0.08em;
   display: flex;
   align-items: center;
   gap: var(--space-2);
 }
 
+.control-panel h4::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-full);
+  background: var(--color-warning);
+  animation: pulse 2s infinite;
+}
+
+.control-panel.authorized h4::before {
+  background: var(--color-success);
+  animation: none;
+}
+
+.control-btn-group {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+}
+
+.control-btn {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-md);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 40px;
+}
+
 .control-btn:hover:not(:disabled) {
-  background: var(--color-bg-card);
+  background: var(--color-bg-elevated);
   color: var(--color-text-primary);
   border-color: var(--color-border-hover);
   transform: translateY(-1px);
@@ -1259,8 +1292,9 @@ button:focus-visible {
 }
 
 .control-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: not-allowed;
+  filter: grayscale(0.5);
 }
 
 .control-btn.danger {
@@ -1285,6 +1319,14 @@ button:focus-visible {
   background: var(--color-success);
   color: #fff;
   border-color: var(--color-success);
+}
+
+.control-message {
+  margin-top: var(--space-3);
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+  min-height: 20px;
 }
 
 /* ========== 时间线 ========== */

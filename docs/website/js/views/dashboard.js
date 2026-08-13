@@ -30,10 +30,11 @@ class DashboardView {
     this._initEventListeners();
     this._initMap();
     await this._fetchInitialData();
-    // 视频自动启动：当RTSP地址已配置时自动开始流
-    setTimeout(() => this._autoStartVideo(), 1500);
+    // 延迟启动视频：等待数据加载完成后再自动连接
+    setTimeout(() => this._autoStartVideo(), 2000);
+    // 每30秒检查一次视频连接状态，自动重连
+    setInterval(() => this._autoStartVideo(), 30000);
   }
-  
   destroy() {
     if (this._pollInterval) clearInterval(this._pollInterval);
     if (this._clockInterval) clearInterval(this._clockInterval);
@@ -737,10 +738,12 @@ class DashboardView {
     const video = window._state.get('video') || {};
     const sources = video.sources || {};
     
+    // 只启动front和rear摄像头（thermal和body_front需要额外探测）
     ['front', 'rear'].forEach(source => {
       const config = sources[source];
-      if (config && config.rtsp_url && config.state !== 'online') {
-        console.log(`[Dashboard] Auto-starting video for ${source}`);
+      // 条件：有RTSP地址 且 状态不是online且不是connecting
+      if (config && config.rtsp_url && config.state !== 'online' && config.state !== 'connecting') {
+        console.log(`[Dashboard] Auto-starting video for ${source}: ${config.rtsp_url}`);
         this._startVideo(source);
       }
     });
