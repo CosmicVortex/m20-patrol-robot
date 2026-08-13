@@ -342,16 +342,49 @@
             
             <!-- 控制面板 -->
             <div class="control-panel" id="control-panel">
-              <h4>控制面板</h4>
-              <div class="control-btn-group">
-                <button class="control-btn success" id="nav-authorize-btn">✓ 授权导航</button>
-                <button class="control-btn" id="nav-deauthorize-btn" disabled>撤销授权</button>
-                <button class="control-btn" id="motion-stand-btn" disabled>站立</button>
-                <button class="control-btn" id="motion-lie-btn" disabled>趴下</button>
-                <button class="control-btn" id="motion-charge-btn" disabled>回充</button>
-                <button class="control-btn danger" id="motion-estop-btn" disabled>⚠ 软急停</button>
+              <h4><span class="panel-status" id="panel-status"></span>控制面板</h4>
+              
+              <!-- 模式选择 -->
+              <div class="mode-selector">
+                <button class="mode-btn active" data-mode="normal" title="常规巡检模式">常规</button>
+                <button class="mode-btn" data-mode="assist" title="辅助导航模式">辅助</button>
+                <button class="mode-btn" data-mode="navigation" title="自动导航模式">导航</button>
               </div>
-              <div class="modal-error" id="control-message"></div>
+              
+              <!-- 方向控制（游戏手柄样式） -->
+              <div class="joystick-control">
+                <div class="joystick-center">
+                  <button class="joystick-btn center" id="motion-stand-btn" disabled title="站立">
+                    <span>⬆</span>
+                    <small>站立</small>
+                  </button>
+                </div>
+                <div class="joystick-directions">
+                  <button class="joystick-btn" id="motion-forward-btn" disabled title="前进">⬆</button>
+                  <button class="joystick-btn" id="motion-backward-btn" disabled title="后退">⬇</button>
+                  <button class="joystick-btn" id="motion-left-btn" disabled title="左转">⬅</button>
+                  <button class="joystick-btn" id="motion-right-btn" disabled title="右转">➡</button>
+                </div>
+              </div>
+              
+              <!-- 功能按钮 -->
+              <div class="function-buttons">
+                <button class="func-btn charge" id="motion-charge-btn" disabled title="返回充电座">
+                  <span>🔋</span>回充
+                </button>
+                <button class="func-btn estop" id="motion-estop-btn" disabled title="紧急停止">
+                  <span>⚠</span>急停
+                </button>
+              </div>
+              
+              <!-- 授权区域 -->
+              <div class="auth-section">
+                <button class="auth-btn success" id="nav-authorize-btn">✓ 授权控制</button>
+                <button class="auth-btn" id="nav-deauthorize-btn" disabled>撤销授权</button>
+                <p class="auth-hint">授权后启用全部控制功能</p>
+              </div>
+              
+              <div class="control-message" id="control-message"></div>
             </div>
           </div>
         </section>

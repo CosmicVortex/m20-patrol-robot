@@ -36,7 +36,16 @@ class SettingsView {
       ]);
       this._render({ info, gimbal, video });
     } catch (error) {
-      this._content.innerHTML = `<div class="empty-state"><h3>配置加载失败</h3><p>${this._escapeHtml(error.message)}</p><button class="btn btn-primary" onclick="window._router.refresh()">重试</button></div>`;
+      // 显示友好的错误信息，而不是告警
+      const errorMsg = error?.message || '未知错误';
+      this._content.innerHTML = `
+        <div class="card" style="padding:var(--space-8);text-align:center;">
+          <div style="font-size:48px;margin-bottom:var(--space-4)">⚠️</div>
+          <h3>配置加载失败</h3>
+          <p style="color:var(--color-text-muted);margin-bottom:var(--space-4)">${this._escapeHtml(errorMsg)}</p>
+          <button class="btn btn-primary" onclick="window._router.refresh()">重新加载</button>
+        </div>
+      `;
     }
   }
 

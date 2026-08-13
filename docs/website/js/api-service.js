@@ -235,6 +235,32 @@ class ApiService {
   async fetchGimbalDeviceInfo() {
     return this.get('/gimbal/device/info');
   }
+  
+  // ── Motion Control ───────────────────────────────────────────────────────
+  
+  async motionState(state) {
+    return this.post('/motion/state', { state });
+  }
+  
+  async motionAxis(x, y, rotate) {
+    return this.post('/motion/axis', { x, y, rotate });
+  }
+  
+  async chargeControl(action) {
+    return this.post('/motion/charge', { action });
+  }
+  
+  async switchMode(mode) {
+    return this.post('/motion/mode', { mode });
+  }
+  
+  async authorizeMotion() {
+    return this.post('/motion/authorize', {});
+  }
+  
+  async deauthorizeMotion() {
+    return this.post('/motion/deauthorize', {});
+  }
 }
 
 // Export for module usage

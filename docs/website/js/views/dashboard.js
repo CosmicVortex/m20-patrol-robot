@@ -295,26 +295,38 @@ class DashboardView {
   }
 
   _updateEmergencyBtn(nav) {
-    const btn = document.getElementById('emergency-btn');
     const authorizeBtn = document.getElementById('nav-authorize-btn');
     const deauthorizeBtn = document.getElementById('nav-deauthorize-btn');
-    const controlBtns = ['motion-stand-btn', 'motion-lie-btn', 'motion-charge-btn', 'motion-estop-btn'];
+    const panelStatus = document.getElementById('panel-status');
     
-    if (btn) {
-      btn.disabled = !(nav?.authorized && nav?.control_enabled);
+    // 更新控制面板状态指示器
+    const isAuthorized = nav?.authorized && nav?.control_enabled;
+    if (panelStatus) {
+      panelStatus.className = 'panel-status' + (isAuthorized ? ' authorized' : '');
     }
     
     if (authorizeBtn) {
-      authorizeBtn.disabled = nav?.authorized || false;
+      authorizeBtn.disabled = isAuthorized;
     }
     
     if (deauthorizeBtn) {
-      deauthorizeBtn.disabled = !nav?.authorized;
+      deauthorizeBtn.disabled = !isAuthorized;
     }
     
-    controlBtns.forEach(id => {
+    // 更新所有控制按钮状态
+    const controlBtnIds = [
+      'motion-stand-btn',
+      'motion-forward-btn',
+      'motion-backward-btn',
+      'motion-left-btn',
+      'motion-right-btn',
+      'motion-charge-btn',
+      'motion-estop-btn'
+    ];
+    
+    controlBtnIds.forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.disabled = !(nav?.authorized && nav?.control_enabled);
+      if (el) el.disabled = !isAuthorized;
     });
   }
 
@@ -576,8 +588,9 @@ class DashboardView {
     // 导航授权
     document.getElementById('nav-authorize-btn')?.addEventListener('click', async () => {
       try {
-        await window._api.authorizeNavigation();
+        await window._api.authorizeMotion();
         await this._fetchNavStatus();
+        if (Toast) Toast.success('控制授权成功');
       } catch (e) {
         this._showControlError(`授权失败: ${e.message}`);
       }
@@ -585,40 +598,65 @@ class DashboardView {
     
     document.getElementById('nav-deauthorize-btn')?.addEventListener('click', async () => {
       try {
-        await window._api.deauthorizeNavigation();
+        await window._api.deauthorizeMotion();
         await this._fetchNavStatus();
+        if (Toast) Toast.info('控制已撤销');
       } catch (e) {
         this._showControlError(`撤销失败: ${e.message}`);
       }
     });
     
-    // 运动控制
+    // 模式切换
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const mode = btn.dataset.mode;
+        this._showControlMessage(`模式切换: ${btn.title}`);
+        // TODO: 实际模式下发模式切换指令
+      });
+    });
+    
+    // 方向控制（游戏手柄）
+    const axisMap = {
+      'motion-forward-btn': { x: 0, y: 1 },
+      'motion-backward-btn': { x: 0, y: -1 },
+      'motion-left-btn': { x: -1, y: 0 },
+      'motion-right-btn': { x: 1, y: 0 }
+    };
+    
+    Object.entries(axisMap).forEach(([id, {x, y}]) => {
+      document.getElementById(id)?.addEventListener('click', async () => {
+        try {
+          await window._api.motionAxis(x, y, 0);
+        } catch (e) {
+          this._showControlError(`移动失败: ${e.message}`);
+        }
+      });
+    });
+    
+    // 站立
     document.getElementById('motion-stand-btn')?.addEventListener('click', async () => {
       try {
-        await window._api.motionStand();
+        await window._api.motionState(1); // MOTION_STATE_STAND
+        this._showControlMessage('机器狗已站立');
       } catch (e) {
         this._showControlError(`站立失败: ${e.message}`);
       }
     });
     
-    document.getElementById('motion-lie-btn')?.addEventListener('click', async () => {
-      try {
-        await window._api.motionLie();
-      } catch (e) {
-        this._showControlError(`趴下失败: ${e.message}`);
-      }
-    });
-    
+    // 回充
     document.getElementById('motion-charge-btn')?.addEventListener('click', async () => {
       try {
-        await window._api.motionCharge();
+        await window._api.chargeControl(1); // CHARGE_START
+        this._showControlMessage('已发送回充指令');
       } catch (e) {
         this._showControlError(`回充失败: ${e.message}`);
       }
     });
     
     // 紧急停止
-    document.getElementById('emergency-btn')?.addEventListener('click', async () => {
+    document.getElementById('motion-estop-btn')?.addEventListener('click', async () => {
       const confirmed = await Toast.confirm('确认执行紧急停止？此操作将立即停止机器狗所有运动。');
       if (!confirmed) return;
       window.handleEmergencyStop();
@@ -729,6 +767,15 @@ class DashboardView {
       el.textContent = message;
       el.style.color = 'var(--color-error)';
       setTimeout(() => { el.textContent = ''; }, 5000);
+    }
+  }
+  
+  _showControlMessage(message) {
+    const el = document.getElementById('control-message');
+    if (el) {
+      el.textContent = message;
+      el.style.color = 'var(--color-success)';
+      setTimeout(() => { el.textContent = ''; }, 3000);
     }
   }
 
