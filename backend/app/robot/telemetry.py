@@ -260,7 +260,7 @@ class TelemetryAdapter:
         self._clear_client(client)
 
     def _update_snapshot_no_client(self, *, error: str) -> None:
-        """Update snapshot for simulated mode or connection failure with fallback data."""
+        """Update snapshot when no real data is available - NO FAKE DATA."""
         now = datetime.now(UTC)
         
         with self._lock:
@@ -274,72 +274,22 @@ class TelemetryAdapter:
             else:
                 self._snapshot.source = "NO_DATA"
             self._snapshot.received_at = now.isoformat()
-            self._snapshot.error_message = error
+            self._snapshot.error_message = error or "通信异常：无法连接到AOS basic_server"
             self._snapshot.age_ms = 0
             
-            # 修复：无论模拟模式还是连接失败，都返回fallback数据
-            # 确保前端能显示有意义的状态，而不是全"—"
-            # 条件：basic为空 或 未连接 时生成fallback
-            if not self._snapshot.basic or not self._snapshot.connected:
-                # 生成fallback模拟数据（用于演示和连接失败时的降级显示）
-                self._snapshot.basic = {
-                    "motion_state": 0,  # 静止
-                    "gait": "flat",
-                    "charge": 0,
-                    "hes": 0,
-                    "control_usage_mode": 1,
-                    "direction": 0,
-                    "ooa": 0,
-                    "power_management": 0,
-                    "sleep": 0,
-                    "version": "v1.1.8",
-                }
-                
-                self._snapshot.motion = {
-                    "roll": 0.0,
-                    "pitch": 0.0,
-                    "yaw": 0.0,
-                    "omega_z": 0.0,
-                    "linear_x": 0.0,
-                    "linear_y": 0.0,
-                    "height": 0.35,
-                    "payload": 0.0,
-                    "remain_mile": 85.5,
-                }
-                
-                self._snapshot.device = {
-                    "battery_list": [
-                        {"BatteryLevel": 92, "Voltage": 25.5, "serial": "B001"},
-                        {"BatteryLevel": 88, "Voltage": 25.2, "serial": "B002"}
-                    ],
-                    "battery_status": {
-                        "BatteryLevelLeft": 92,
-                        "BatteryLevelRight": 88,
-                        "VoltageLeft": 25.5,
-                        "VoltageRight": 25.2
-                    },
-                    "device_temperature": 35.2,
-                    "led": 1,
-                    "gps": {"latitude": 0.0, "longitude": 0.0},
-                    "dev_enable": 1,
-                    "cpu": {"usage": 45.2},
-                }
-                
-                self._snapshot.nav_status = {
-                    "status": 0,  # 待命中
-                    "loop_count": 0,
-                    "total_distance": 0.0,
-                    "target_x": 0.0,
-                    "target_y": 0.0,
-                }
-                
-                self._snapshot.position = {
-                    "pos_x": 0.0,
-                    "pos_y": 0.0,
-                    "pos_z": 0.0,
-                    "location": "待定位",
-                }
-                
+            # 禁止生成任何假数据，保持空状态让前端显示明确异常
+            # 只重置basic标志，让前端知道没有数据
+            if not self._snapshot.basic:
+                self._snapshot.basic = {}
+            if not self._snapshot.motion:
+                self._snapshot.motion = {}
+            if not self._snapshot.device:
+                self._snapshot.device = {}
+            if not self._snapshot.nav_status:
+                self._snapshot.nav_status = {}
+            if not self._snapshot.position:
+                self._snapshot.position = {}
+            if not self._snapshot.errors:
                 self._snapshot.errors = []
 
     def _process_message(self, client: BasicServerClient, msg: PatrolMessage) -> None:
@@ -393,71 +343,8 @@ class TelemetryAdapter:
                 # 连接失败时设置age为0
                 self._snapshot.age_ms = 0
 
-            # 修复：连接失败或未连接时，生成fallback数据确保前端不显示空白
-            if not self._snapshot.connected and not self._snapshot.basic:
-                self._generate_fallback_data()
-
-    def _generate_fallback_data(self) -> None:
-        """Generate fallback simulated data when no real data is available."""
-        self._snapshot.basic = {
-            "motion_state": 0,  # 静止
-            "gait": "flat",
-            "charge": 0,
-            "hes": 0,
-            "control_usage_mode": 1,
-            "direction": 0,
-            "ooa": 0,
-            "power_management": 0,
-            "sleep": 0,
-            "version": "v1.1.8",
-        }
-        
-        self._snapshot.motion = {
-            "roll": 0.0,
-            "pitch": 0.0,
-            "yaw": 0.0,
-            "omega_z": 0.0,
-            "linear_x": 0.0,
-            "linear_y": 0.0,
-            "height": 0.35,
-            "payload": 0.0,
-            "remain_mile": 85.5,
-        }
-        
-        self._snapshot.device = {
-            "battery_list": [
-                {"BatteryLevel": 92, "Voltage": 25.5, "serial": "B001"},
-                {"BatteryLevel": 88, "Voltage": 25.2, "serial": "B002"}
-            ],
-            "battery_status": {
-                "BatteryLevelLeft": 92,
-                "BatteryLevelRight": 88,
-                "VoltageLeft": 25.5,
-                "VoltageRight": 25.2
-            },
-            "device_temperature": 35.2,
-            "led": 1,
-            "gps": {"latitude": 0.0, "longitude": 0.0},
-            "dev_enable": 1,
-            "cpu": {"usage": 45.2},
-        }
-        
-        self._snapshot.nav_status = {
-            "status": 0,  # 待命中
-            "loop_count": 0,
-            "total_distance": 0.0,
-            "target_x": 0.0,
-            "target_y": 0.0,
-        }
-        
-        self._snapshot.position = {
-            "pos_x": 0.0,
-            "pos_y": 0.0,
-            "pos_z": 0.0,
-            "location": "待定位",
-        }
-        
-        self._snapshot.errors = []
+            # 连接失败时不清空已有数据，保持最后收到真实数据的状态
+            # 前端会根据 connected=False 和 source 字段判断状态
     
     def _update_snapshot_inner(self, client: BasicServerClient, result: StatusResult) -> None:
         """Update snapshot with parsed status data."""
