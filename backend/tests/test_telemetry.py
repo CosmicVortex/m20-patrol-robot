@@ -86,12 +86,11 @@ class TestTelemetryAdapter:
         
         assert adapter.message_count == 0
         assert adapter.error_count == 0
-    def test_default_configuration_allows_telemetry_transmit():
+    def test_default_configuration_allows_telemetry_transmit(self):
         config = ConnectionConfig(host="10.21.31.103")
         assert config.read_only is True
         assert config.telemetry_tx_enabled is True  # 默认启用心跳
         assert config.runtime_mode == "simulated"
-
 
     def test_receive_disabled_is_enforced(self):
         config = ConnectionConfig(host="10.21.31.103", runtime_mode="realtime", telemetry_receive_enabled=False)
@@ -124,7 +123,7 @@ class TestTelemetryAdapter:
             adapter.stop()
         client_class.assert_not_called()
 
-    def test_read_only_configuration_allows_telemetry_transmit():
+    def test_read_only_configuration_allows_telemetry_transmit(self):
         """只读模式也允许心跳发送"""
         config = ConnectionConfig(
             host="10.21.31.103",
