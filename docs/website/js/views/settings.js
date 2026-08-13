@@ -147,6 +147,8 @@ class SettingsView {
       const form = new FormData(event.currentTarget);
       const values = {};
       const invalid = [];
+      const submitBtn = event.currentTarget.querySelector('button[type="submit"]');
+      const originalText = submitBtn?.textContent || '保存';
       
       ['front','rear','thermal','body_front'].forEach(key => {
         const value = String(form.get(key) || '').trim();
@@ -161,6 +163,11 @@ class SettingsView {
         return;
       }
       
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = '保存中...';
+      }
+      
       try {
         const result = await window._api.updateVideoConfig(values);
         const failed = Object.entries(result.results || {}).filter(([, item]) => !item.success);
@@ -168,9 +175,16 @@ class SettingsView {
           ? `部分配置失败：${failed.map(([key, item]) => `${key} ${item.error || ''}`).join('；')}`
           : '视频配置已保存';
         message.style.color = failed.length ? 'var(--color-warning)' : 'var(--color-success)';
+        if (!failed.length && Toast) Toast.success('视频配置已保存');
       } catch (error) {
         message.textContent = `保存失败：${error.message}`;
         message.style.color = 'var(--color-error)';
+        if (Toast) Toast.error(`保存失败：${error.message}`);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
+        }
       }
     });
     
@@ -179,11 +193,19 @@ class SettingsView {
       event.preventDefault();
       const form = new FormData(event.currentTarget);
       const message = this._content.querySelector('#password-message');
+      const submitBtn = event.currentTarget.querySelector('button[type="submit"]');
+      const originalText = submitBtn?.textContent || '修改密码';
+      
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = '修改中...';
+      }
       
       try {
         await window._api.changePassword(form.get('old_password'), form.get('new_password'));
         message.textContent = '密码已修改，请重新登录';
         message.style.color = 'var(--color-success)';
+        if (Toast) Toast.success('密码已修改，请重新登录');
         
         // 退出登录
         window._ws.disconnect();

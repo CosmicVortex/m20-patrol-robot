@@ -17,7 +17,43 @@
   window._api = new ApiService(window._state);
   window._ws = new WebSocketService(window._state);
   window._router = new ViewRouter(window._state);
-  
+
+  // ── 键盘快捷键 ──────────────────────────────────────────────────────────────
+  document.addEventListener('keydown', (e) => {
+    // Esc - 取消/关闭弹窗
+    if (e.key === 'Escape') {
+      const confirmDialog = document.querySelector('.toast-confirm');
+      if (confirmDialog) {
+        confirmDialog.classList.add('toast-confirm-hide');
+        setTimeout(() => confirmDialog.remove(), 300);
+      }
+    }
+    // Ctrl+Shift+E - 紧急停止
+    if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+      e.preventDefault();
+      if (window.handleEmergencyStop) {
+        window.handleEmergencyStop();
+      }
+    }
+    // Ctrl+Shift+S - 导航授权
+    if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+      e.preventDefault();
+      if (window.authorizeNavigation) {
+        window.authorizeNavigation();
+      }
+    }
+    // Ctrl+D - 切换到实时监控
+    if (e.ctrlKey && e.key === 'd') {
+      e.preventDefault();
+      window._router?.navigate('dashboard');
+    }
+    // Ctrl+P - 切换到巡逻管理
+    if (e.ctrlKey && e.key === 'p') {
+      e.preventDefault();
+      window._router?.navigate('patrol');
+    }
+  });
+
   // ── 注册视图 ────────────────────────────────────────────────────────────────
   window._router.register('dashboard', new DashboardView());
   window._router.register('patrol', new PatrolView());

@@ -178,12 +178,15 @@ class DashboardView {
     
     // 电量
     const batteryEl = document.getElementById('battery-pct');
+    const batteryBar = document.getElementById('battery-bar');
     if (batteryEl) {
       const batt = robot.battery;
       batteryEl.textContent = batt == null ? '—' : `${batt}%`;
-      batteryEl.style.color = batt == null ? 'var(--color-text-muted)' : 
-                               batt < 20 ? 'var(--color-error)' : 
-                               batt < 40 ? 'var(--color-warning)' : 'var(--color-success)';
+      batteryEl.className = 'battery-value' + (batt < 20 ? ' low' : batt < 40 ? ' medium' : '');
+    }
+    if (batteryBar && robot.battery != null) {
+      batteryBar.style.width = `${robot.battery}%`;
+      batteryBar.className = 'battery-bar-fill' + (robot.battery < 20 ? ' low' : robot.battery < 40 ? ' medium' : '');
     }
     
     // 圈数
@@ -325,31 +328,57 @@ class DashboardView {
           stateEl.textContent = '● 在线';
         }
         cameraEl.classList.add('connected');
-        cameraEl.classList.remove('unverified');
+        cameraEl.classList.remove('unverified', 'connecting');
         
         if (videoEl && config.playback_url) {
           videoEl.src = config.playback_url;
           videoEl.style.display = 'block';
+          videoEl.classList.add('active');
         }
-        if (placeholderEl) placeholderEl.style.display = 'none';
+        if (placeholderEl) {
+          placeholderEl.classList.add('hidden');
+          placeholderEl.style.display = 'none';
+        }
       } else if (state === 'blocked') {
         if (stateEl) {
           stateEl.className = 'camera-status offline';
           stateEl.textContent = '● 受限';
         }
-        cameraEl.classList.remove('connected');
+        cameraEl.classList.remove('connected', 'connecting');
         cameraEl.classList.add('unverified');
-        if (videoEl) videoEl.style.display = 'none';
-        if (placeholderEl) placeholderEl.style.display = 'flex';
+        if (videoEl) {
+          videoEl.style.display = 'none';
+          videoEl.classList.remove('active');
+        }
+        if (placeholderEl) {
+          placeholderEl.classList.remove('hidden');
+          placeholderEl.style.display = 'flex';
+        }
       } else {
-        if (stateEl) {
-          stateEl.className = 'camera-status unverified';
-          stateEl.textContent = '● 未验证';
+        // connecting or unverified
+        if (state === 'connecting') {
+          if (stateEl) {
+            stateEl.className = 'camera-status unverified';
+            stateEl.textContent = '● 连接中...';
+          }
+          cameraEl.classList.add('connecting');
+        } else {
+          if (stateEl) {
+            stateEl.className = 'camera-status unverified';
+            stateEl.textContent = '● 未验证';
+          }
+          cameraEl.classList.remove('connecting');
         }
         cameraEl.classList.remove('connected');
         cameraEl.classList.add('unverified');
-        if (videoEl) videoEl.style.display = 'none';
-        if (placeholderEl) placeholderEl.style.display = 'flex';
+        if (videoEl) {
+          videoEl.style.display = 'none';
+          videoEl.classList.remove('active');
+        }
+        if (placeholderEl) {
+          placeholderEl.classList.remove('hidden');
+          placeholderEl.style.display = 'flex';
+        }
       }
     });
   }
