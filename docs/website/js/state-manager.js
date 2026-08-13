@@ -126,17 +126,18 @@ class StateManager {
     
     this.set('robot.connected', data.connected);
     this.set('robot.source', data.source);
-    const battery = data.source === 'REAL' ? (data.battery_percent ?? d.battery_percent ?? null) : null;
+    // 修复：模拟模式下也显示电池数据（用于演示）
+    const battery = data.battery_percent != null ? data.battery_percent : null;
     this.set('robot.battery', battery);
     this.set('robot.motion_state', d.basic?.motion_state ?? 0);
-    this.set('robot.gait', d.basic?.gait ?? 0);
+    this.set('robot.gait', d.basic?.gait ?? 'flat');
     this.set('robot.nav_status', d.nav_status?.status ?? 0);
     this.set('robot.loop_count', d.nav_status?.loop_count ?? 0);
     this.set('robot.total_distance', d.nav_status?.total_distance ?? 0);
     this.set('robot.position', d.position || null);
     this.set('robot.location', d.position?.location ?? null);
     this.set('robot.errors', d.errors || []);
-    this.set('robot.coverage_rate', data.inspection_stats?.coverage_rate ?? null);
+    this.set('robot.coverage_rate', data.inspection_stats?.coverage_rate ?? 0);
     
     // Update motion speed
     const m = d.motion || {};

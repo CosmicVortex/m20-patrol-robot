@@ -201,7 +201,7 @@ class DashboardView {
     // 覆盖率
     const coverageEl = document.getElementById('coverage-rate');
     if (coverageEl) {
-      const rate = robot.inspection_stats?.coverage_rate || 0;
+      const rate = robot.coverage_rate || 0;
       coverageEl.textContent = `${rate}%`;
     }
     
@@ -241,7 +241,8 @@ class DashboardView {
     // 导航状态
     const navEl = document.getElementById('nav-state');
     if (navEl) {
-      const navStatus = nav?.status || '待命中';
+      const navStatusMap = {0: '待命中', 1: '定位中', 2: '导航中', 3: '到达目标', 4: '暂停', 5: '异常'};
+      const navStatus = navStatusMap[robot.nav_status] || '未知';
       navEl.textContent = navStatus;
     }
     
