@@ -260,11 +260,76 @@ class TelemetryAdapter:
         self._clear_client(client)
 
     def _update_snapshot_no_client(self, *, error: str) -> None:
+        """Update snapshot for simulated mode with default data."""
+        import math
+        now = datetime.now(UTC)
+        
         with self._lock:
             self._snapshot.connected = False
             self._snapshot.source = "SIMULATED" if self.config.runtime_mode == "simulated" else "NO_DATA"
-            self._snapshot.received_at = None
+            self._snapshot.received_at = now.isoformat()
             self._snapshot.error_message = error
+            self._snapshot.age_ms = 0
+            
+            # 生成模拟数据（仅用于演示，无真实硬件交互）
+            if self.config.runtime_mode == "simulated":
+                # 模拟基础状态
+                self._snapshot.basic = {
+                    "motion_state": 0,  # 静止
+                    "gait": "flat",
+                    "charge": 0,
+                    "hes": 0,
+                    "control_usage_mode": 1,
+                    "direction": 0,
+                    "ooa": 0,
+                    "power_management": 0,
+                    "sleep": 0,
+                    "version": "v1.1.8",
+                }
+                
+                # 模拟运动状态
+                self._snapshot.motion = {
+                    "roll": 0.0,
+                    "pitch": 0.0,
+                    "yaw": 0.0,
+                    "omega_z": 0.0,
+                    "linear_x": 0.0,
+                    "linear_y": 0.0,
+                    "height": 0.35,
+                    "payload": 0.0,
+                    "remain_mile": 85.5,
+                }
+                
+                # 模拟设备状态
+                self._snapshot.device = {
+                    "battery_list": [{"BatteryLevel": 92}],
+                    "battery_status": {"BatteryLevel": 92},
+                    "device_temperature": 35.2,
+                    "led": 1,
+                    "gps": {"latitude": 0.0, "longitude": 0.0},
+                    "dev_enable": 1,
+                    "cpu": {"usage": 45.2},
+                }
+                
+                # 模拟导航状态
+                self._snapshot.nav_status = {
+                    "status": 0,  # 待命中
+                    "loop_count": 0,
+                    "total_distance": 0.0,
+                    "target_x": 0.0,
+                    "target_y": 0.0,
+                }
+                
+                # 模拟位置
+                self._snapshot.position = {
+                    "pos_x": 0.0,
+                    "pos_y": 0.0,
+                    "pos_z": 0.0,
+                    "location": "待定位",
+                }
+                
+                # 模拟错误列表（空）
+                self._snapshot.errors = []
 
     def _process_message(self, client: BasicServerClient, msg: PatrolMessage) -> None:
         """Parse and store status message."""
