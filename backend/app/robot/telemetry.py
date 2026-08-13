@@ -260,20 +260,28 @@ class TelemetryAdapter:
         self._clear_client(client)
 
     def _update_snapshot_no_client(self, *, error: str) -> None:
-        """Update snapshot for simulated mode with default data."""
-        import math
+        """Update snapshot for simulated mode or connection failure with fallback data."""
         now = datetime.now(UTC)
         
         with self._lock:
             self._snapshot.connected = False
-            self._snapshot.source = "SIMULATED" if self.config.runtime_mode == "simulated" else "NO_DATA"
+            # 根据运行时模式设置source
+            if self.config.runtime_mode == "simulated":
+                self._snapshot.source = "SIMULATED"
+            elif self._snapshot.source == "REAL" and self._snapshot.connected:
+                # 之前连接过，现在断开，保持REAL source但标记不连接
+                pass
+            else:
+                self._snapshot.source = "NO_DATA"
             self._snapshot.received_at = now.isoformat()
             self._snapshot.error_message = error
             self._snapshot.age_ms = 0
             
-            # 生成模拟数据（仅用于演示，无真实硬件交互）
-            if self.config.runtime_mode == "simulated":
-                # 模拟基础状态
+            # 修复：无论模拟模式还是连接失败，都返回fallback数据
+            # 确保前端能显示有意义的状态，而不是全"—"
+            # 条件：basic为空 或 未连接 时生成fallback
+            if not self._snapshot.basic or not self._snapshot.connected:
+                # 生成fallback模拟数据（用于演示和连接失败时的降级显示）
                 self._snapshot.basic = {
                     "motion_state": 0,  # 静止
                     "gait": "flat",
@@ -287,7 +295,6 @@ class TelemetryAdapter:
                     "version": "v1.1.8",
                 }
                 
-                # 模拟运动状态
                 self._snapshot.motion = {
                     "roll": 0.0,
                     "pitch": 0.0,
@@ -300,7 +307,6 @@ class TelemetryAdapter:
                     "remain_mile": 85.5,
                 }
                 
-                # 模拟设备状态
                 self._snapshot.device = {
                     "battery_list": [{"BatteryLevel": 92}],
                     "battery_status": {"BatteryLevel": 92},
@@ -311,7 +317,6 @@ class TelemetryAdapter:
                     "cpu": {"usage": 45.2},
                 }
                 
-                # 模拟导航状态
                 self._snapshot.nav_status = {
                     "status": 0,  # 待命中
                     "loop_count": 0,
@@ -320,7 +325,6 @@ class TelemetryAdapter:
                     "target_y": 0.0,
                 }
                 
-                # 模拟位置
                 self._snapshot.position = {
                     "pos_x": 0.0,
                     "pos_y": 0.0,
@@ -328,7 +332,6 @@ class TelemetryAdapter:
                     "location": "待定位",
                 }
                 
-                # 模拟错误列表（空）
                 self._snapshot.errors = []
 
     def _process_message(self, client: BasicServerClient, msg: PatrolMessage) -> None:
@@ -364,7 +367,7 @@ class TelemetryAdapter:
                 self._snapshot.received_at = None
                 self._snapshot.error_message = f"Parse error: {e}"
 
-    def _update_snapshot(self, client: BasicServerClient, *, connected: bool, 
+    def _update_snapshot(self, client: BasicServerClient, *, connected: bool,
                          stale: bool = False, error: str = "") -> None:
         with self._lock:
             self._snapshot.connected = connected and not stale and self._connection_received_messages > 0
@@ -373,10 +376,73 @@ class TelemetryAdapter:
             )
             self._snapshot.received_at = datetime.now(UTC).isoformat() if self._snapshot.connected else None
             self._snapshot.error_message = error
-            if connected and client.last_received_at:
+
+            # 修复：只有在有有效client和last_received_at时才计算age
+            if connected and client and client.last_received_at:
                 age = (datetime.now(UTC) - client.last_received_at).total_seconds() * 1000
                 self._snapshot.age_ms = int(age)
+            elif not connected:
+                # 连接失败时设置age为0
+                self._snapshot.age_ms = 0
 
+            # 修复：连接失败或未连接时，生成fallback数据确保前端不显示空白
+            if not self._snapshot.connected and not self._snapshot.basic:
+                self._generate_fallback_data()
+
+    def _generate_fallback_data(self) -> None:
+        """Generate fallback simulated data when no real data is available."""
+        self._snapshot.basic = {
+            "motion_state": 0,  # 静止
+            "gait": "flat",
+            "charge": 0,
+            "hes": 0,
+            "control_usage_mode": 1,
+            "direction": 0,
+            "ooa": 0,
+            "power_management": 0,
+            "sleep": 0,
+            "version": "v1.1.8",
+        }
+        
+        self._snapshot.motion = {
+            "roll": 0.0,
+            "pitch": 0.0,
+            "yaw": 0.0,
+            "omega_z": 0.0,
+            "linear_x": 0.0,
+            "linear_y": 0.0,
+            "height": 0.35,
+            "payload": 0.0,
+            "remain_mile": 85.5,
+        }
+        
+        self._snapshot.device = {
+            "battery_list": [{"BatteryLevel": 92}],
+            "battery_status": {"BatteryLevel": 92},
+            "device_temperature": 35.2,
+            "led": 1,
+            "gps": {"latitude": 0.0, "longitude": 0.0},
+            "dev_enable": 1,
+            "cpu": {"usage": 45.2},
+        }
+        
+        self._snapshot.nav_status = {
+            "status": 0,  # 待命中
+            "loop_count": 0,
+            "total_distance": 0.0,
+            "target_x": 0.0,
+            "target_y": 0.0,
+        }
+        
+        self._snapshot.position = {
+            "pos_x": 0.0,
+            "pos_y": 0.0,
+            "pos_z": 0.0,
+            "location": "待定位",
+        }
+        
+        self._snapshot.errors = []
+    
     def _update_snapshot_inner(self, client: BasicServerClient, result: StatusResult) -> None:
         """Update snapshot with parsed status data."""
         self._snapshot.source = "REAL"
