@@ -111,16 +111,17 @@
   
   // ── 紧急停止 ────────────────────────────────────────────────────────────────
   window.handleEmergencyStop = async function() {
-    if (!confirm('确认执行紧急停止？')) return;
+    const confirmed = await Toast.confirm('确认执行紧急停止？此操作将立即停止机器狗所有运动。');
+    if (!confirmed) return;
     
     try {
       const result = await window._api.emergencyStop();
       if (!result.command_sent) {
         throw new Error(result.message || '服务端未确认指令发送');
       }
-      alert('紧急停止指令已发送');
+      Toast.success('紧急停止指令已发送');
     } catch (e) {
-      alert('操作失败: ' + e.message);
+      Toast.error('操作失败: ' + e.message);
     }
   };
   
@@ -233,20 +234,20 @@
   window.authorizeNavigation = async function() {
     try {
       await window._api.authorizeNavigation();
-      alert('导航授权成功');
+      Toast.success('导航授权成功');
       await window._api.fetchNavStatus();
     } catch (e) {
-      alert('授权失败: ' + e.message);
+      Toast.error('授权失败: ' + e.message);
     }
   };
   
   window.deauthorizeNavigation = async function() {
     try {
       await window._api.deauthorizeNavigation();
-      alert('导航授权已撤销');
+      Toast.info('导航授权已撤销');
       await window._api.fetchNavStatus();
     } catch (e) {
-      alert('撤销失败: ' + e.message);
+      Toast.error('撤销失败: ' + e.message);
     }
   };
   

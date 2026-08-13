@@ -6,7 +6,7 @@
  * 适用分辨率: 1920x1080 基准
  */
 
-/* ========== 设计令牌系统 ========== */
+/* ========== 配色体系 ========== */
 :root {
   /* 品牌色 - 奔驰银/蓝体系 */
   --color-brand-silver: #C0C0C0;
@@ -14,7 +14,7 @@
   --color-brand-blue: #00A0E9;
   --color-brand-blue-dark: #0077B6;
   --color-brand-blue-dim: rgba(0, 160, 233, 0.12);
-  
+
   /* 背景层级 */
   --color-bg-deep: #080C14;
   --color-bg-primary: #0D1220;
@@ -22,18 +22,18 @@
   --color-bg-card: #1A2340;
   --color-bg-elevated: #1F2948;
   --color-bg-input: #0F1623;
-  
+
   /* 边框 */
   --color-border: rgba(192, 192, 192, 0.15);
   --color-border-hover: rgba(192, 192, 192, 0.35);
   --color-border-active: rgba(0, 160, 233, 0.5);
-  
+
   /* 文字 */
   --color-text-primary: #F0F4F8;
   --color-text-secondary: #A8B8D0;
   --color-text-muted: #687890;
-  --color-text-disabled: #3D4F65;
-  
+  --color-text-disabled: #5A6B80;  /* WCAG AA compliant (≥3:1) */
+
   /* 状态色 */
   --color-success: #22C55E;
   --color-success-dim: rgba(34, 197, 94, 0.12);
@@ -100,7 +100,7 @@
   --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
   
   /* 布局常量 */
-  --sidebar-width: 240px;
+  --sidebar-width: 260px;
   --topbar-height: 60px;
   --statusbar-height: 28px;
 }
@@ -557,7 +557,7 @@ button {
 
 .topbar h1 {
   margin: 0;
-  font-size: var(--fs-xl);
+  font-size: var(--fs-2xl);
   color: var(--color-text-primary);
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -757,7 +757,7 @@ button {
 /* ========== 监控网格 ========== */
 .monitor-grid {
   display: grid;
-  grid-template-columns: 1fr 340px;
+  grid-template-columns: 1fr 460px;
   gap: var(--space-4);
 }
 
@@ -1707,45 +1707,198 @@ tbody tr:last-child td {
   
   .metrics {
     grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .monitor-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .robot-panel {
-    grid-column: span 2;
-  }
-}
-
-@media (max-width: 1024px) {
-  .sidebar {
+  /* ========== Toast通知组件 ========== */
+  .toast-container {
     position: fixed;
-    left: -240px;
-    z-index: 100;
-    transition: left var(--transition-base);
+    bottom: var(--space-6);
+    right: var(--space-6);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    pointer-events: none;
   }
-  
-  .sidebar.open {
-    left: 0;
-  }
-  
-  .metrics {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .camera-wall {
-    grid-template-columns: 1fr;
-  }
-}
 
-@media (max-width: 768px) {
-  .metrics {
-    grid-template-columns: 1fr;
+  .toast {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-5);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg);
+    min-width: 280px;
+    max-width: 420px;
+    pointer-events: auto;
+    transform: translateX(120%);
+    opacity: 0;
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
-  .topbar h1 {
+
+  .toast.toast-show {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  .toast.toast-hide {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+
+  .toast-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--r-full);
+    display: grid;
+    place-items: center;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .toast-message {
+    flex: 1;
+    font-size: var(--fs-sm);
+    color: var(--color-text-primary);
+    line-height: var(--lh-base);
+  }
+
+  .toast-close {
+    width: 20px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    color: var(--color-text-muted);
     font-size: var(--fs-lg);
+    cursor: pointer;
+    border-radius: var(--r-sm);
+    transition: all var(--transition-fast);
+  }
+
+  .toast-close:hover {
+    background: var(--color-bg-elevated);
+    color: var(--color-text-primary);
+  }
+
+  /* Toast类型样式 */
+  .toast-success .toast-icon {
+    background: var(--color-success-dim);
+    color: var(--color-success);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+
+  .toast-error .toast-icon {
+    background: var(--color-error-dim);
+    color: var(--color-error);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .toast-warning .toast-icon {
+    background: var(--color-warning-dim);
+    color: var(--color-warning);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+
+  .toast-info .toast-icon {
+    background: var(--color-info-dim);
+    color: var(--color-info);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+  }
+
+  /* Toast确认对话框 */
+  .toast-confirm {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .toast-confirm-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    animation: fadeIn 200ms ease;
+  }
+
+  .toast-confirm-box {
+    position: relative;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--r-xl);
+    padding: var(--space-8);
+    max-width: 400px;
+    width: 90%;
+    box-shadow: var(--shadow-xl);
+    animation: slideUp 200ms ease;
+  }
+
+  .toast-confirm h3 {
+    margin: 0 0 var(--space-4);
+    font-size: var(--fs-xl);
+    color: var(--color-text-primary);
+    font-weight: 600;
+  }
+
+  .toast-confirm p {
+    margin: 0 0 var(--space-6);
+    font-size: var(--fs-base);
+    color: var(--color-text-secondary);
+    line-height: var(--lh-relaxed);
+  }
+
+  .toast-confirm-actions {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: flex-end;
+  }
+
+  .toast-confirm-actions .btn {
+    min-width: 80px;
+  }
+
+  .toast-confirm-hide {
+    animation: fadeOut 200ms ease forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
+  /* ========== 加载状态 ========== */
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(13, 18, 32, 0.8);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: var(--r-lg);
+  }
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-brand-blue);
+    border-radius: var(--r-full);
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
   }
   
   .control-btn-group {
