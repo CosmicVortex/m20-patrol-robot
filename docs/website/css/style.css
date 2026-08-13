@@ -1067,6 +1067,12 @@ button:focus-visible {
   font-family: var(--font-mono);
 }
 
+.gimbal-val {
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+}
+
 /* ========== 机器人状态面板 ========== */
 .robot-panel {
   background: var(--color-bg-card);
@@ -1337,11 +1343,6 @@ button:focus-visible {
   color: var(--color-text-muted);
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
 .timeline-stats {
   display: flex;
   gap: var(--space-6);
@@ -1608,11 +1609,6 @@ button:focus-visible {
   animation: fadeIn 0.3s ease;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
 /* ========== 底部状态栏 ========== */
 .foot {
   height: var(--statusbar-height);
@@ -1853,10 +1849,6 @@ tbody tr:last-child td {
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 /* ========== 响应式 ========== */
 @media (max-width: 1400px) {
   :root {
@@ -2066,16 +2058,6 @@ tbody tr:last-child td {
 
   .toast-confirm-hide {
     animation: fadeOut 200ms ease forwards;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  @keyframes fadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
   }
 
   /* ========== 加载状态 ========== */
