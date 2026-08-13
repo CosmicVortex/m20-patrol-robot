@@ -74,6 +74,17 @@ def test_navigation_message_is_refused_when_control_is_disabled():
         client.require_control_permission(message)
 
 
+def test_send_heartbeat_only_does_not_require_socket():
+    """非阻塞心跳发送方法存在，不依赖socket连接"""
+    client = BasicServerClient(BasicServerConfig(host="10.21.31.103", transmit_enabled=True))
+
+    # 方法存在且可调用签名正确（不会尝试连接socket）
+    assert hasattr(client, 'send_heartbeat_only')
+    # 未连接时调用会抛出"client is not connected"而非其他错误
+    with pytest.raises(ClientStateError, match="not connected"):
+        client.send_heartbeat_only()
+
+
 def test_client_marks_server_stale_after_documented_three_second_silence():
     client = BasicServerClient(BasicServerConfig(host="10.21.31.103", stale_after_seconds=3.0))
     client.record_received_at(datetime(2026, 8, 6, 14, 0, 0, tzinfo=UTC))

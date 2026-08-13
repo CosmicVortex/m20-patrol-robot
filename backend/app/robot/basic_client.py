@@ -188,6 +188,18 @@ class BasicServerClient:
                 return response
         raise ClientStateError(f"no response for message_id={frame_id}")
 
+    def send_heartbeat_only(self) -> None:
+        """发送心跳但不等待响应（非阻塞）。
+
+        官方文档只要求发送任意指令作为心跳保活，不要求AOS响应。
+        使用此方法避免阻塞主循环。
+        """
+        if not self.config.transmit_enabled:
+            raise ClientStateError("transmit is disabled for this client")
+        heartbeat = self.build_heartbeat()
+        self._send(heartbeat)
+        logger.debug("心跳已发送 (非阻塞)")
+
     def send_control(self, message: PatrolMessage) -> PatrolMessage:
         """Send control command. Requires control_enabled and authorization."""
         self.require_control_permission(message)

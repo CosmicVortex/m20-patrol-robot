@@ -217,9 +217,8 @@ class TelemetryAdapter:
                     # Send heartbeat every interval (required for TCP keepalive)
                     # Official doc: basic_server stops pushing data after 2s without heartbeat
                     time.sleep(self.config.heartbeat_interval_s / 2)
-                    heartbeat = client.build_heartbeat()
                     try:
-                        client.send_read_only(heartbeat)
+                        client.send_heartbeat_only()  # 非阻塞发送，不等待响应
                     except ClientStateError as e:
                         logger.debug("心跳发送失败: %s", e)
                     except Exception as e:
