@@ -185,6 +185,7 @@ button:focus-visible {
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: var(--r-sm);
+  will-change: background-position;
 }
 
 /* 脉冲动画 - 用于实时状态指示器 */
@@ -195,6 +196,7 @@ button:focus-visible {
 
 .pulse {
   animation: pulse 2s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
 /* 脉冲光环效果 */
@@ -206,6 +208,7 @@ button:focus-visible {
 
 .pulse-ring {
   animation: pulse-ring 2s ease-out infinite;
+  will-change: box-shadow;
 }
 
 /* 滑入动画 */
@@ -435,7 +438,9 @@ button:focus-visible {
   font-size: var(--fs-base);
   font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition-property: transform, box-shadow;
+  transition-duration: var(--transition-fast);
+  transition-timing-function: ease;
   margin-top: var(--space-2);
   box-shadow: var(--shadow-md);
 }
@@ -836,7 +841,9 @@ button:focus-visible {
   place-items: center;
   font-size: var(--fs-xl);
   color: var(--color-brand-blue);
-  transition: all var(--transition-base);
+  transition-property: transform, color, background-color;
+  transition-duration: var(--transition-base);
+  transition-timing-function: ease;
   flex-shrink: 0;
 }
 
@@ -1898,7 +1905,9 @@ button:focus-visible {
   color: var(--color-text-secondary);
   font-size: var(--fs-sm);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition-property: color, background-color, border-color, box-shadow;
+  transition-duration: var(--transition-fast);
+  transition-timing-function: ease;
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -2058,6 +2067,9 @@ tbody tr:last-child td {
   border-color: var(--color-border-hover);
   box-shadow: var(--shadow-card-hover);
   transform: translateY(-2px);
+  transition-property: border-color, box-shadow, transform;
+  transition-duration: var(--transition-base);
+  transition-timing-function: ease;
 }
 
 .card h3 {
