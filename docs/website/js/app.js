@@ -181,7 +181,7 @@
     try {
       await window._api.connectGimbal(host, username, password);
       hideGimbalModal();
-      alert('云台连接成功');
+      Toast.success('云台连接成功');
     } catch (e) {
       errEl.textContent = e.message;
     }
@@ -190,9 +190,9 @@
   window.scanGimbal = async function() {
     try {
       const result = await window._api.scanGimbal();
-      alert('扫描完成，找到: ' + (result.hosts?.length || 0) + ' 个设备');
+      Toast.success(`扫描完成，找到 ${result.hosts?.length || 0} 个设备`);
     } catch (e) {
-      alert('扫描失败: ' + e.message);
+      Toast.error('扫描失败: ' + e.message);
     }
   };
   
@@ -251,7 +251,7 @@
   window.captureFrame = function(cameraId) {
     const video = document.getElementById('video-' + cameraId);
     if (!video || !video.videoWidth) {
-      alert('视频未连接，无法截图');
+      Toast.error('视频未连接，无法截图');
       return;
     }
     

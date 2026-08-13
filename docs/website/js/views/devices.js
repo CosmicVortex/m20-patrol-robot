@@ -140,18 +140,19 @@ class DevicesView {
         });
         await this._loadDevices();
       } catch (err) {
-        alert(`添加设备失败: ${err.message}`);
+        Toast.error(`添加设备失败: ${err.message}`);
       }
     });
-    
+
     document.querySelectorAll('[data-delete-device]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (!confirm('确认删除该设备？')) return;
+        const confirmed = await Toast.confirm('确认删除该设备？');
+        if (!confirmed) return;
         try {
           await window._api.deleteDevice(btn.dataset.deleteDevice);
           await this._loadDevices();
         } catch (err) {
-          alert(`删除设备失败: ${err.message}`);
+          Toast.error(`删除设备失败: ${err.message}`);
         }
       });
     });

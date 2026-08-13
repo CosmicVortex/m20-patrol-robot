@@ -91,7 +91,7 @@ def test_dashboard_never_assigns_rtsp_url_to_html_video():
 
 def test_dashboard_uses_browser_playback_endpoint():
     source = (WEB / "js" / "views" / "dashboard.js").read_text(encoding="utf-8")
-    assert "videoEl.src = src.playback_url" in source
+    assert "videoEl.src = config.playback_url" in source
     assert "videoEl.src = src.rtsp_url" not in source
 
 
@@ -119,7 +119,7 @@ def test_app_initializes_router_after_login_without_duplicate_global_polling():
 def test_emergency_stop_reports_server_command_result():
     source = (WEB / "js" / "app.js").read_text(encoding="utf-8")
     emergency_block = source[
-        source.index("window.handleEmergencyStop"):source.index("// ── Gimbal Functions")
+        source.index("window.handleEmergencyStop"):source.index("// ── 云台管理")
     ]
 
     assert "command_sent" in emergency_block

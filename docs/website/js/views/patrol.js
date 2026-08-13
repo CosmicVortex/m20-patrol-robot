@@ -165,17 +165,17 @@ class PatrolView {
         });
         await this._loadTasks();
       } catch (err) {
-        alert(`创建任务失败: ${err.message}`);
+        Toast.error(`创建任务失败: ${err.message}`);
       }
     });
-    
+
     document.querySelectorAll('[data-cancel-task]').forEach(btn => {
       btn.addEventListener('click', async () => {
         try {
           await window._api.cancelTask(btn.dataset.cancelTask);
           await this._loadTasks();
         } catch (err) {
-          alert(`取消任务失败: ${err.message}`);
+          Toast.error(`取消任务失败: ${err.message}`);
         }
       });
     });
@@ -269,10 +269,10 @@ class PatrolView {
         });
         await this._loadOrders();
       } catch (err) {
-        alert(`创建工单失败: ${err.message}`);
+        Toast.error(`创建工单失败: ${err.message}`);
       }
     });
-    
+
     document.querySelectorAll('[data-update-order]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.updateOrder;
@@ -281,7 +281,7 @@ class PatrolView {
           await window._api.updateWorkOrder(id, { status });
           await this._loadOrders();
         } catch (err) {
-          alert(`更新工单失败: ${err.message}`);
+          Toast.error(`更新工单失败: ${err.message}`);
         }
       });
     });
@@ -359,18 +359,19 @@ class PatrolView {
         });
         await this._loadPoints();
       } catch (err) {
-        alert(`添加巡检点失败: ${err.message}`);
+        Toast.error(`添加巡检点失败: ${err.message}`);
       }
     });
-    
+
     document.querySelectorAll('[data-delete-point]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (!confirm('确认删除该巡检点？')) return;
+        const confirmed = await Toast.confirm('确认删除该巡检点？');
+        if (!confirmed) return;
         try {
           await window._api.deleteInspectionPoint(btn.dataset.deletePoint);
           await this._loadPoints();
         } catch (err) {
-          alert(`删除巡检点失败: ${err.message}`);
+          Toast.error(`删除巡检点失败: ${err.message}`);
         }
       });
     });

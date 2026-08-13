@@ -588,10 +588,10 @@ class DashboardView {
     });
     
     // 紧急停止
-    document.getElementById('emergency-btn')?.addEventListener('click', () => {
-      if (confirm('确认执行紧急停止？')) {
-        window.handleEmergencyStop();
-      }
+    document.getElementById('emergency-btn')?.addEventListener('click', async () => {
+      const confirmed = await Toast.confirm('确认执行紧急停止？此操作将立即停止机器狗所有运动。');
+      if (!confirmed) return;
+      window.handleEmergencyStop();
     });
     
     // 云台连接
@@ -624,9 +624,9 @@ class DashboardView {
     document.getElementById('gimbal-scan-btn')?.addEventListener('click', async () => {
       try {
         const result = await window._api.scanGimbal();
-        alert(`扫描完成，找到 ${result.hosts?.length || 0} 个设备`);
+        Toast.success(`扫描完成，找到 ${result.hosts?.length || 0} 个设备`);
       } catch (e) {
-        alert(`扫描失败: ${e.message}`);
+        Toast.error(`扫描失败: ${e.message}`);
       }
     });
   }
@@ -652,7 +652,7 @@ class DashboardView {
     window._api.startVideoStream(source).then(() => {
       this._fetchVideo();
     }).catch(e => {
-      alert(`启动视频失败: ${e.message}`);
+      Toast.error(`启动视频失败: ${e.message}`);
     });
   }
 
@@ -660,7 +660,7 @@ class DashboardView {
     window._api.probeVideoStream(source).then(() => {
       this._fetchVideo();
     }).catch(e => {
-      alert(`探测视频失败: ${e.message}`);
+      Toast.error(`探测视频失败: ${e.message}`);
     });
   }
 
@@ -678,7 +678,7 @@ class DashboardView {
   _captureFrame(cameraId) {
     const video = document.getElementById('video-' + cameraId);
     if (!video || !video.videoWidth) {
-      alert('视频未连接，无法截图');
+      Toast.error('视频未连接，无法截图');
       return;
     }
     

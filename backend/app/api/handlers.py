@@ -28,6 +28,7 @@ from backend.app.api.base_handler import BaseHandler
 from backend.app.robot.telemetry import TelemetryAdapter
 from backend.app.navigation.service import NavigationService
 from backend.app.config import WebServiceConfig
+from backend.app.protocol.messages import PatrolMessage
 
 logger = logging.getLogger(__name__)
 
@@ -445,7 +446,6 @@ class EmergencyStopHandler(BaseHandler):
         try:
             service = getattr(self.server_instance, 'motion_service', None)
             if service and hasattr(service, '_client'):
-                from backend.app.protocol.messages import PatrolMessage
                 msg = PatrolMessage(
                     message_type=2,
                     command=22,
