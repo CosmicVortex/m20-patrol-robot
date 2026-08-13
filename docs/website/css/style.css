@@ -835,29 +835,6 @@ button {
   background: #000;
 }
 
-/* 视频加载状态 */
-.camera-view::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--color-border);
-  border-top-color: var(--color-brand-blue);
-  border-radius: var(--r-full);
-  animation: spin 0.8s linear infinite;
-  opacity: 0;
-  transition: opacity var(--transition-fast);
-  pointer-events: none;
-  z-index: 2;
-}
-
-.camera.connecting .camera-view::before {
-  opacity: 1;
-}
-
 .camera-video {
   width: 100%;
   height: 100%;
@@ -868,7 +845,6 @@ button {
 
 .camera-video.active {
   display: block;
-  opacity: 1;
 }
 
 .camera-placeholder {
@@ -880,12 +856,6 @@ button {
   justify-content: center;
   gap: var(--space-3);
   background: linear-gradient(145deg, var(--color-bg-secondary), var(--color-bg-deep));
-  transition: opacity var(--transition-fast);
-}
-
-.camera-placeholder.hidden {
-  opacity: 0;
-  pointer-events: none;
 }
 
 .placeholder-icon {
@@ -1033,7 +1003,6 @@ button {
 .robot-battery {
   margin-left: auto;
   text-align: right;
-  min-width: 80px;
 }
 
 .robot-battery .battery-value {
@@ -1041,45 +1010,6 @@ button {
   font-weight: 700;
   color: var(--color-success);
   line-height: 1;
-  transition: color var(--transition-fast);
-}
-
-.robot-battery .battery-value.low {
-  color: var(--color-error);
-  animation: pulse 1s ease-in-out infinite;
-}
-
-.robot-battery .battery-value.medium {
-  color: var(--color-warning);
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
-.robot-battery .battery-bar {
-  width: 80px;
-  height: 6px;
-  background: var(--color-bg-secondary);
-  border-radius: var(--r-full);
-  margin-top: var(--space-2);
-  overflow: hidden;
-}
-
-.robot-battery .battery-bar-fill {
-  height: 100%;
-  background: var(--color-success);
-  border-radius: var(--r-full);
-  transition: width var(--transition-base), background var(--transition-fast);
-}
-
-.robot-battery .battery-bar-fill.low {
-  background: var(--color-error);
-}
-
-.robot-battery .battery-bar-fill.medium {
-  background: var(--color-warning);
 }
 
 .robot-battery .battery-label {
