@@ -608,12 +608,18 @@ class DashboardView {
     
     // 模式切换
     document.querySelectorAll('.mode-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const mode = btn.dataset.mode;
-        this._showControlMessage(`模式切换: ${btn.title}`);
-        // TODO: 实际模式下发模式切换指令
+        try {
+          // 映射UI模式到协议模式: normal=0, assist=1, navigation=2
+          const modeMap = { 'normal': 0, 'assist': 1, 'navigation': 2 };
+          await window._api.switchMode(modeMap[mode]);
+          this._showControlMessage(`已切换到${btn.title}`);
+        } catch (e) {
+          this._showControlError(`模式切换失败: ${e.message}`);
+        }
       });
     });
     
@@ -717,7 +723,7 @@ class DashboardView {
   }
 
   _startVideo(source) {
-    window._api.startVideoStream(source).then(() => {
+    window._api.startVideo(source).then(() => {
       this._fetchVideo();
     }).catch(e => {
       Toast.error(`启动视频失败: ${e.message}`);
