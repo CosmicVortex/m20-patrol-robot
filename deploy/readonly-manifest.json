@@ -1,9 +1,9 @@
 {
   "manifest_version": "1.0.0",
   "project": "m20-patrol-robot",
-  "runtime_mode": "realtime_readonly",
-  "read_only_mode": true,
-  "control_enabled": false,
+  "runtime_mode": "realtime",
+  "read_only_mode": false,
+  "control_enabled": true,
   "telemetry_rx_enabled": true,
   "telemetry_tx_enabled": false,
   "web_realtime_enabled": true,
@@ -11,6 +11,8 @@
   "web_bind_host": "0.0.0.0",
   "static_root": "docs/website",
   "stale_after_seconds": 3,
+  "auth_enabled": false,
+  "allow_anonymous": true,
   "targets": {
     "gos_host": "10.21.31.104",
     "aos_host": "10.21.31.103",

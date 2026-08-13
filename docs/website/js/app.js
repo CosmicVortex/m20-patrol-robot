@@ -62,6 +62,31 @@
   window._router.register('settings', new SettingsView());
   
   // ── 登录/登出处理 ───────────────────────────────────────────────────────────
+  // 检查是否需要登录（auth_enabled=false时自动跳过）
+  async function autoLogin() {
+    // 尝试检查当前session
+    try {
+      const resp = await fetch('/api/v1/auth/me', { credentials: 'omit' });
+      if (resp.ok) {
+        const data = await resp.json();
+        window._state.set('user', data.data);
+        window._state.set('isAuthenticated', true);
+        return true;
+      }
+    } catch (e) {
+      // 会话无效，尝试匿名访问
+    }
+
+    // 如果认证已禁用，自动创建匿名会话
+    if (window._state.get('authEnabled') === false) {
+      window._state.set('user', { username: 'anonymous', role: 'admin' });
+      window._state.set('isAuthenticated', true);
+      return true;
+    }
+
+    return false;
+  }
+
   document.getElementById('login-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     const username = document.getElementById('login-username').value.trim();
@@ -289,4 +314,22 @@
   
   // 初始化完成
   console.log('M20 Pro 巡检平台已初始化');
+
+  // ── 自动登录检查 ────────────────────────────────────────────────────────────
+  // 延迟执行，确保所有服务已初始化
+  setTimeout(async () => {
+    try {
+      const autoLoggedIn = await autoLogin();
+      if (autoLoggedIn) {
+        showApp();
+        initWebSocket();
+        window._router.init();
+      } else {
+        showLogin();
+      }
+    } catch (e) {
+      console.error('Auto-login failed:', e);
+      showLogin();
+    }
+  }, 100);
 })();
