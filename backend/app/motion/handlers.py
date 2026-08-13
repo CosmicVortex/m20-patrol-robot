@@ -286,10 +286,16 @@ class MotionAuthorizeHandler(BaseHandler):
 
         auth = self._authenticate()
         if auth is None:
+            self.send_error_response(401, "未授权访问")
+            return
+
+        # 匿名模式不允许授权控制
+        if auth.role == "anonymous":
+            self.send_error_response(403, "匿名模式不允许执行控制操作，请先登录")
             return
 
         if auth.role != "admin":
-            self.send_error_response(403, "admin role required")
+            self.send_error_response(403, "需要管理员权限")
             return
 
         service: Optional[MotionControlService] = getattr(self.server_instance, "motion_service", None)

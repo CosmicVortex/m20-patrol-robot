@@ -150,4 +150,8 @@ class TestAuthMiddleware:
         handler = FakeHandler()
 
         result = middleware.authenticate(handler)
-        assert result is None
+        # 当allow_anonymous=True时，应返回匿名用户对象而不是None
+        # 这样handler才能发送响应而不是挂起
+        assert result is not None
+        assert result.role == "anonymous"
+        assert result.user.username == "anonymous"

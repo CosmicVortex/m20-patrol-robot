@@ -101,19 +101,28 @@ class AuthMiddleware:
     def authenticate(self, handler: BaseHTTPRequestHandler) -> Optional[AuthResult]:
         """Extract and validate authentication. Returns AuthResult or None."""
         if self.allow_anonymous:
-            return None
+            # 返回匿名用户对象，而不是None，让handler能发送响应
+            return AuthResult(
+                user=AuthUser(user_id=0, username="anonymous", role="anonymous", enabled=True),
+                session=None,  # type: ignore
+                role="anonymous",
+            )
 
         token = self._extract_token(handler)
         if not token:
             if self.allow_anonymous:
-                return None
+                return AuthResult(
+                    user=AuthUser(user_id=0, username="anonymous", role="anonymous", enabled=True),
+                    session=None,  # type: ignore
+                    role="anonymous",
+                )
             raise AuthRequiredError("missing authentication token")
 
         session = self.store.resolve_session(token)
         if not session:
             raise AuthRequiredError("invalid or expired session")
 
-        if self.required_roles and not self.store.has_role(session.user, self.required_roles):
+        if self.required_roles and not self.store.has_role(session.user, list(self.required_roles)):
             raise AuthRequiredError("insufficient role")
 
         return AuthResult(
