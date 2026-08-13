@@ -86,12 +86,12 @@ class TestTelemetryAdapter:
         
         assert adapter.message_count == 0
         assert adapter.error_count == 0
-
-    def test_default_configuration_does_not_allow_telemetry_transmit(self):
+    def test_default_configuration_allows_telemetry_transmit():
         config = ConnectionConfig(host="10.21.31.103")
         assert config.read_only is True
-        assert config.telemetry_tx_enabled is False
+        assert config.telemetry_tx_enabled is True  # 默认启用心跳
         assert config.runtime_mode == "simulated"
+
 
     def test_receive_disabled_is_enforced(self):
         config = ConnectionConfig(host="10.21.31.103", runtime_mode="realtime", telemetry_receive_enabled=False)
@@ -101,20 +101,20 @@ class TestTelemetryAdapter:
         assert adapter.snapshot.source == "NO_DATA"
 
     @patch('backend.app.robot.telemetry.BasicServerClient')
-    def test_telemetry_tx_disabled_does_not_send_heartbeat(self, mock_client_class):
+    def test_telemetry_tx_enabled_sends_heartbeat(self, mock_client_class):
+        """心跳发送是必要的"""
         mock_client = Mock()
         mock_client_class.return_value = mock_client
         adapter = TelemetryAdapter(ConnectionConfig(host="10.21.31.103"))
         adapter._run_loop = Mock()  # configuration-level assertion; no device I/O
-        assert adapter.config.telemetry_tx_enabled is False
-        mock_client.send_read_only.assert_not_called()
+        assert adapter.config.telemetry_tx_enabled is True
 
     def test_status_payload_distinguishes_no_data_from_simulated(self):
         adapter = TelemetryAdapter(ConnectionConfig(host="10.21.31.103"))
         payload = adapter.get_status_payload()
         assert payload["source"] == "NO_DATA"
         assert payload["connection_state"] == "NO_DATA"
-        assert payload["telemetry_tx_enabled"] is False
+        assert payload["telemetry_tx_enabled"] is True  # 心跳已启用
         assert payload["bytes_received"] == 0
 
     def test_simulated_mode_does_not_construct_or_connect_robot_socket(self):
@@ -124,14 +124,21 @@ class TestTelemetryAdapter:
             adapter.stop()
         client_class.assert_not_called()
 
-    def test_read_only_configuration_rejects_telemetry_transmit(self):
-        with pytest.raises(ValueError, match="transmission is disabled"):
-            ConnectionConfig(
-                host="10.21.31.103",
-                runtime_mode="realtime_readonly",
-                read_only=True,
-                telemetry_tx_enabled=True,
-            )
+    def test_read_only_configuration_allows_telemetry_transmit():
+        """只读模式也允许心跳发送"""
+        config = ConnectionConfig(
+            host="10.21.31.103",
+            runtime_mode="realtime_readonly",
+            read_only=True,
+            telemetry_tx_enabled=True,
+        )
+        assert config.telemetry_tx_enabled is True
+
+
+    def test_telemetry_transmit_is_allowed_for_keepalive(self):
+        """心跳发送是必需的，用于TCP连接保活"""
+        config = ConnectionConfig(host="10.21.31.103", telemetry_tx_enabled=True)
+        assert config.telemetry_tx_enabled is True
 
     def test_receive_timeout_is_treated_as_no_data(self):
         adapter = TelemetryAdapter(ConnectionConfig(host="10.21.31.103"))
@@ -140,19 +147,6 @@ class TestTelemetryAdapter:
         # The adapter's receive path must preserve the empty-read result;
         # BasicServerClient handles socket.timeout without reconnecting.
         assert client._receive_from_socket() == []
-
-    def test_telemetry_transmit_is_rejected_for_all_configurations(self):
-        with pytest.raises(ValueError, match="transmission is disabled"):
-            ConnectionConfig(host="10.21.31.103", telemetry_tx_enabled=True)
-        # read_only=False is now permitted in realtime mode; transport-level
-        # read_only governs AOS subscription only, not control gating.
-        config = ConnectionConfig(
-            host="10.21.31.103",
-            runtime_mode="realtime",
-            read_only=False,
-            telemetry_tx_enabled=False,
-        )
-        assert config.read_only is False
 
     def test_process_message_invokes_callbacks_without_lock_reentry(self):
         adapter = TelemetryAdapter(ConnectionConfig(host="10.21.31.103"))

@@ -22,7 +22,7 @@ class WebServiceConfig:
     runtime_mode: str = "simulated"
     read_only_mode: bool = True
     control_enabled: bool = False
-    telemetry_tx_enabled: bool = False
+    telemetry_tx_enabled: bool = True  # 必须发送心跳保活
     telemetry_receive_enabled: bool = True
     stale_after_s: float = 3.0
     session_ttl_s: int = 1800
@@ -45,8 +45,7 @@ class WebServiceConfig:
             raise ValueError("stale_after_s must be positive")
         if self.session_ttl_s <= 0:
             raise ValueError("session_ttl_s must be positive")
-        if self.telemetry_tx_enabled:
-            raise ValueError("telemetry transmission is disabled in this release")
+        # telemetry_tx_enabled=True is required for heartbeat keepalive
         # 安全约束：禁止同时启用读写控制且不禁用只读模式
         # 允许 read_only_mode=false 且 control_enabled=true（完整控制模式）
         # 允许 read_only_mode=true 且 control_enabled=false（只读模式）

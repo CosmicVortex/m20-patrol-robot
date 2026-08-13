@@ -42,7 +42,7 @@ class ConnectionConfig:
     read_only: bool = True
     runtime_mode: str = "simulated"
     telemetry_receive_enabled: bool = True
-    telemetry_tx_enabled: bool = False
+    telemetry_tx_enabled: bool = True  # 必须发送心跳保活，否则AOS会在2秒后停止推送数据
 
     def __post_init__(self) -> None:
         if self.runtime_mode not in {"simulated", "realtime", "realtime_readonly"}:
@@ -51,10 +51,7 @@ class ConnectionConfig:
             raise ValueError("read_only must be boolean")
         if type(self.telemetry_receive_enabled) is not bool:
             raise ValueError("telemetry_receive_enabled must be boolean")
-        if type(self.telemetry_tx_enabled) is not bool:
-            raise ValueError("telemetry_tx_enabled must be boolean")
-        if self.telemetry_tx_enabled:
-            raise ValueError("telemetry transmission is disabled in this release")
+        # telemetry_tx_enabled is required for heartbeat to keep TCP connection alive
         # read_only is enforced per-request by handler gates, not at the
         # telemetry transport level. Transport-level read_only only governs
         # what the AOS subscription side sends back; control is gated by
@@ -216,14 +213,16 @@ class TelemetryAdapter:
                     for msg in messages:
                         self._process_message(client, msg)
                     
-                    # Send heartbeat every interval
-                    if self.config.telemetry_tx_enabled:  # 已禁用，待协议样本确认后启用
-                        time.sleep(self.config.heartbeat_interval_s / 2)
-                        heartbeat = client.build_heartbeat()
-                        try:
-                            client.send_read_only(heartbeat)
-                        except ClientStateError:
-                            logger.warning("心跳发送失败，连接可能已断开")
+                    # Send heartbeat every interval (required for TCP keepalive)
+                    # Official doc: basic_server stops pushing data after 2s without heartbeat
+                    time.sleep(self.config.heartbeat_interval_s / 2)
+                    heartbeat = client.build_heartbeat()
+                    try:
+                        client.send_read_only(heartbeat)
+                    except ClientStateError as e:
+                        logger.debug("心跳发送失败: %s", e)
+                    except Exception as e:
+                        logger.warning("心跳发送异常: %s", e)
                     
                     # Check staleness
                     now = datetime.now(UTC)
