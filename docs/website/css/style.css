@@ -874,14 +874,21 @@ button:focus-visible {
   align-items: start;
 }
 
-/* 右侧面板 - 固定宽度 */
+/* 左侧视频区域 */
+.video-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* 右侧面板 - 固定宽度，粘性定位 */
 .right-panel {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   position: sticky;
-  top: var(--topbar-height);
-  max-height: calc(100vh - var(--topbar-height));
+  top: calc(var(--topbar-height) + var(--space-4));
+  max-height: calc(100vh - var(--topbar-height) - var(--space-8));
   overflow-y: auto;
   padding-right: var(--space-2);
 }
