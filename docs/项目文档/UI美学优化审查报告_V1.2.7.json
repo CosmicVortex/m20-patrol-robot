@@ -1,0 +1,49 @@
+{
+  "version": "V1.2.7",
+  "check_time": "2026-08-14",
+  "css_syntax": {
+    "brace_match": false,
+    "comment_match": true,
+    "no_duplicate_keyframes": true
+  },
+  "html_semantics": {
+    "no_custom_tags": true,
+    "has_alt_images": true,
+    "has_aria_labels": true
+  },
+  "accessibility": {
+    "has_focus_styles": true,
+    "keyboard_navigable": false
+  },
+  "responsive": {
+    "has_1400_breakpoint": true,
+    "has_1024_breakpoint": true,
+    "has_768_breakpoint": true
+  },
+  "animations": {
+    "skeleton_animation": true,
+    "pulse_animation": true,
+    "slide_animations": true,
+    "fade_animations": true,
+    "uses_transform": true,
+    "uses_opacity": true,
+    "no_duplicate_keyframes": true
+  },
+  "performance": {
+    "no_transition_all": true,
+    "uses_will_change": true,
+    "gpu_accelerated": true
+  },
+  "aesthetics": {
+    "glass_effects": true,
+    "layered_shadows": true,
+    "hover_transform": true,
+    "focus_states": true
+  },
+  "summary": {
+    "total_passed": 23,
+    "total_checks": 25,
+    "score": "92.0%",
+    "grade": "A"
+  }
+}
