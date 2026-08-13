@@ -211,18 +211,23 @@ def test_motion_control_actions_allow_anonymous_in_test_mode(handler_class):
         return_value=SimpleNamespace(role="anonymous", user=SimpleNamespace(username="anonymous"))
     )
     handler.send_error_response = MagicMock()
+    handler.send_raw_json_response = MagicMock()  # 添加mock
     handler.server_instance = SimpleNamespace(motion_service=MagicMock())
 
     # 根据handler类型提供不同的请求参数
     if handler_class == MotionStateHandler:
         handler._parse_json_body = MagicMock(return_value={"state": 1})
+        handler.server_instance.motion_service.motion_state_switch = MagicMock(return_value={"status": "ok"})
     elif handler_class == GaitSwitchHandler:
         handler._parse_json_body = MagicMock(return_value={"gait": 0})
+        handler.server_instance.motion_service.gait_switch = MagicMock(return_value={"status": "ok"})
     elif handler_class == AxisControlHandler:
         handler._parse_json_body = MagicMock(return_value={"x": 0, "y": 1, "yaw": 0})
+        handler.server_instance.motion_service.axis_control = MagicMock(return_value={"status": "ok"})
 
     handler.do_POST()
 
     # 测试阶段不应拒绝匿名用户
     handler.send_error_response.assert_not_called()
+    # 应该成功调用service方法
     assert handler.server_instance.motion_service.mock_calls
