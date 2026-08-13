@@ -51,7 +51,7 @@ class SettingsView {
     const sourceInput = key => `
       <div class="form-group">
         <label for="rtsp-${key}">${esc(sources[key]?.label || key)}</label>
-        <input type="text" id="rtsp-${key}" name="${key}" class="input" value="${esc(sources[key]?.rtsp_url || '')}" placeholder="RTSP地址">
+        <input type="text" id="rtsp-${key}" name="${key}" class="input" value="${esc(sources[key]?.rtsp_url || '')}" placeholder="RTSP地址（可选）">
       </div>
     `;
     
@@ -122,7 +122,7 @@ class SettingsView {
       
       <div class="card" style="margin-top:var(--space-4)">
         <h3>系统信息</h3>
-        <dl style="display:grid;grid-template-columns:repeat(2,1fr);gap:var(--space-3)">
+        <dl style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3)">
           <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">Python版本</dt>
           <dd>3.8.10</dd>
           
@@ -152,6 +152,7 @@ class SettingsView {
       
       ['front','rear','thermal','body_front'].forEach(key => {
         const value = String(form.get(key) || '').trim();
+        // 允许空地址，只检查非空值是否以rtsp://开头
         if (value && !value.startsWith('rtsp://')) invalid.push(key);
         values[key] = { rtsp_url: value };
       });

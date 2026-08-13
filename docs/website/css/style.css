@@ -524,6 +524,21 @@ button {
   position: relative;
 }
 
+/* 视图容器 - 固定高度，不滚动 */
+.view-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+}
+
+.view-container h2 {
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
 /* 顶部栏 */
 .topbar {
   height: var(--topbar-height);
