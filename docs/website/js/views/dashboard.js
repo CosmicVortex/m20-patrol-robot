@@ -188,7 +188,7 @@ class DashboardView {
 
     if (batteryEl) {
       const batt = robot.battery;
-      batteryEl.textContent = batt == null ? '—' : `${batt}%`;
+      batteryEl.textContent = batt == null ? '暂无数据' : `${batt}%`;
       batteryEl.className = 'battery-total' + (batt < 20 ? ' low' : batt < 40 ? ' medium' : '');
     }
     if (batteryBar && robot.battery != null) {
@@ -199,7 +199,7 @@ class DashboardView {
     // 前电池（左）
     if (batteryLeftEl) {
       const leftBatt = robot.battery_left;
-      batteryLeftEl.textContent = leftBatt == null ? '—' : `${leftBatt}%`;
+      batteryLeftEl.textContent = leftBatt == null ? '-' : `${leftBatt}%`;
       batteryLeftEl.className = 'battery-value' + (leftBatt < 20 ? ' low' : leftBatt < 40 ? ' medium' : '');
     }
     if (batteryBarLeft && robot.battery_left != null) {
@@ -210,7 +210,7 @@ class DashboardView {
     // 后电池（右）
     if (batteryRightEl) {
       const rightBatt = robot.battery_right;
-      batteryRightEl.textContent = rightBatt == null ? '—' : `${rightBatt}%`;
+      batteryRightEl.textContent = rightBatt == null ? '-' : `${rightBatt}%`;
       batteryRightEl.className = 'battery-value' + (rightBatt < 20 ? ' low' : rightBatt < 40 ? ' medium' : '');
     }
     if (batteryBarRight && robot.battery_right != null) {
@@ -269,15 +269,14 @@ class DashboardView {
     const navEl = document.getElementById('nav-state');
     if (navEl) {
       const navStatusMap = {0: '待命中', 1: '定位中', 2: '导航中', 3: '到达目标', 4: '暂停', 5: '异常'};
-      const navStatus = navStatusMap[robot.nav_status] || '未知';
-      navEl.textContent = navStatus;
+      navEl.textContent = robot.nav_status != null ? (navStatusMap[robot.nav_status] || '未知') : '未连接';
     }
-    
+
     // 步态
     const gaitEl = document.getElementById('gait-state');
     if (gaitEl) {
       const gaitMap = {'flat': '平地', 'stairs': '楼梯', 'agile': '敏捷', 'steady': '平稳'};
-      gaitEl.textContent = gaitMap[robot.gait] || (robot.gait_code || '—');
+      gaitEl.textContent = robot.gait ? (gaitMap[robot.gait] || robot.gait) : '—';
     }
     
     // 姿态

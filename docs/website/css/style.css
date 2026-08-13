@@ -1765,20 +1765,66 @@ tbody tr:last-child td {
   :root {
     --sidebar-width: 200px;
   }
-  
+
   .metrics {
     grid-template-columns: repeat(2, 1fr);
-  /* ========== Toast通知组件 ========== */
-  .toast-container {
-    position: fixed;
-    bottom: var(--space-6);
-    right: var(--space-6);
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-    pointer-events: none;
   }
+}
+
+@media (max-width: 1024px) {
+  .monitor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .camera-wall {
+    grid-template-columns: 1fr;
+  }
+
+  .robot-panel {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 0px;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: -260px;
+    transition: left var(--transition-base);
+    z-index: 1000;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  .main {
+    margin-left: 0 !important;
+  }
+
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar-right {
+    display: none;
+  }
+}
+
+/* ========== Toast通知组件 ========== */
+.toast-container {
+  position: fixed;
+  bottom: var(--space-6);
+  right: var(--space-6);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  pointer-events: none;
+}
 
   .toast {
     display: flex;
