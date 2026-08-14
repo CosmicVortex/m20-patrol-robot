@@ -45,15 +45,16 @@ class VideoStreamManager:
     PROCESS_WAIT_TIMEOUT_S = 5
     PROBE_TIMEOUT_S = 10
 
-    def __init__(self, *, allow_real_io: bool = False) -> None:
+    def __init__(self, *, allow_real_io: bool = True) -> None:
         if type(allow_real_io) is not bool:
             raise ValueError("allow_real_io 必须为布尔值")
         self.allow_real_io = allow_real_io
+        # RTSP地址硬编码（测试阶段）
         self._streams: Dict[str, CameraConfig] = {
             "front": CameraConfig("front", "前向本体相机", "rtsp://10.21.31.103:8554/video1"),
             "rear": CameraConfig("rear", "后向本体相机", "rtsp://10.21.31.103:8554/video2"),
-            "thermal": CameraConfig("thermal", "热成像相机", ""),
-            "body_front": CameraConfig("body_front", "车身前视相机", ""),
+            "thermal": CameraConfig("thermal", "热成像相机", "rtsp://10.21.31.103:8554/thermal"),
+            "body_front": CameraConfig("body_front", "车身广角前视", "rtsp://10.21.31.103:8554/body_front"),
         }
         self._stream_states: Dict[str, StreamState] = {
             source: StreamState.DISCONNECTED for source in self._streams

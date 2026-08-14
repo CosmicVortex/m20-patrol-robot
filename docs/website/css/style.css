@@ -1,5 +1,5 @@
 /*
- * M20 Pro 巡检机器狗 Web 仪表盘 — 奔驰品牌视觉规范 V2.0
+ * M20 Pro 巡检巡逻机器人 Web 仪表盘 — 奔驰品牌视觉规范 V2.0
  *
  * 设计原则: 高端、精密、克制、科技感
  * 品牌: 中升之星奔驰
@@ -884,6 +884,8 @@ button:focus-visible {
   color: var(--color-text-primary);
   display: block;
   line-height: var(--lh-tight);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .metric span {
@@ -1702,12 +1704,12 @@ button:focus-visible {
   bottom: var(--space-8);
   right: var(--space-8);
   padding: var(--space-4) var(--space-8);
-  background: linear-gradient(135deg, var(--color-error), #DC2626);
+  background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
   color: #fff;
   font-size: var(--fs-lg);
   font-weight: 700;
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow-xl), 0 0 30px rgba(239, 68, 68, 0.4);
+  box-shadow: var(--shadow-xl), 0 0 30px rgba(220, 38, 38, 0.5);
   z-index: 100;
   transition: all var(--transition-fast);
   display: flex;
@@ -1715,11 +1717,13 @@ button:focus-visible {
   align-items: center;
   gap: 4px;
   letter-spacing: 0.05em;
+  border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .emergency-btn:hover:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: var(--shadow-xl), 0 0 50px rgba(239, 68, 68, 0.6);
+  box-shadow: var(--shadow-xl), 0 0 50px rgba(220, 38, 38, 0.7);
+  background: linear-gradient(135deg, #EF4444 0%, #B91C1C 100%);
 }
 
 .emergency-btn:active:not(:disabled) {
@@ -1727,15 +1731,17 @@ button:focus-visible {
 }
 
 .emergency-btn:disabled {
-  opacity: 0.3;
+  opacity: 0.4;
   cursor: not-allowed;
-  filter: grayscale(1);
+  filter: grayscale(0.8);
+  background: linear-gradient(135deg, #666 0%, #444 100%);
 }
 
 .emergency-btn small {
   font-size: var(--fs-xs);
   font-weight: 400;
-  opacity: 0.8;
+  opacity: 0.9;
+  letter-spacing: 0.02em;
 }
 
 /* ========== Modal ========== */
@@ -2060,6 +2066,10 @@ tbody tr:last-child td {
   box-shadow: var(--shadow-card);
   position: relative;
   overflow: hidden;
+  /* 玻璃态效果 */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(20, 29, 50, 0.8);
 }
 
 .card::before {
@@ -2111,6 +2121,50 @@ tbody tr:last-child td {
 .empty-state p {
   margin: 0 0 var(--space-4);
   font-size: var(--fs-sm);
+}
+
+/* ========== 状态指示器 ========== */
+.state-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-full);
+  display: inline-block;
+}
+
+.state-indicator.online {
+  background: var(--color-success);
+  box-shadow: 0 0 6px var(--color-success-glow);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.state-indicator.offline {
+  background: var(--color-text-muted);
+}
+
+.state-indicator.error {
+  background: var(--color-error);
+  box-shadow: 0 0 6px var(--color-error-glow);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.state-indicator.warning {
+  background: var(--color-warning);
+  box-shadow: 0 0 6px var(--color-warning-glow);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* 按钮状态四态增强 */
+.btn:focus-visible {
+  outline: 2px solid var(--color-brand-blue);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* 数值显示等宽字体 */
+.numeral {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 /* ========== 加载状态 ========== */

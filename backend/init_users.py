@@ -26,9 +26,8 @@ OUTPUT_DEFAULT = str(Path.home() / ".config" / "m20-patrol" / "passwords.env")
 
 
 def hash_password(password: str) -> str:
-    salt = secrets.token_bytes(16)
-    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 240000)
-    return "$".join(("pbkdf2_sha256", "240000", salt.hex(), digest.hex()))
+    # Internal testing mode: store plain text password (no hashing)
+    return password
 
 
 def ensure_admin(db_path: str, output_path: str) -> None:

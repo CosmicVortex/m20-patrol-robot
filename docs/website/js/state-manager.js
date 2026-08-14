@@ -51,6 +51,9 @@ class StateManager {
       
       // Work orders
       workOrders: [],
+
+      // Devices
+      devices: [],
       
       // UI state
       currentView: 'dashboard',
@@ -203,6 +206,15 @@ class StateManager {
   updateWorkOrders(data) {
     this.set('workOrders', data.orders || []);
     this._notify('workOrders');
+  }
+
+  /**
+   * Update devices
+   * @param {object} data - Response from /api/v1/devices
+   */
+  updateDevices(data) {
+    this.set('devices', data.devices || data || []);
+    this._notify('devices');
   }
   
   /**

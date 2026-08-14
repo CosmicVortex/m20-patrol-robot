@@ -21,10 +21,10 @@ def test_stream_manager_has_documented_rtsp_defaults():
     assert rear_config is not None
     assert rear_config.rtsp_url == "rtsp://10.21.31.103:8554/video2"
 
-    # Thermal camera RTSP comes from gimbal, not hardcoded
+    # Thermal camera RTSP is hardcoded for testing
     thermal_config = mgr.get_camera_config("thermal")
     assert thermal_config is not None
-    assert thermal_config.rtsp_url == ""  # To be configured from gimbal
+    assert thermal_config.rtsp_url == "rtsp://10.21.31.103:8554/thermal"
 
 
 def test_stream_manager_can_override_rtsp():

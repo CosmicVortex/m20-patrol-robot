@@ -114,6 +114,10 @@ class ApiService {
   async cancelNavigation() {
     return this.post('/navigation/cancel', {});
   }
+
+  async cancelTask(taskId) {
+    return this.post('/navigation/cancel', { task_id: taskId });
+  }
   
   async createTask(params) {
     return this.post('/navigation/tasks', params);
@@ -163,6 +167,7 @@ class ApiService {
   }
 
   async probeVideo(source) { return this.post('/video/probe', { source }); }
+  async probeVideoStream(source) { return this.post('/video/probe', { source }); }
   async startVideo(source) { return this.post('/video/start', { source }); }
   async stopVideo(source) { return this.post('/video/stop', { source }); }
   
@@ -212,6 +217,14 @@ class ApiService {
     return this.get('/inspection-points');
   }
 
+  async createInspectionPoint(params) {
+    return this.post('/inspection-points', params);
+  }
+
+  async deleteInspectionPoint(pointId) {
+    return this.delete(`/inspection-points/${pointId}`);
+  }
+
   async fetchTimeline() {
     return this.get('/timeline');
   }
@@ -226,6 +239,20 @@ class ApiService {
     return this.post('/users/password', { old_password: oldPassword, new_password: newPassword });
   }
   
+  async fetchDevices() {
+    const data = await this.get('/devices');
+    this.state.updateDevices(data);
+    return data;
+  }
+
+  async addDevice(params) {
+    return this.post('/devices', params);
+  }
+
+  async deleteDevice(deviceId) {
+    return this.delete(`/devices/${deviceId}`);
+  }
+
   // ── System Info ──────────────────────────────────────────────────────────
   
   async fetchSystemInfo() {

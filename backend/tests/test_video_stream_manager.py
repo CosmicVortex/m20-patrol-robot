@@ -9,7 +9,7 @@ from backend.app.video.stream_manager import StreamState, VideoStreamManager
 
 
 def test_default_manager_blocks_real_video_io():
-    manager = VideoStreamManager()
+    manager = VideoStreamManager(allow_real_io=False)
     result = asyncio.run(manager.probe_camera("front"))
     assert result["status"] == "BLOCKED"
 

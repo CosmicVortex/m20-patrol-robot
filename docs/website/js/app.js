@@ -1,5 +1,5 @@
 /**
- * M20 Pro 巡检机器狗管理平台 - 主应用入口
+ * M20 Pro 巡检巡逻机器人管理平台 - 主应用入口
  * 
  * 功能：
  * - 初始化所有服务（状态管理、API、WebSocket、路由）
@@ -172,7 +172,7 @@
   
   // ── 紧急停止 ────────────────────────────────────────────────────────────────
   window.handleEmergencyStop = async function() {
-    const confirmed = await Toast.confirm('确认执行紧急停止？此操作将立即停止机器狗所有运动。');
+    const confirmed = await Toast.confirm('确认执行紧急停止？此操作将立即停止巡逻机器人所有运动。');
     if (!confirmed) return;
     
     try {

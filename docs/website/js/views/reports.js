@@ -41,11 +41,23 @@ class ReportsView {
     
     // 计算统计指标
     const pendingOrders = orders.filter(o => o.status !== 'completed').length;
-    const totalDistance = navStatus.total_distance || 0;
     const loopCount = navStatus.loop_count || 0;
-    const resolveRate = orders.length > 0 
+    const resolveRate = orders.length > 0
       ? Math.round((orders.filter(o => o.status === 'completed').length / orders.length) * 100)
       : 0;
+
+    // 累计巡逻里程（从robot.total_distance获取，单位km）
+    const totalDistance = robot.total_distance || 0;
+    const distanceKm = totalDistance > 0 ? (totalDistance / 1000).toFixed(2) : '—';
+
+    // 设备在线率 - 根据机器人连接状态显示
+    const connected = robot.connected || false;
+    const source = robot.source || 'NO_DATA';
+    const deviceOnlineRate = (source === 'REAL' && connected) ? 100 : 0;
+    const deviceStatusText = source === 'REAL' && connected ? '在线' : '离线';
+
+    // 告警趋势数据 - 基于工单数据计算，无数据时显示"暂无数据"
+    const alertChartData = this._generateAlertChartData(orders);
     
     let html = `
       <h2>数据报表</h2>
@@ -69,9 +81,9 @@ class ReportsView {
         <div class="metric">
           <div class="metric-icon">◈</div>
           <div>
-            <label>总巡检距离</label>
-            <strong>${totalDistance.toFixed(1)} km</strong>
-            <span>累计巡逻里程</span>
+            <label>累计巡逻里程</label>
+            <strong>${distanceKm} km</strong>
+            <span>基于nav_status.total_distance</span>
           </div>
         </div>
         <div class="metric">
@@ -88,7 +100,7 @@ class ReportsView {
         <div class="card">
           <h3>告警趋势（近7天）</h3>
           <div id="alert-chart" style="height:300px;display:flex;align-items:flex-end;justify-content:space-around;padding:var(--space-4);gap:var(--space-2)">
-            ${this._generateAlertChart()}
+            ${alertChartData}
           </div>
         </div>
         
@@ -116,10 +128,10 @@ class ReportsView {
             <div>
               <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2)">
                 <span style="font-size:var(--fs-sm);color:var(--color-text-secondary)">设备在线率</span>
-                <span style="font-size:var(--fs-sm);font-weight:600">100%</span>
+                <span style="font-size:var(--fs-sm);font-weight:600">${deviceOnlineRate}% (${deviceStatusText})</span>
               </div>
               <div style="height:8px;background:var(--color-bg-secondary);border-radius:var(--r-full);overflow:hidden">
-                <div style="height:100%;width:100%;background:linear-gradient(90deg,var(--color-brand-blue),var(--color-brand-blue-dark));border-radius:var(--r-full)"></div>
+                <div style="height:100%;width:${deviceOnlineRate}%;background:linear-gradient(90deg,var(--color-brand-blue),var(--color-brand-blue-dark));border-radius:var(--r-full)"></div>
               </div>
             </div>
           </div>
@@ -175,11 +187,42 @@ class ReportsView {
     const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
     const values = [2, 5, 3, 8, 4, 6, 2];
     const maxVal = Math.max(...values);
-    
+
     return days.map((day, i) => `
       <div style="display:flex;flex-direction:column;align-items:center;flex:1">
         <div style="width:100%;background:linear-gradient(180deg,var(--color-warning),var(--color-error));height:${(values[i] / maxVal) * 200}px;border-radius:4px 4px 0 0;min-height:4px"></div>
         <span style="font-size:var(--fs-xs);color:var(--color-text-muted);margin-top:var(--space-2)">${day}</span>
+      </div>
+    `).join('');
+  }
+
+  _generateAlertChartData(orders) {
+    if (!orders || orders.length === 0) {
+      return '<div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--color-text-muted)">暂无数据</div>';
+    }
+
+    // 基于工单创建时间统计最近7天数据
+    const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    const now = new Date();
+    const values = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const dayOfWeek = date.getDay();
+      const dayName = days[dayOfWeek === 0 ? 6 : dayOfWeek - 1];
+      const dateStr = date.toISOString().split('T')[0];
+
+      const count = orders.filter(o => o.created_at && o.created_at.startsWith(dateStr)).length;
+      values.push({ day: dayName, count });
+    }
+
+    const maxVal = Math.max(...values.map(v => v.count), 1);
+
+    return values.map(v => `
+      <div style="display:flex;flex-direction:column;align-items:center;flex:1">
+        <div style="width:100%;background:linear-gradient(180deg,var(--color-warning),var(--color-error));height:${(v.count / maxVal) * 200}px;border-radius:4px 4px 0 0;min-height:4px" title="${v.count} 条"></div>
+        <span style="font-size:var(--fs-xs);color:var(--color-text-muted);margin-top:var(--space-2)">${v.day}</span>
       </div>
     `).join('');
   }

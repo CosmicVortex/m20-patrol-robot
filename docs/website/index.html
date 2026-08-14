@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>中升之星奔驰 · M20 Pro 巡检机器狗管理平台</title>
+<title>中升之星奔驰 · M20 Pro 巡检巡逻机器人管理平台</title>
 <link rel="stylesheet" href="css/style.css">
 <script src="js/components/toast.js"></script>
 </head>
@@ -18,7 +18,7 @@
       </svg>
       <div class="login-brand-text">
         <strong>中升之星奔驰</strong>
-        <small>M20 Pro 巡检机器狗管理平台</small>
+        <small>M20 Pro 巡检巡逻机器人管理平台</small>
       </div>
     </div>
     <div class="login-error" id="login-error"></div>
@@ -104,7 +104,7 @@
           <div class="metric">
             <div class="metric-icon success">♙</div>
             <div>
-              <label>在线机器狗</label>
+              <label>在线巡逻机器人</label>
               <strong id="robot-count">0 台</strong>
               <span id="robot-status">等待连接</span>
             </div>
@@ -150,13 +150,19 @@
                   <video id="video-front" class="camera-video" autoplay muted playsinline></video>
                   <div class="camera-placeholder" id="placeholder-front">
                     <div class="placeholder-icon">◈</div>
-                    <div class="placeholder-text">前向相机 — 等待配置RTSP地址</div>
+                    <div class="placeholder-text">前向相机 — 就绪（点击启动）</div>
                   </div>
                 </div>
                 <div class="camera-controls">
                   <button data-camera-action="start" data-camera="front" title="启动视频">▶ 启动</button>
                   <button data-camera-action="fullscreen" data-camera="front" title="全屏">⛶ 全屏</button>
-                  <button data-camera-action="capture" data-camera="front" title="截图">📸 截图</button>
+                  <button data-camera-action="capture" data-camera="front" title="截图">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    截图
+                  </button>
                 </div>
               </div>
               
@@ -170,13 +176,19 @@
                   <video id="video-rear" class="camera-video" autoplay muted playsinline></video>
                   <div class="camera-placeholder" id="placeholder-rear">
                     <div class="placeholder-icon">◈</div>
-                    <div class="placeholder-text">后向相机 — 等待配置RTSP地址</div>
+                    <div class="placeholder-text">后向相机 — 就绪（点击启动）</div>
                   </div>
                 </div>
                 <div class="camera-controls">
                   <button data-camera-action="start" data-camera="rear" title="启动视频">▶ 启动</button>
                   <button data-camera-action="fullscreen" data-camera="rear" title="全屏">⛶ 全屏</button>
-                  <button data-camera-action="capture" data-camera="rear" title="截图">📸 截图</button>
+                  <button data-camera-action="capture" data-camera="rear" title="截图">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    截图
+                  </button>
                 </div>
               </div>
               
@@ -190,13 +202,19 @@
                   <video id="video-thermal" class="camera-video" autoplay muted playsinline></video>
                   <div class="camera-placeholder" id="placeholder-thermal">
                     <div class="placeholder-icon">◈</div>
-                    <div class="placeholder-text">云台可见光 — 等待连接</div>
+                    <div class="placeholder-text">云台可见光 — 就绪（点击启动）</div>
                   </div>
                 </div>
                 <div class="camera-controls">
                   <button data-camera-action="probe" data-camera="thermal" title="探测视频">⚡ 探测</button>
                   <button data-camera-action="fullscreen" data-camera="thermal" title="全屏">⛶ 全屏</button>
-                  <button data-camera-action="capture" data-camera="thermal" title="截图">📸 截图</button>
+                  <button data-camera-action="capture" data-camera="thermal" title="截图">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    截图
+                  </button>
                 </div>
               </div>
               
@@ -210,13 +228,19 @@
                   <video id="video-body_front" class="camera-video" autoplay muted playsinline></video>
                   <div class="camera-placeholder" id="placeholder-body_front">
                     <div class="placeholder-icon">◈</div>
-                    <div class="placeholder-text">热成像 — 等待连接</div>
+                    <div class="placeholder-text">热成像相机 — 就绪（点击启动）</div>
                   </div>
                 </div>
                 <div class="camera-controls">
                   <button data-camera-action="probe" data-camera="body_front" title="探测视频">⚡ 探测</button>
                   <button data-camera-action="fullscreen" data-camera="body_front" title="全屏">⛶ 全屏</button>
-                  <button data-camera-action="capture" data-camera="body_front" title="截图">📸 截图</button>
+                  <button data-camera-action="capture" data-camera="body_front" title="截图">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    截图
+                  </button>
                 </div>
               </div>
             </div>
@@ -355,7 +379,10 @@
               <div class="joystick-control">
                 <div class="joystick-center">
                   <button class="joystick-btn center" id="motion-stand-btn" disabled title="站立">
-                    <span>🦾</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 2v20M2 12h20"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
                     <small>站立</small>
                   </button>
                 </div>
@@ -370,10 +397,20 @@
               <!-- 功能按钮 -->
               <div class="function-buttons">
                 <button class="func-btn charge" id="motion-charge-btn" disabled title="返回充电座">
-                  <span>🔋</span>回充
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="1" y="6" width="18" height="12" rx="2"/>
+                    <path d="M23 13v-2"/>
+                    <path d="M7 10l-2 4h4l-2 4"/>
+                  </svg>
+                  回充
                 </button>
                 <button class="func-btn estop" id="motion-estop-btn" disabled title="紧急停止">
-                  <span>⚠</span>急停
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="12" r="6"/>
+                    <circle cx="12" cy="12" r="2"/>
+                  </svg>
+                  急停
                 </button>
               </div>
               

@@ -162,7 +162,7 @@ class BasicServerClient:
         """Test-only loopback seam; production callers must use connect()."""
         host, port = address
         if host != "127.0.0.1" or type(port) is not int:
-            raise ValueError("test connection requires loopback endpoint")
+            raise ValueError("连接要求本地回环地址")
         if self._socket is not None:
             raise ClientStateError("client is already connected")
         self._socket = socket.create_connection(address, 1)

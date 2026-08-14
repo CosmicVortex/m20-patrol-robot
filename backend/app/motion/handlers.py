@@ -33,7 +33,7 @@ class MotionStateHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        # 测试阶段：允许所有用户执行控制操作
+        # 研发阶段：允许所有已认证用户执行控制操作
         # if auth.role != "admin":
         #     self.send_error_response(403, "需要管理员权限")
         #     return
@@ -69,7 +69,7 @@ class GaitSwitchHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        # 测试阶段：允许所有用户执行控制操作
+        # 研发阶段：允许所有已认证用户执行控制操作
         # if auth.role != "admin":
         #     self.send_error_response(403, "需要管理员权限")
         #     return
@@ -105,7 +105,7 @@ class AxisControlHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        # 测试阶段：允许所有用户执行控制操作
+        # 研发阶段：允许所有已认证用户执行控制操作
         # if auth.role != "admin":
         #     self.send_error_response(403, "需要管理员权限")
         #     return
@@ -140,7 +140,7 @@ class LightControlHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        # 测试阶段：允许所有用户执行控制操作
+        # 研发阶段：允许所有已认证用户执行控制操作
         # if auth.role != "admin":
         #     self.send_error_response(403, "需要管理员权限")
         #     return
@@ -174,7 +174,7 @@ class ModeSwitchHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        # 测试阶段：允许所有用户执行控制操作
+        # 研发阶段：允许所有已认证用户执行控制操作
         # if auth.role != "admin":
         #     self.send_error_response(403, "需要管理员权限")
         #     return
@@ -210,7 +210,7 @@ class ChargeControlHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        # 测试阶段：允许所有用户执行控制操作
+        # 研发阶段：允许所有已认证用户执行控制操作
         # if auth.role != "admin":
         #     self.send_error_response(403, "需要管理员权限")
         #     return
@@ -246,7 +246,7 @@ class SleepModeHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        # 测试阶段：允许所有用户执行控制操作
+        # 研发阶段：允许所有已认证用户执行控制操作
         # if auth.role != "admin":
         #     self.send_error_response(403, "需要管理员权限")
         #     return
@@ -334,7 +334,7 @@ class MotionDeauthorizeHandler(BaseHandler):
         if auth is None:
             return
 
-        # 测试阶段：允许所有用户执行控制操作
+        # 研发阶段：允许所有已认证用户执行控制操作
         # if auth.role != "admin":
         #     self.send_error_response(403, "需要管理员权限")
         #     return

@@ -2,7 +2,7 @@
  * DevicesView - 设备管理视图
  * 
  * 功能：
- * - 机器狗档案
+ * - 巡逻机器人档案
  * - 充电桩管理
  * - 门禁系统
  * - 环境传感器
@@ -92,7 +92,7 @@ class DevicesView {
             <div class="form-group">
               <label>设备类型</label>
               <select name="type" class="input">
-                <option value="robot">机器狗</option>
+                <option value="robot">巡逻机器人</option>
                 <option value="gimbal">云台</option>
                 <option value="charger">充电桩</option>
                 <option value="access_control">门禁</option>
@@ -107,7 +107,7 @@ class DevicesView {
             </div>
             <div class="form-group">
               <label>安装位置</label>
-              <input type="text" name="location" class="input" placeholder="例如：机器狗顶部">
+              <input type="text" name="location" class="input" placeholder="例如：巡逻机器人顶部">
             </div>
           </div>
           <div class="form-row">

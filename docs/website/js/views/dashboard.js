@@ -169,7 +169,7 @@ class DashboardView {
   }
 
   _updateMetrics(robot) {
-    // 在线机器狗数量
+    // 在线巡逻机器人数量
     const robotCountEl = document.getElementById('robot-count');
     const robotStatusEl = document.getElementById('robot-status');
     if (robotCountEl) {
@@ -195,7 +195,7 @@ class DashboardView {
       }
     }
 
-    // 机器狗运动状态
+    // 巡逻机器人运动状态
     const motionStateEl = document.getElementById('motion-state');
     if (motionStateEl) {
       const motionMap = {0:'静止',1:'站立',2:'行走',3:'慢跑',4:'上下楼',5:'摔倒'};
@@ -204,7 +204,6 @@ class DashboardView {
 
     // 电量 - 双电池显示
     const batteryEl = document.getElementById('battery-pct');
-    const batteryBar = document.getElementById('battery-bar');
     const batteryLeftEl = document.getElementById('battery-pct-left');
     const batteryRightEl = document.getElementById('battery-pct-right');
     const batteryBarLeft = document.getElementById('battery-bar-left');
@@ -214,10 +213,6 @@ class DashboardView {
       const batt = robot.battery;
       batteryEl.textContent = batt == null ? '暂无数据' : `${batt}%`;
       batteryEl.className = 'battery-total' + (batt < 20 ? ' low' : batt < 40 ? ' medium' : '');
-    }
-    if (batteryBar && robot.battery != null) {
-      batteryBar.style.width = `${robot.battery}%`;
-      batteryBar.className = 'battery-bar-fill' + (robot.battery < 20 ? ' low' : robot.battery < 40 ? ' medium' : '');
     }
 
     // 前电池（左）
@@ -488,9 +483,9 @@ class DashboardView {
   _initMap() {
     const canvas = document.getElementById('map-canvas');
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
-    
+
     const resize = () => {
       const rect = canvas.parentElement.getBoundingClientRect();
       canvas.width = rect.width;
@@ -498,16 +493,10 @@ class DashboardView {
     };
     resize();
     window.addEventListener('resize', resize);
-    
-    // 模拟巡检点
-    this._mapPoints = [
-      { x: 0.2, y: 0.3, label: '展厅入口', type: 'point' },
-      { x: 0.5, y: 0.2, label: '展车区', type: 'point' },
-      { x: 0.8, y: 0.4, label: '售后车间', type: 'point' },
-      { x: 0.3, y: 0.7, label: '停车场', type: 'point' },
-      { x: 0.6, y: 0.8, label: '充电桩', type: 'point' },
-    ];
-    
+
+    // 从API加载巡检点，移除硬编码数据
+    this._loadMapPoints();
+
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
@@ -576,6 +565,21 @@ class DashboardView {
     draw();
   }
 
+  async _loadMapPoints() {
+    try {
+      const points = await window._api.fetchInspectionPoints();
+      this._mapPoints = (points || []).map(p => ({
+        x: (p.x || 0) / 20,  // 假设坐标范围 0-20
+        y: (p.y || 0) / 15,  // 假设坐标范围 0-15
+        label: p.name || p.id,
+        type: 'point'
+      }));
+    } catch (e) {
+      console.log('Map points fetch error:', e);
+      this._mapPoints = [];
+    }
+  }
+
   _updateMap(robot) {
     // 地图由animation frame自动更新
   }
@@ -611,17 +615,17 @@ class DashboardView {
     // 导航授权
     document.getElementById('nav-authorize-btn')?.addEventListener('click', async () => {
       try {
-        await window._api.authorizeMotion();
+        await window._api.authorizeNavigation();
         await this._fetchNavStatus();
         if (Toast) Toast.success('控制授权成功');
       } catch (e) {
         this._showControlError(`授权失败: ${e.message}`);
       }
     });
-    
+
     document.getElementById('nav-deauthorize-btn')?.addEventListener('click', async () => {
       try {
-        await window._api.deauthorizeMotion();
+        await window._api.deauthorizeNavigation();
         await this._fetchNavStatus();
         if (Toast) Toast.info('控制已撤销');
       } catch (e) {
@@ -668,7 +672,7 @@ class DashboardView {
     document.getElementById('motion-stand-btn')?.addEventListener('click', async () => {
       try {
         await window._api.motionState(1); // MOTION_STATE_STAND
-        this._showControlMessage('机器狗已站立');
+        this._showControlMessage('巡逻机器人已站立');
       } catch (e) {
         this._showControlError(`站立失败: ${e.message}`);
       }
@@ -686,7 +690,7 @@ class DashboardView {
     
     // 紧急停止
     document.getElementById('motion-estop-btn')?.addEventListener('click', async () => {
-      const confirmed = await Toast.confirm('确认执行紧急停止？此操作将立即停止机器狗所有运动。');
+      const confirmed = await Toast.confirm('确认执行紧急停止？此操作将立即停止巡逻机器人所有运动。');
       if (!confirmed) return;
       window.handleEmergencyStop();
     });

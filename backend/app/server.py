@@ -66,10 +66,7 @@ class M20WebServer:
         db_path = Path(self.config.auth_db_path or (Path(__file__).parent / "data" / "m20_auth.db"))
         self.user_store = UserStore(db_path, session_ttl_s=self.config.session_ttl_s)
 
-        # Never ship a known default password in production. For demo/演示
-        # deployments the project owner has confirmed 123456 as the admin
-        # default; mark it explicitly so operators know it must be changed
-        # before any production handover.
+        # 研发阶段默认密码123456（部署后修改）
         self._ensure_admin_user()
 
         # Setup auth middleware
@@ -250,7 +247,7 @@ class M20WebServer:
         handler = self._create_handler()
 
         # Start HTTP server
-        logger.info("尝试绑定 %s:%s...", self.config.host, self.config.port)
+        logger.info("绑定端口 %s:%s...", self.config.host, self.config.port)
         try:
             self.server = ThreadingHTTPServer(
                 (self.config.host, self.config.port),
@@ -259,23 +256,8 @@ class M20WebServer:
             logger.info("✓ 端口绑定成功: %s:%s", self.config.host, self.config.port)
         except OSError as e:
             logger.error("✗ 无法绑定到 %s:%s - %s", self.config.host, self.config.port, e)
-            logger.info("尝试使用其他端口...")
-            # 尝试其他端口
-            for alt_port in range(self.config.port + 1, self.config.port + 11):
-                try:
-                    self.server = ThreadingHTTPServer(
-                        (self.config.host, alt_port),
-                        handler,
-                    )
-                    self.config = replace(self.config, port=alt_port)
-                    logger.info("✓ 使用备用端口: %s", alt_port)
-                    break
-                except OSError as e2:
-                    logger.warning("端口 %s 也被占用: %s", alt_port, e2)
-                    continue
-            else:
-                logger.error("✗ 无法绑定到任何端口（8080-8090）")
-                raise RuntimeError("无法绑定到任何端口")
+            logger.error("请检查端口是否被占用，或修改 deploy/readonly-manifest.json 中的端口配置")
+            raise
 
         logger.info("")
         logger.info("M20 Web Service 已启动")
@@ -284,10 +266,12 @@ class M20WebServer:
         logger.info("  只读模式: %s", self.config.read_only_mode)
         logger.info("  控制启用: %s", self.config.control_enabled)
         logger.info("  认证启用: %s", self.config.auth_enabled)
-        logger.info("  云台地址: %s", self.config.gimbal_host or "未配置")
         logger.info("")
-        logger.info("遥测目标: %s:%s (模式: %s)", self.config.aos_host, self.config.aos_port, self.config.runtime_mode)
-        logger.info("安全配置: 只读模式=%s, 控制命令=%s", self.config.read_only_mode, self.config.control_enabled)
+        logger.info("遥测目标:")
+        logger.info("  AOS: %s:%s (basic_server TCP)", self.config.aos_host or "未配置", self.config.aos_port)
+        logger.info("  云台: %s (HTTP API)", self.config.gimbal_host or "未配置")
+        logger.info("")
+        logger.info("注意: 服务已启动，但设备连接状态取决于实际网络环境")
         logger.info("=" * 60)
 
         # 设置信号处理器

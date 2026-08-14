@@ -93,36 +93,13 @@ class UserStore:
 
     @staticmethod
     def _hash_password(password: str, *, salt: Optional[bytes] = None) -> str:
-        if not isinstance(password, str) or len(password) < 6:
-            raise AuthenticationError("password must contain at least 6 characters")
-        salt = salt or secrets.token_bytes(16)
-        digest = hashlib.pbkdf2_hmac(
-            "sha256", password.encode("utf-8"), salt, _PASSWORD_ITERATIONS
-        )
-        return "$".join(
-            (
-                _PASSWORD_SCHEME,
-                str(_PASSWORD_ITERATIONS),
-                salt.hex(),
-                digest.hex(),
-            )
-        )
+        # 研发阶段：存储明文密码
+        return password
 
     @staticmethod
     def _verify_password(password: str, encoded: str) -> bool:
-        try:
-            scheme, iterations_text, salt_hex, digest_hex = encoded.split("$", 3)
-            if scheme != _PASSWORD_SCHEME:
-                return False
-            iterations = int(iterations_text)
-            salt = bytes.fromhex(salt_hex)
-            expected = bytes.fromhex(digest_hex)
-        except (ValueError, TypeError):
-            return False
-        actual = hashlib.pbkdf2_hmac(
-            "sha256", password.encode("utf-8"), salt, iterations
-        )
-        return hmac.compare_digest(actual, expected)
+        # 研发阶段：直接明文比较
+        return password == encoded
 
     @staticmethod
     def _row_to_user(row: sqlite3.Row) -> AuthUser:

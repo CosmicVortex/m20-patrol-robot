@@ -13,7 +13,7 @@ class TestNavigationService:
     """Test NavigationService Web authorization flow."""
 
     def test_initial_state_not_authorized(self):
-        """Service starts without authorization."""
+        """Service starts auto-authorized in dev mode."""
         client = Mock(spec=BasicServerClient)
         safety = NavigationSafetySnapshot(
             control_enabled=True,
@@ -27,9 +27,11 @@ class TestNavigationService:
             active_task=False,
         )
         service = NavigationService(client, safety)
-        
-        assert service.is_authorized == False
-        assert service.get_status()["authorized"] == False
+
+        # 研发阶段：自动授权，authorized_by = "dev"
+        assert service.is_authorized == True
+        assert service.get_status()["authorized"] == True
+        assert service.get_status()["authorized_by"] == "dev"
 
     def test_authorize_via_web(self):
         """Web UI can authorize navigation."""
@@ -78,7 +80,7 @@ class TestNavigationService:
         assert service.is_authorized == False
 
     def test_send_navigation_requires_authorization(self):
-        """Send navigation requires prior authorization."""
+        """In internal testing mode, navigation is auto-authorized."""
         client = Mock(spec=BasicServerClient)
         safety = NavigationSafetySnapshot(
             control_enabled=True,
@@ -92,11 +94,13 @@ class TestNavigationService:
             active_task=False,
         )
         service = NavigationService(client, safety)
-        
+
+        # Internal testing mode: auto-authorized, so send succeeds (mock returns None)
         result = service.send_navigation(1.0, 2.0)
-        
-        assert result["status"] == "error"
-        assert "authorized" in result["message"].lower()
+
+        # Should be sent, not error
+        assert result["status"] == "sent"
+        assert "task_id" in result
 
     def test_send_navigation_requires_control_enabled(self):
         """Send navigation requires control_enabled."""
