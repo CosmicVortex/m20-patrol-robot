@@ -54,7 +54,13 @@ class StateManager {
 
       // Devices
       devices: [],
-      
+
+      // Patrol tasks
+      tasks: [],
+
+      // Inspection points
+      inspectionPoints: [],
+
       // UI state
       currentView: 'dashboard',
       sidebarOpen: true,
@@ -215,6 +221,24 @@ class StateManager {
   updateDevices(data) {
     this.set('devices', data.devices || data || []);
     this._notify('devices');
+  }
+
+  /**
+   * Update patrol tasks
+   * @param {object} data - Response from /api/v1/navigation/tasks
+   */
+  updateTasks(data) {
+    this.set('tasks', data.tasks || data || []);
+    this._notify('tasks');
+  }
+
+  /**
+   * Update inspection points
+   * @param {object} data - Response from /api/v1/inspection-points
+   */
+  updateInspectionPoints(data) {
+    this.set('inspectionPoints', data.points || data || []);
+    this._notify('inspectionPoints');
   }
   
   /**

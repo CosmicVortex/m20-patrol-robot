@@ -214,7 +214,9 @@ class ApiService {
   // ── Inspection Points ────────────────────────────────────────────────────
   
   async fetchInspectionPoints() {
-    return this.get('/inspection-points');
+    const data = await this.get('/inspection-points');
+    this.state.updateInspectionPoints(data);
+    return data;
   }
 
   async createInspectionPoint(params) {
