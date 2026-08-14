@@ -594,10 +594,6 @@ class GimbalAngleHandler(BaseHandler):
             self.send_error_response(403, "需要管理员权限")
             return
 
-        if self.config and self.config.read_only_mode:
-            self.send_json_response(200, {"status": "blocked", "message": "只读模式：云台控制已禁用"})
-            return
-
         gimbal = self.gimbal_adapter
         if not gimbal or not getattr(gimbal, "connected", False):
             self.send_error_response(503, "云台未连接")

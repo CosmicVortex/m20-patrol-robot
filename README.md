@@ -3,7 +3,7 @@
 面向中升之星奔驰的机器狗安保巡逻系统，基于山猫 M20 Pro 机器狗二次开发。
 
 [![Version](https://img.shields.io/badge/version-V1.1.3-blue.svg)](./CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/tests-235%20passed-green.svg)](./backend/tests/)
+[![Tests](https://img.shields.io/badge/tests-232%20passed-green.svg)](./backend/tests/)
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
 
 **机型**: 山猫 M20 Pro  
@@ -98,169 +98,100 @@ m20-patrol-robot/
 │   │   ├── server.py           # 服务入口
 │   │   ├── config.py           # 配置加载
 │   │   ├── protocol/           # APDU帧编解码
-│   │   ├── robot/              # TCP客户端、遥测适配器
-│   │   ├── navigation/         # 导航控制
+│   │   ├── robot/              # basic_server客户端
+│   │   ├── api/                # HTTP API处理器
+│   │   ├── auth/               # 认证模块
 │   │   ├── motion/             # 运动控制
+│   │   ├── navigation/         # 导航控制
 │   │   ├── gimbal/             # 云台控制
-│   │   ├── video/              # 视频流管理
-│   │   ├── auth/               # 认证鉴权
-│   │   ├── api/                # HTTP API
-│   │   └── websocket/          # WebSocket支持
-│   └── tests/                  # 单元测试（235个用例）
-├── deploy/
+│   │   └── video/              # 视频管理
+│   └── tests/                  # 单元测试 (232 cases)
+├── deploy/                     # 部署脚本
+│   ├── readonly-manifest.json  # 运行时配置
 │   ├── scripts/                # 部署脚本
-│   ├── offline/ffmpeg/         # FFmpeg离线包
-│   └── readonly-manifest.json  # 运行时配置
+│   └── offline/ffmpeg/         # FFmpeg离线包
 ├── docs/
-│   ├── 官方文档/               # 山猫官方手册
-│   │   ├── 机器狗本体/         # 16份协议文档
-│   │   └── 上装设备/           # 3份云台资料
-│   ├── 项目文档/               # 项目文档
-│   └── website/                # Web前端资源
-└── README.md
+│   ├── 官方文档/
+│   │   ├── 机器狗本体/         # 山猫协议文档 (16个)
+│   │   └── 上装设备/           # 数尔云台文档 (4个)
+│   └── 项目文档/
+│       ├── 01-需求分析.md      # 功能需求、验收标准
+│       ├── 02-项目架构.md      # 系统架构、模块划分
+│       ├── 03-模块说明.md      # API接口完整列表
+│       ├── 04-机器狗环境说明.md # 网络拓扑、诊断命令
+│       ├── 05-部署说明.md      # 离线部署流程
+│       └── 06-演示方案.md      # 演示流程设计
+└── website/                    # Web前端
 ```
 
 ---
 
-## API端点
+## API接口概览
 
-### 认证
+| 类别 | 端点数 | 说明 |
+|------|--------|------|
+| 认证 | 3 | login/logout/me |
+| 状态 | 3 | health/status/latest/devices |
+| 运动控制 | 9 | state/gait/axis/light/charge/sleep/authorize/deauthorize/stop |
+| 导航控制 | 5 | authorize/deauthorize/tasks/cancel/status |
+| 云台控制 | 8 | connect/state/move/zoom/angle/scan/device-info/video |
+| 视频管理 | 6 | status/config/probe/start/stop/playback |
+| 业务管理 | 8 | work-orders/inspection-points/timeline/users/info |
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | /api/v1/auth/login | 用户登录 |
-| POST | /api/v1/auth/logout | 退出登录 |
-| GET | /api/v1/auth/me | 当前用户信息 |
-
-### 状态查询
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | /api/v1/status/latest | 最新状态 |
-| GET | /api/v1/status/history | 历史状态 |
-
-### 导航控制
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | /api/v1/navigation/authorize | 授权导航 |
-| POST | /api/v1/navigation/deauthorize | 取消导航授权 |
-| POST | /api/v1/navigation/tasks | 创建/发送导航任务 |
-| POST | /api/v1/navigation/cancel | 取消任务 |
-| GET | /api/v1/navigation/status | 查询导航状态 |
-
-### 运动控制
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | /api/v1/motion/state | 运动状态控制 |
-| POST | /api/v1/motion/authorize | 授权运动控制 |
-| POST | /api/v1/motion/deauthorize | 取消运动授权 |
-
-### 云台控制
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | /api/v1/gimbal/state | 云台状态 |
-| POST | /api/v1/gimbal/move | 方向控制 |
-| POST | /api/v1/gimbal/zoom | 变倍控制 |
-| POST | /api/v1/gimbal/angle | 角度控制 |
-| POST | /api/v1/gimbal/connect | 连接云台 |
-| GET | /api/v1/gimbal/scan | 扫描云台设备 |
-| GET | /api/v1/gimbal/device-info | 设备信息 |
-| GET | /api/v1/gimbal/video | 云台视频流 |
-
-### 视频管理
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | /api/v1/video | 视频状态 |
-| POST | /api/v1/video/config | 配置RTSP地址 |
-| GET | /api/v1/video/playback/{source} | 视频回放 |
-
-### 紧急控制
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | /api/v1/emergency/stop | 紧急停止 |
-
-### 工单管理
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | /api/v1/work-orders | 获取工单列表 |
-| POST | /api/v1/work-orders | 创建工单 |
-| PUT | /api/v1/work-orders/{id} | 更新工单状态 |
-
-### 巡检管理
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | /api/v1/inspection-points | 巡检点列表 |
-| POST | /api/v1/inspection-points | 添加巡检点 |
-| DELETE | /api/v1/inspection-points/{id} | 删除巡检点 |
-
-### 系统信息
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | /api/v1/system/info | 系统信息 |
-| GET | /api/v1/users | 用户列表 |
-| POST | /api/v1/users/password | 修改密码 |
-
----
-
-## 文档索引
-
-| 文档 | 说明 |
-|------|------|
-| [01-需求分析](./docs/项目文档/01-需求分析.md) | 功能需求清单、接口定义、验收规则 |
-| [02-项目架构](./docs/项目文档/02-项目架构.md) | 系统拓扑、协议端口、安全边界 |
-| [03-模块说明](./docs/项目文档/03-模块说明.md) | 代码结构、接口定义、测试覆盖 |
-| [04-机器狗环境说明](./docs/项目文档/04-机器狗环境说明.md) | 主机架构、网络配置、常用命令 |
-| [05-部署说明](./docs/项目文档/05-部署说明.md) | 安装步骤、故障排查、回滚方案 |
-| [06-演示方案](./docs/项目文档/06-演示方案.md) | 演示流程、脚本、应急预案 |
-
----
-
-## 官方文档
-
-- [山猫M20软件开发指南V1.2.1](./docs/官方文档/机器狗本体/山猫M20软件开发指南V1.2.1.md)
-- [basic_server通信协议](./docs/官方文档/机器狗本体/山猫M20basic_server通信协议总览.md)
-- [数尔WEB通讯协议V1.0](./docs/官方文档/上装设备/数尔WEB通讯协议V1.0.md)
+完整API文档见 [03-模块说明.md](./docs/项目文档/03-模块说明.md)
 
 ---
 
 ## 故障排查
 
-### 服务未启动
-
+### 服务无法启动
 ```bash
-# 检查服务状态
-systemctl --user status m20-patrol-readonly
-
-# 查看启动日志
-journalctl --user -u m20-patrol-readonly -n 50 --no-pager
+journalctl --user -u m20-patrol-readonly -n 50
+ss -tlnp | grep 8080
 ```
 
-### 端口被占用
-
+### 无法连接AOS
 ```bash
-# 检查端口
-netstat -tlnp | grep :8080
-
-# 服务会自动尝试备用端口（8081-8090）
+ping 10.21.31.103
+nc -zv 10.21.31.103 30001
 ```
 
-### AOS连接失败
-
+### FFmpeg问题
 ```bash
-# 测试TCP连接
-timeout 3 bash -c 'echo > /dev/tcp/10.21.31.103/30001' && echo "OK" || echo "FAIL"
+ffmpeg -version
+ffprobe rtsp://10.21.31.103:8554/video1
 ```
 
 ---
 
-**版本**: V1.0.0
-**更新日期**: 2026-08-13
-**部署客户**: 中升之星奔驰
+## 开发说明
+
+### 运行测试
+```bash
+cd /opt/data/m20-patrol-robot
+PYTHONPATH=. uv run --with pytest pytest -q backend/tests/
+```
+
+### 编译检查
+```bash
+python3 -m compileall -q backend/
+```
+
+### 本地预览
+```bash
+cd docs/website
+python3 -m http.server 8765
+# 访问 http://localhost:8765/index.html
+```
+
+---
+
+## 版本历史
+
+详见 [CHANGELOG.md](./CHANGELOG.md)
+
+---
+
+## 许可证
+
+MIT License - 详见 [LICENSE](./LICENSE)

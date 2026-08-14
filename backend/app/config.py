@@ -24,7 +24,7 @@ class WebServiceConfig:
     control_enabled: bool = False
     telemetry_tx_enabled: bool = True  # 必须发送心跳保活
     telemetry_receive_enabled: bool = True
-    stale_after_s: float = 3.0
+    stale_after_s: float = 3.0  # 对应manifest.json中的stale_after_seconds
     session_ttl_s: int = 1800
     auth_enabled: bool = True
     allow_anonymous: bool = False
