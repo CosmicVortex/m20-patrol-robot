@@ -50,6 +50,10 @@ from backend.app.api.extended_handlers import (
     WorkOrdersListHandler,
     WorkOrdersUpdateHandler,
 )
+from backend.app.api.device_handlers import (
+    DevicesCreateHandler,
+    DevicesDeleteHandler,
+)
 from backend.app.gimbal.adapter import SoarGimbalAdapter
 from backend.app.video.stream_manager import VideoStreamManager
 from backend.app.motion.handlers import (
@@ -125,6 +129,9 @@ class ApiRouter:
         ("GET", "/api/v1/work-orders"): WorkOrdersListHandler,
         ("POST", "/api/v1/work-orders"): WorkOrdersCreateHandler,
         ("PUT", "/api/v1/work-orders/"): WorkOrdersUpdateHandler,
+        # Device management routes
+        ("POST", "/api/v1/devices"): DevicesCreateHandler,
+        ("DELETE", "/api/v1/devices/"): DevicesDeleteHandler,
     }
 
     # WebSocket paths
