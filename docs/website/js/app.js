@@ -171,6 +171,12 @@
   };
   
   // ── 紧急停止 ────────────────────────────────────────────────────────────────
+  document.getElementById('emergency-btn')?.addEventListener('click', () => {
+    if (window.handleEmergencyStop) {
+      window.handleEmergencyStop();
+    }
+  });
+
   window.handleEmergencyStop = async function() {
     const confirmed = await Toast.confirm('确认执行紧急停止？此操作将立即停止巡逻机器人所有运动。');
     if (!confirmed) return;

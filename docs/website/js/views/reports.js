@@ -183,19 +183,6 @@ class ReportsView {
     this._content.innerHTML = html;
   }
 
-  _generateAlertChart() {
-    const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
-    const values = [2, 5, 3, 8, 4, 6, 2];
-    const maxVal = Math.max(...values);
-
-    return days.map((day, i) => `
-      <div style="display:flex;flex-direction:column;align-items:center;flex:1">
-        <div style="width:100%;background:linear-gradient(180deg,var(--color-warning),var(--color-error));height:${(values[i] / maxVal) * 200}px;border-radius:4px 4px 0 0;min-height:4px"></div>
-        <span style="font-size:var(--fs-xs);color:var(--color-text-muted);margin-top:var(--space-2)">${day}</span>
-      </div>
-    `).join('');
-  }
-
   _generateAlertChartData(orders) {
     if (!orders || orders.length === 0) {
       return '<div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--color-text-muted)">暂无数据</div>';

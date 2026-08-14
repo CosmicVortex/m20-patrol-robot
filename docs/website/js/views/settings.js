@@ -133,17 +133,17 @@ class SettingsView {
         <h3>系统信息</h3>
         <dl style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3)">
           <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">Python版本</dt>
-          <dd>3.8.10</dd>
-          
+          <dd id="setting-python-version">待配置</dd>
+
           <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">固件版本</dt>
-          <dd>v1.1.8</dd>
-          
+          <dd id="setting-firmware-version">待配置</dd>
+
           <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">协议版本</dt>
-          <dd>V1.2.1</dd>
-          
+          <dd id="setting-protocol-version">待配置</dd>
+
           <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">云台型号</dt>
           <dd>SR-UPA810T609</dd>
-          
+
           <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">部署时间</dt>
           <dd>${new Date().toLocaleDateString('zh-CN')}</dd>
         </dl>

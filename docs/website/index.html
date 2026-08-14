@@ -608,6 +608,35 @@
   </div>
 </div>
 
+<!-- 视频配置弹窗 -->
+<div class="modal-overlay" id="video-config-modal">
+  <div class="modal-box">
+    <h3>视频源配置</h3>
+    <p style="font-size:var(--fs-xs);color:var(--color-text-muted);margin-bottom:var(--space-4)">保存RTSP地址配置；浏览器播放需后端playback_url。</p>
+    <div class="form-group">
+      <label for="rtsp-front">前向本体相机</label>
+      <input type="text" id="rtsp-front" class="input" placeholder="rtsp://10.21.31.103:8554/video1">
+    </div>
+    <div class="form-group">
+      <label for="rtsp-rear">后向本体相机</label>
+      <input type="text" id="rtsp-rear" class="input" placeholder="rtsp://10.21.31.103:8554/video2">
+    </div>
+    <div class="form-group">
+      <label for="rtsp-thermal">云台可见光</label>
+      <input type="text" id="rtsp-thermal" class="input" placeholder="rtsp://10.21.31.108:554/id=1&type=0">
+    </div>
+    <div class="form-group">
+      <label for="rtsp-body_front">热成像</label>
+      <input type="text" id="rtsp-body_front" class="input" placeholder="rtsp://10.21.31.108:554/id=2&type=0">
+    </div>
+    <div class="modal-error" id="video-config-error" style="margin:var(--space-3) 0;font-size:var(--fs-sm)"></div>
+    <div style="display:flex;gap:var(--space-3);justify-content:flex-end;margin-top:var(--space-6)">
+      <button class="btn" onclick="window.hideVideoConfigModal()">取消</button>
+      <button class="btn btn-primary" id="video-config-submit" onclick="window.saveVideoConfig()">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- 脚本 -->
 <script src="js/state-manager.js"></script>
 <script src="js/api-service.js"></script>
@@ -619,5 +648,6 @@
 <script src="js/views/reports.js"></script>
 <script src="js/views/settings.js"></script>
 <script src="js/app.js"></script>
+<div id="toast-container"></div>
 </body>
 </html>
