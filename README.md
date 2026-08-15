@@ -1,14 +1,14 @@
 # M20 Pro 巡逻机器人系统
 
-面向中升之星奔驰的机器狗安保巡逻系统，基于山猫 M20 Pro 机器狗二次开发。
+面向中升之星奔驰4S店的机器狗安保巡逻系统，基于山猫 M20 Pro 机器狗二次开发。
 
-[![Version](https://img.shields.io/badge/version-V1.1.3-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-V1.1.4-blue.svg)](./CHANGELOG.md)
 [![Tests](https://img.shields.io/badge/tests-232%20passed-green.svg)](./backend/tests/)
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
 
-**机型**: 山猫 M20 Pro
-**部署位置**: GOS 主机（10.21.31.104）
-**状态**: 待实机验证
+**机型**: 山猫 M20 Pro  
+**部署位置**: GOS 主机（10.21.31.104）  
+**状态**: 待实机验证  
 
 ---
 
