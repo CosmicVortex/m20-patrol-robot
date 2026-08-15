@@ -116,7 +116,7 @@ class NavigationService:
         return {"status": "deauthorized"}
 
     def send_navigation(self, pos_x: float, pos_y: float, pos_z: float = 0.0, 
-                        angle_yaw: float = 0.0, map_id: int = 1) -> dict[str, Any]:
+                        angle_yaw: float = 0.0, map_id: int = 0) -> dict[str, Any]:
         """Send single-point navigation command."""
         if not self._auth.authorized:
             return {"status": "error", "message": "Navigation not authorized"}

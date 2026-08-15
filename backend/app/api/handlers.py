@@ -348,7 +348,7 @@ class NavigationTaskHandler(BaseHandler):
             pos_y = body.get("pos_y", 0.0)
             pos_z = body.get("pos_z", 0.0)
             angle_yaw = body.get("angle_yaw", 0.0)
-            map_id = body.get("map_id", 1)
+            map_id = body.get("map_id", 0)  # 官方协议默认值0，与service.py保持一致
 
             try:
                 result = nav_service.send_navigation(pos_x, pos_y, pos_z, angle_yaw, map_id)
