@@ -48,11 +48,11 @@ curl http://127.0.0.1:8080/api/v1/status/latest
 
 | 配置项 | 值 | 说明 |
 |--------|-----|------|
-| runtime_mode | realtime_readonly | 实时遥测只读 |
-| read_only_mode | true | 禁止控制命令 |
-| control_enabled | false | 禁用运动/导航控制 |
-| telemetry_tx_enabled | false | 不发送心跳 |
-| allow_real_io | false | 禁止真实IO |
+|| runtime_mode | realtime_readonly | 实时遥测只读 |
+|| read_only_mode | true | 禁止控制命令 |
+|| control_enabled | false | 禁用运动/导航控制 |
+|| telemetry_tx_enabled | true | 发送心跳（仅用于保活，不发送控制指令） |
+|| allow_real_io | true | 允许真实IO（由read_only_mode控制实际执行） |
 
 ### 本地测试模式
 
@@ -65,8 +65,7 @@ vim deploy/readonly-manifest.json
 # 修改为测试模式
 sed -i 's/"read_only_mode": true/"read_only_mode": false/' deploy/readonly-manifest.json
 sed -i 's/"control_enabled": false/"control_enabled": true/' deploy/readonly-manifest.json
-sed -i 's/"telemetry_tx_enabled": false/"telemetry_tx_enabled": true/' deploy/readonly-manifest.json
-sed -i 's/"allow_real_io": false/"allow_real_io": true/' deploy/readonly-manifest.json
+# 注：telemetry_tx_enabled和allow_real_io当前已为true，无需修改
 ```
 
 ---
