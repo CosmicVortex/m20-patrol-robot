@@ -6,9 +6,9 @@
 [![Tests](https://img.shields.io/badge/tests-232%20passed-green.svg)](./backend/tests/)
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
 
-**机型**: 山猫 M20 Pro  
-**部署位置**: GOS 主机（10.21.31.104）  
-**状态**: 🟡 offline_verified（待实机验证）
+**机型**: 山猫 M20 Pro
+**部署位置**: GOS 主机（10.21.31.104）
+**状态**: 待实机验证
 
 ---
 
@@ -42,17 +42,17 @@ curl http://127.0.0.1:8080/api/v1/status/latest
 
 ## 配置说明
 
-### 生产模式（部署后）
+### 生产模式
 
 当前配置文件 `deploy/readonly-manifest.json` 设置为只读模式：
 
 | 配置项 | 值 | 说明 |
 |--------|-----|------|
-|| runtime_mode | realtime_readonly | 实时遥测只读 |
-|| read_only_mode | true | 禁止控制命令 |
-|| control_enabled | false | 禁用运动/导航控制 |
-|| telemetry_tx_enabled | true | 发送心跳（仅用于保活，不发送控制指令） |
-|| allow_real_io | true | 允许真实IO（由read_only_mode控制实际执行） |
+| runtime_mode | realtime_readonly | 实时遥测只读 |
+| read_only_mode | true | 禁止控制命令 |
+| control_enabled | false | 禁用运动/导航控制 |
+| telemetry_tx_enabled | true | 发送心跳（仅用于保活，不发送控制指令） |
+| allow_real_io | true | 允许真实IO（由read_only_mode控制实际执行） |
 
 ### 本地测试模式
 
