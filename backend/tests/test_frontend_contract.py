@@ -109,9 +109,8 @@ def test_websocket_pong_frames_are_unmasked_and_limited():
 
 def test_app_initializes_router_after_login_without_duplicate_global_polling():
     source = (WEB / "js" / "app.js").read_text(encoding="utf-8")
-    login_block = source[source.index("window.handleLogin"):source.index("window.handleLogout")]
-
-    assert "window._router.init()" in login_block
+    # Auto-login: check router initialization and app display
+    assert "window._router.init()" in source
     assert "style.display = ''" in source
     assert "setInterval(async () =>" not in source
 
