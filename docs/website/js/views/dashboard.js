@@ -523,13 +523,14 @@ class DashboardView {
         
         ctx.beginPath();
         ctx.arc(x, y, 8, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(251, 191, 36, 0.6)';
+        const styles = getComputedStyle(document.documentElement);
+        ctx.fillStyle = styles.getPropertyValue('--color-warning-dim').trim() || 'rgba(251, 191, 36, 0.6)';
         ctx.fill();
-        ctx.strokeStyle = '#FBBF24';
+        ctx.strokeStyle = styles.getPropertyValue('--color-warning').trim() || '#FBBF24';
         ctx.lineWidth = 2;
         ctx.stroke();
         
-        ctx.fillStyle = '#A8B8D0';
+        ctx.fillStyle = styles.getPropertyValue('--color-text-secondary').trim() || '#A8B8D0';
         ctx.font = '11px Inter, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(p.label, x, y - 14);
@@ -543,9 +544,10 @@ class DashboardView {
         
         ctx.beginPath();
         ctx.arc(rx, ry, 12, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 160, 233, 0.8)';
+        const brandBlue = getComputedStyle(document.documentElement).getPropertyValue('--color-brand-blue').trim() || '#00AEEF';
+        ctx.fillStyle = brandBlue.replace(')', ', 0.8)').replace('rgb(', 'rgba(').replace('#', '');
         ctx.fill();
-        ctx.strokeStyle = '#00A0E9';
+        ctx.strokeStyle = brandBlue;
         ctx.lineWidth = 3;
         ctx.stroke();
         
@@ -554,7 +556,7 @@ class DashboardView {
         const pulse = (Math.sin(time * 3) + 1) / 2;
         ctx.beginPath();
         ctx.arc(rx, ry, 12 + pulse * 10, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(0, 160, 233, ${0.3 - pulse * 0.2})`;
+        ctx.strokeStyle = `rgba(0, 174, 239, ${0.3 - pulse * 0.2})`;
         ctx.lineWidth = 2;
         ctx.stroke();
       }

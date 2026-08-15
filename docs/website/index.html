@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>中升之星奔驰 · M20 Pro 巡检巡逻机器人管理平台</title>
 <link rel="stylesheet" href="css/style.css">
+<script src="js/components/icons.js"></script>
 <script src="js/components/toast.js"></script>
 </head>
 <body>
@@ -53,19 +54,24 @@
     
     <nav class="nav" aria-label="主导航">
       <button class="active" data-view="dashboard" aria-current="page">
-        <i>◈</i>实时监控
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        实时监控
       </button>
       <button data-view="patrol">
-        <i>◉</i>巡逻管理
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        巡逻管理
       </button>
       <button data-view="devices">
-        <i>⚙</i>设备管理
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        设备管理
       </button>
       <button data-view="reports">
-        <i>▤</i>数据报表
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        数据报表
       </button>
       <button data-view="settings">
-        <i>⚙</i>系统设置
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        系统设置
       </button>
     </nav>
     
@@ -102,7 +108,9 @@
         <!-- 指标卡片 -->
         <section class="metrics">
           <div class="metric">
-            <div class="metric-icon success">♙</div>
+            <div class="metric-icon success">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            </div>
             <div>
               <label>在线巡逻机器人</label>
               <strong id="robot-count">0 台</strong>
@@ -110,7 +118,9 @@
             </div>
           </div>
           <div class="metric">
-            <div class="metric-icon">↺</div>
+            <div class="metric-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            </div>
             <div>
               <label>今日巡检圈数</label>
               <strong id="laps-count">0</strong>
@@ -118,7 +128,9 @@
             </div>
           </div>
           <div class="metric">
-            <div class="metric-icon">◎</div>
+            <div class="metric-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            </div>
             <div>
               <label>覆盖率</label>
               <strong id="coverage-rate">0%</strong>
@@ -126,7 +138,9 @@
             </div>
           </div>
           <div class="metric">
-            <div class="metric-icon warning">!</div>
+            <div class="metric-icon warning">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
             <div>
               <label>待处理工单</label>
               <strong id="work-orders">0</strong>
@@ -149,13 +163,18 @@
                 <div class="camera-view">
                   <video id="video-front" class="camera-video" autoplay muted playsinline></video>
                   <div class="camera-placeholder" id="placeholder-front">
-                    <div class="placeholder-icon">◈</div>
+                    <div class="placeholder-icon">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    </div>
                     <div class="placeholder-text">前向相机 — 就绪（点击启动）</div>
                   </div>
                 </div>
                 <div class="camera-controls">
                   <button data-camera-action="start" data-camera="front" title="启动视频">▶ 启动</button>
-                  <button data-camera-action="fullscreen" data-camera="front" title="全屏">⛶ 全屏</button>
+                  <button data-camera-action="fullscreen" data-camera="front" title="全屏">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                      全屏
+                    </button>
                   <button data-camera-action="capture" data-camera="front" title="截图">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
@@ -175,13 +194,18 @@
                 <div class="camera-view">
                   <video id="video-rear" class="camera-video" autoplay muted playsinline></video>
                   <div class="camera-placeholder" id="placeholder-rear">
-                    <div class="placeholder-icon">◈</div>
+                    <div class="placeholder-icon">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    </div>
                     <div class="placeholder-text">后向相机 — 就绪（点击启动）</div>
                   </div>
                 </div>
                 <div class="camera-controls">
                   <button data-camera-action="start" data-camera="rear" title="启动视频">▶ 启动</button>
-                  <button data-camera-action="fullscreen" data-camera="rear" title="全屏">⛶ 全屏</button>
+                  <button data-camera-action="fullscreen" data-camera="rear" title="全屏">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                      全屏
+                    </button>
                   <button data-camera-action="capture" data-camera="rear" title="截图">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
@@ -201,13 +225,18 @@
                 <div class="camera-view">
                   <video id="video-thermal" class="camera-video" autoplay muted playsinline></video>
                   <div class="camera-placeholder" id="placeholder-thermal">
-                    <div class="placeholder-icon">◈</div>
+                    <div class="placeholder-icon">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    </div>
                     <div class="placeholder-text">云台可见光 — 就绪（点击启动）</div>
                   </div>
                 </div>
                 <div class="camera-controls">
                   <button data-camera-action="probe" data-camera="thermal" title="探测视频">⚡ 探测</button>
-                  <button data-camera-action="fullscreen" data-camera="thermal" title="全屏">⛶ 全屏</button>
+                  <button data-camera-action="fullscreen" data-camera="thermal" title="全屏">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                      全屏
+                    </button>
                   <button data-camera-action="capture" data-camera="thermal" title="截图">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
@@ -227,13 +256,18 @@
                 <div class="camera-view">
                   <video id="video-body_front" class="camera-video" autoplay muted playsinline></video>
                   <div class="camera-placeholder" id="placeholder-body_front">
-                    <div class="placeholder-icon">◈</div>
+                    <div class="placeholder-icon">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    </div>
                     <div class="placeholder-text">热成像相机 — 就绪（点击启动）</div>
                   </div>
                 </div>
                 <div class="camera-controls">
                   <button data-camera-action="probe" data-camera="body_front" title="探测视频">⚡ 探测</button>
-                  <button data-camera-action="fullscreen" data-camera="body_front" title="全屏">⛶ 全屏</button>
+                  <button data-camera-action="fullscreen" data-camera="body_front" title="全屏">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                      全屏
+                    </button>
                   <button data-camera-action="capture" data-camera="body_front" title="截图">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
@@ -416,7 +450,10 @@
               
               <!-- 授权区域 -->
               <div class="auth-section">
-                <button class="auth-btn success" id="nav-authorize-btn">✓ 授权控制</button>
+                <button class="auth-btn success" id="nav-authorize-btn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  授权控制
+                </button>
                 <button class="auth-btn" id="nav-deauthorize-btn" disabled>撤销授权</button>
                 <p class="auth-hint">授权后启用全部控制功能</p>
               </div>
@@ -471,7 +508,9 @@
         <h2>数据报表</h2>
         <div class="metrics">
           <div class="metric">
-            <div class="metric-icon success">✓</div>
+            <div class="metric-icon success">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
             <div>
               <label>今日完成率</label>
               <strong id="report-completion">0%</strong>
@@ -479,7 +518,9 @@
             </div>
           </div>
           <div class="metric">
-            <div class="metric-icon warning">⚠</div>
+            <div class="metric-icon warning">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
             <div>
               <label>告警总数</label>
               <strong id="report-alerts">0</strong>
@@ -487,7 +528,9 @@
             </div>
           </div>
           <div class="metric">
-            <div class="metric-icon">◈</div>
+            <div class="metric-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
+            </div>
             <div>
               <label>设备在线率</label>
               <strong id="report-online">0%</strong>
@@ -495,7 +538,9 @@
             </div>
           </div>
           <div class="metric">
-            <div class="metric-icon">↺</div>
+            <div class="metric-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            </div>
             <div>
               <label>总巡检距离</label>
               <strong id="report-distance">0 km</strong>
@@ -586,7 +631,8 @@
 
 <!-- 紧急停止按钮 -->
 <button class="emergency-btn" id="emergency-btn" disabled title="需先授权导航控制">
-  ⚠ 紧急停止
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+  紧急停止
   <small>需授权后启用</small>
 </button>
 

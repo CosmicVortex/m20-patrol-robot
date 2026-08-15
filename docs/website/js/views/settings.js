@@ -40,7 +40,9 @@ class SettingsView {
       const errorMsg = error?.message || '未知错误';
       this._content.innerHTML = `
         <div class="card" style="padding:var(--space-8);text-align:center;">
-          <div style="font-size:48px;margin-bottom:var(--space-4)">⚠️</div>
+          <div style="font-size:48px;margin-bottom:var(--space-4)">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-warning)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
           <h3>配置加载失败</h3>
           <p style="color:var(--color-text-muted);margin-bottom:var(--space-4)">${this._escapeHtml(errorMsg)}</p>
           <button class="btn btn-primary" onclick="window._router.refresh()">重新加载</button>

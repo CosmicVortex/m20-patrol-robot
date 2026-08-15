@@ -63,7 +63,9 @@ class ReportsView {
       <h2>数据报表</h2>
       <div class="metrics">
         <div class="metric">
-          <div class="metric-icon success">✓</div>
+          <div class="metric-icon success">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
           <div>
             <label>待处理告警</label>
             <strong>${pendingOrders}</strong>
@@ -71,7 +73,9 @@ class ReportsView {
           </div>
         </div>
         <div class="metric">
-          <div class="metric-icon ${pendingOrders > 0 ? 'warning' : 'success'}">⚠</div>
+          <div class="metric-icon ${pendingOrders > 0 ? 'warning' : 'success'}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
           <div>
             <label>告警解决率</label>
             <strong>${resolveRate}%</strong>
@@ -79,7 +83,9 @@ class ReportsView {
           </div>
         </div>
         <div class="metric">
-          <div class="metric-icon">◈</div>
+          <div class="metric-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
+          </div>
           <div>
             <label>累计巡逻里程</label>
             <strong>${distanceKm} km</strong>
@@ -87,7 +93,9 @@ class ReportsView {
           </div>
         </div>
         <div class="metric">
-          <div class="metric-icon">↺</div>
+          <div class="metric-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          </div>
           <div>
             <label>今日圈数</label>
             <strong>${loopCount}</strong>
@@ -113,7 +121,7 @@ class ReportsView {
                 <span style="font-size:var(--fs-sm);font-weight:600">${resolveRate}%</span>
               </div>
               <div style="height:8px;background:var(--color-bg-secondary);border-radius:var(--r-full);overflow:hidden">
-                <div style="height:100%;width:${resolveRate}%;background:linear-gradient(90deg,var(--color-success),#34D399);border-radius:var(--r-full)"></div>
+                <div style="height:100%;width:${resolveRate}%;background:var(--color-success);border-radius:var(--r-full)"></div>
               </div>
             </div>
             <div style="margin-bottom:var(--space-4)">
@@ -122,7 +130,7 @@ class ReportsView {
                 <span style="font-size:var(--fs-sm);font-weight:600">${pendingOrders}</span>
               </div>
               <div style="height:8px;background:var(--color-bg-secondary);border-radius:var(--r-full);overflow:hidden">
-                <div style="height:100%;width:${Math.min(100, pendingOrders * 10)}%;background:linear-gradient(90deg,var(--color-warning),#FBBF24);border-radius:var(--r-full)"></div>
+                <div style="height:100%;width:${Math.min(100, pendingOrders * 10)}%;background:var(--color-warning);border-radius:var(--r-full)"></div>
               </div>
             </div>
             <div>
