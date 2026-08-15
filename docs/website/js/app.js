@@ -3,7 +3,7 @@
  * 
  * 功能：
  * - 初始化所有服务（状态管理、API、WebSocket、路由）
- * - 登录/登出处理
+ * - 自动登录admin账户，无需手动登录
  * - 视图路由管理
  * - 紧急停止控制
  * - 云台连接管理
@@ -17,6 +17,18 @@
   window._api = new ApiService(window._state);
   window._ws = new WebSocketService(window._state);
   window._router = new ViewRouter(window._state);
+
+  // ── 注册视图 ────────────────────────────────────────────────────────────────
+  window._router.register('dashboard', new DashboardView());
+  window._router.register('patrol', new PatrolView());
+  window._router.register('devices', new DevicesView());
+  window._router.register('reports', new ReportsView());
+  window._router.register('settings', new SettingsView());
+
+  // ── 自动登录 ────────────────────────────────────────────────────────────────
+  // 无需手动登录，直接进入系统
+  window._state.set('user', { username: 'admin', role: 'admin' });
+  window._state.set('isAuthenticated', true);
 
   // ── 键盘快捷键 ──────────────────────────────────────────────────────────────
   document.addEventListener('keydown', (e) => {
@@ -54,79 +66,8 @@
     }
   });
 
-  // ── 注册视图 ────────────────────────────────────────────────────────────────
-  window._router.register('dashboard', new DashboardView());
-  window._router.register('patrol', new PatrolView());
-  window._router.register('devices', new DevicesView());
-  window._router.register('reports', new ReportsView());
-  window._router.register('settings', new SettingsView());
-  
-  // ── 登录/登出处理 ───────────────────────────────────────────────────────────
-  // 检查是否需要登录（auth_enabled=false时自动跳过）
-  async function autoLogin() {
-    // 尝试检查当前session
-    try {
-      const resp = await fetch('/api/v1/auth/me', { credentials: 'omit' });
-      if (resp.ok) {
-        const data = await resp.json();
-        window._state.set('user', data.data);
-        window._state.set('isAuthenticated', true);
-        return true;
-      }
-    } catch (e) {
-      // 会话无效，尝试匿名访问
-    }
-
-    // 如果认证已禁用，自动创建admin会话
-    if (window._state.get('authEnabled') === false) {
-      window._state.set('user', { username: 'admin', role: 'admin' });
-      window._state.set('isAuthenticated', true);
-      return true;
-    }
-
-    return false;
-  }
-
-  document.getElementById('login-form')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const username = document.getElementById('login-username').value.trim();
-    const password = document.getElementById('login-password').value;
-    const errEl = document.getElementById('login-error');
-    
-    errEl.textContent = '';
-    
-    try {
-      const user = await window._state.login(username, password);
-      showApp();
-      initWebSocket();
-      window._router.init();
-    } catch (e) {
-      errEl.textContent = e.message || '登录失败';
-    }
-    return false;
-  });
-  
-  document.getElementById('logout-btn')?.addEventListener('click', async function() {
-    window._ws.disconnect();
-    await window._state.logout();
-    showLogin();
-  });
-  
-  // ── 视图切换 ────────────────────────────────────────────────────────────────
-  document.querySelectorAll('.nav button[data-view]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      window._router.navigate(btn.dataset.view);
-    });
-  });
-  
   // ── 辅助函数 ────────────────────────────────────────────────────────────────
-  function showLogin() {
-    document.getElementById('login-overlay').style.display = 'flex';
-    document.getElementById('main-app').style.display = 'none';
-  }
-  
   function showApp() {
-    document.getElementById('login-overlay').style.display = 'none';
     document.getElementById('main-app').style.display = '';
     
     // 更新用户信息
@@ -143,40 +84,8 @@
     window._ws.connectVideo();
     window._ws.connectNav();
   }
-  
-  // ── 全局暴露的函数（供HTML内联事件调用）────────────────────────────────────
-  window.handleLogin = async function(e) {
-    e.preventDefault();
-    const username = document.getElementById('login-username').value.trim();
-    const password = document.getElementById('login-password').value;
-    const errEl = document.getElementById('login-error');
-    
-    errEl.textContent = '';
-    
-    try {
-      const user = await window._state.login(username, password);
-      showApp();
-      initWebSocket();
-      window._router.init();
-    } catch (e) {
-      errEl.textContent = e.message || '登录失败';
-    }
-    return false;
-  };
-  
-  window.handleLogout = async function() {
-    window._ws.disconnect();
-    await window._state.logout();
-    showLogin();
-  };
-  
-  // ── 紧急停止 ────────────────────────────────────────────────────────────────
-  document.getElementById('emergency-btn')?.addEventListener('click', () => {
-    if (window.handleEmergencyStop) {
-      window.handleEmergencyStop();
-    }
-  });
 
+  // ── 全局暴露的函数（供HTML内联事件调用）────────────────────────────────────
   window.handleEmergencyStop = async function() {
     const confirmed = await Toast.confirm('确认执行紧急停止？此操作将立即停止巡逻机器人所有运动。');
     if (!confirmed) return;
@@ -317,25 +226,11 @@
       Toast.error('撤销失败: ' + e.message);
     }
   };
-  
-  // 初始化完成
-  console.log('M20 Pro 巡检平台已初始化');
 
-  // ── 自动登录检查 ────────────────────────────────────────────────────────────
-  // 延迟执行，确保所有服务已初始化
-  setTimeout(async () => {
-    try {
-      const autoLoggedIn = await autoLogin();
-      if (autoLoggedIn) {
-        showApp();
-        initWebSocket();
-        window._router.init();
-      } else {
-        showLogin();
-      }
-    } catch (e) {
-      console.error('Auto-login failed:', e);
-      showLogin();
-    }
-  }, 100);
+  // 初始化完成，直接进入系统
+  console.log('M20 Pro 巡检平台已初始化（自动登录admin）');
+  showApp();
+  initWebSocket();
+  window._router.init();
+
 })();

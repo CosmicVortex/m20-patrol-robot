@@ -160,14 +160,11 @@ class AuthMeHandler(BaseHandler):
             self.send_error_response(404, "Not found")
             return
 
-        auth = self._authenticate()
-        if not auth:
-            return
-
+        # 已取消登录流程，直接返回admin用户信息
         self.send_json_response(200, {
-            "user_id": auth.user.user_id,
-            "username": auth.user.username,
-            "role": auth.user.role,
+            "user_id": 1,
+            "username": "admin",
+            "role": "admin",
         })
 
 
