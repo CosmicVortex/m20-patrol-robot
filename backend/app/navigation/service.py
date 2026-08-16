@@ -53,13 +53,7 @@ class NavigationService:
         self._client = client
         self._safety = safety
         # 研发阶段：自动授权导航（可通过M20_DEV_MODE环境变量控制）
-        import os
         dev_mode = os.environ.get("M20_DEV_MODE", "1") == "1"
-        from datetime import datetime, timezone
-        try:
-            from datetime import UTC
-        except ImportError:
-            UTC = timezone.utc
         self._auth = NavigationAuthorization(
             authorized=dev_mode,
             authorized_by="dev" if dev_mode else "",
