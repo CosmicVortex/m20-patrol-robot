@@ -11,8 +11,8 @@
   "web_bind_host": "0.0.0.0",
   "static_root": "docs/website",
   "stale_after_seconds": 3,
-  "auth_enabled": true,
-  "allow_anonymous": false,
+  "auth_enabled": false,
+  "allow_anonymous": true,
   "targets": {
     "gos_host": "10.21.31.104",
     "aos_host": "10.21.31.103",
