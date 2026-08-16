@@ -78,7 +78,7 @@ def request(address, method: str, path: str, body: dict | None = None, headers=N
     [
         ("/js/state-manager.js", "text/javascript"),
         ("/js/app.js", "text/javascript"),
-        ("/robot-dog.jpg", "image/jpeg"),
+        ("/robot-dog.png", "image/png"),
     ],
 )
 def test_static_assets_are_served(runtime_server, path: str, content_type: str):

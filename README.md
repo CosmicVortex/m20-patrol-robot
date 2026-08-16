@@ -48,11 +48,13 @@ curl http://127.0.0.1:8080/api/v1/status/latest
 
 | 配置项 | 值 | 说明 |
 |--------|-----|------|
-| runtime_mode | realtime_readonly | 实时遥测只读 |
-| read_only_mode | true | 禁止控制命令 |
-| control_enabled | false | 禁用运动/导航控制 |
-| telemetry_tx_enabled | true | 发送心跳（仅用于保活，不发送控制指令） |
-| allow_real_io | true | 允许真实IO（由read_only_mode控制实际执行） |
+| runtime_mode | realtime | 实时控制模式 |
+| read_only_mode | false | 允许写操作 |
+| control_enabled | true | 启用运动/导航控制 |
+| telemetry_tx_enabled | true | 发送心跳 |
+| allow_real_io | true | 允许真实IO |
+| auth_enabled | false | 禁用认证（开发测试模式） |
+| allow_anonymous | true | 允许匿名访问 |
 
 ### 本地测试模式
 
