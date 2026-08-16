@@ -316,21 +316,31 @@ class DashboardView {
     const authorizeBtn = document.getElementById('nav-authorize-btn');
     const deauthorizeBtn = document.getElementById('nav-deauthorize-btn');
     const panelStatus = document.getElementById('panel-status');
-    
+
     // 更新控制面板状态指示器
     const isAuthorized = nav?.authorized && nav?.control_enabled;
     if (panelStatus) {
       panelStatus.className = 'panel-status' + (isAuthorized ? ' authorized' : '');
     }
-    
+
     if (authorizeBtn) {
       authorizeBtn.disabled = isAuthorized;
+      if (!isAuthorized) {
+        authorizeBtn.setAttribute('title', '导航已授权，无需重复授权');
+      } else {
+        authorizeBtn.removeAttribute('title');
+      }
     }
-    
+
     if (deauthorizeBtn) {
       deauthorizeBtn.disabled = !isAuthorized;
+      if (isAuthorized) {
+        deauthorizeBtn.setAttribute('title', '当前未授权，无需撤销');
+      } else {
+        deauthorizeBtn.removeAttribute('title');
+      }
     }
-    
+
     // 更新所有控制按钮状态
     const controlBtnIds = [
       'motion-stand-btn',
@@ -341,10 +351,19 @@ class DashboardView {
       'motion-charge-btn',
       'motion-estop-btn'
     ];
-    
+
     controlBtnIds.forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.disabled = !isAuthorized;
+      if (el) {
+        el.disabled = !isAuthorized;
+        if (!isAuthorized && id !== 'motion-estop-btn') {
+          el.setAttribute('title', '请先授权导航控制');
+        } else if (id === 'motion-estop-btn') {
+          el.removeAttribute('title');
+        } else {
+          el.removeAttribute('title');
+        }
+      }
     });
   }
 
@@ -381,7 +400,7 @@ class DashboardView {
       }
       
       const state = config.state || 'unverified';
-      
+
       if (state === 'online') {
         if (stateEl) {
           stateEl.className = 'camera-status online';
@@ -389,7 +408,7 @@ class DashboardView {
         }
         cameraEl.classList.add('connected');
         cameraEl.classList.remove('unverified', 'connecting');
-        
+
         if (videoEl && config.playback_url) {
           videoEl.src = config.playback_url;
           videoEl.style.display = 'block';
@@ -421,11 +440,19 @@ class DashboardView {
             stateEl.className = 'camera-status unverified';
             stateEl.textContent = '● 连接中...';
           }
+          if (placeholderEl) {
+            const textEl = placeholderEl.querySelector('.placeholder-text');
+            if (textEl) textEl.textContent = '视频连接中...';
+          }
           cameraEl.classList.add('connecting');
         } else {
           if (stateEl) {
             stateEl.className = 'camera-status unverified';
             stateEl.textContent = '● 未验证';
+          }
+          if (placeholderEl) {
+            const textEl = placeholderEl.querySelector('.placeholder-text');
+            if (textEl) textEl.textContent = `${source.charAt(0).toUpperCase() + source.slice(1)}相机 — 就绪（点击启动）`;
           }
           cameraEl.classList.remove('connecting');
         }
