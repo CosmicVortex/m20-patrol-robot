@@ -104,7 +104,7 @@ class ConfigLoader:
             runtime_mode=env_text("M20_RUNTIME_MODE", data.get("runtime_mode", "simulated")),
             read_only_mode=env_bool("M20_READ_ONLY_MODE", data.get("read_only_mode", True)),
             control_enabled=env_bool("M20_CONTROL_ENABLED", data.get("control_enabled", False)),
-            telemetry_tx_enabled=env_bool("M20_TELEMETRY_TX_ENABLED", data.get("telemetry_tx_enabled", data.get("telemetry_rx_enabled", True))),
+            telemetry_tx_enabled=env_bool("M20_TELEMETRY_TX_ENABLED", data.get("telemetry_tx_enabled", False)),
             telemetry_receive_enabled=env_bool("M20_TELEMETRY_RX_ENABLED", data.get("telemetry_receive_enabled", data.get("telemetry_rx_enabled", True))),
             stale_after_s=float(os.environ.get("M20_STALE_AFTER_SECONDS") or data.get("stale_after_s", data.get("stale_after_seconds", 3.0))),
             session_ttl_s=data.get("session_ttl_s", 1800),

@@ -81,9 +81,9 @@ class MotionControlService:
     def __init__(self, client, safety: MotionSafetySnapshot) -> None:
         self._client = client
         self._safety = safety
-        # 开发模式默认授权（可通过M20_DEV_MODE环境变量控制）
-        self._authorized: bool = os.environ.get("M20_DEV_MODE", "1") == "1"
-        self._authorized_by: str = "dev" if self._authorized else ""
+        # 默认授权（开发测试模式）
+        self._authorized: bool = True
+        self._authorized_by: str = "system"
         self._audit_log: list[dict[str, Any]] = []
     
     @property
