@@ -773,8 +773,7 @@ this._mapPoints = [];
     if (document.fullscreenElement) {
       document.exitFullscreen();
     } else {
-      video.requestFullscreen().catch(e =>
-);
+      video.requestFullscreen().catch(() => {});
     }
   }
 
