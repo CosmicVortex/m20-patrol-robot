@@ -184,7 +184,7 @@
     if (document.fullscreenElement) {
       document.exitFullscreen();
     } else {
-      video.requestFullscreen().catch(e => console.error('Fullscreen error:', e));
+      video.requestFullscreen().catch(() => {});
     }
   };
   
@@ -228,7 +228,6 @@
   };
 
   // 初始化完成，直接进入系统
-  console.log('M20 Pro 巡检平台已初始化（自动登录admin）');
   showApp();
   initWebSocket();
   window._router.init();

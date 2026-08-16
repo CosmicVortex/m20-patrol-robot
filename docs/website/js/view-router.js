@@ -36,7 +36,8 @@ class ViewRouter {
     if (this._currentView && this._views.has(this._currentView)) {
       const prev = this._views.get(this._currentView);
       if (prev.destroy) {
-        try { prev.destroy(); } catch (e) { console.error('View destroy error:', e); }
+        try { prev.destroy(); } catch (e) {
+}
       }
     }
     
@@ -60,10 +61,8 @@ class ViewRouter {
         await component.init?.(params);
         component.render?.();
       } catch (e) {
-        console.error(`View ${name} render error:`, e);
       }
     } else {
-      console.warn(`View ${name} not registered`);
     }
   }
   

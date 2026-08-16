@@ -27,7 +27,6 @@ class WebSocketService {
       this._wsVideo = new WebSocket(this._getWsUrl('/ws/video'));
       
       this._wsVideo.onopen = () => {
-        console.log('[WS] Video connected');
         this.state.set('video.wsConnected', true);
       };
       
@@ -36,22 +35,18 @@ class WebSocketService {
           const data = JSON.parse(event.data);
           this._handleVideoMessage(data);
         } catch (e) {
-          console.error('[WS] Video message parse error:', e);
         }
       };
       
       this._wsVideo.onclose = () => {
-        console.log('[WS] Video disconnected');
         this.state.set('video.wsConnected', false);
         this._wsVideo = null;
         this._scheduleReconnect();
       };
       
       this._wsVideo.onerror = () => {
-        console.error('[WS] Video error');
       };
     } catch (e) {
-      console.error('[WS] Video init error:', e);
     }
   }
   
@@ -65,7 +60,6 @@ class WebSocketService {
       this._wsNav = new WebSocket(this._getWsUrl('/ws/navigation'));
       
       this._wsNav.onopen = () => {
-        console.log('[WS] Navigation connected');
         this.state.set('nav.wsConnected', true);
       };
       
@@ -74,22 +68,18 @@ class WebSocketService {
           const data = JSON.parse(event.data);
           this._handleNavMessage(data);
         } catch (e) {
-          console.error('[WS] Nav message parse error:', e);
         }
       };
       
       this._wsNav.onclose = () => {
-        console.log('[WS] Navigation disconnected');
         this.state.set('nav.wsConnected', false);
         this._wsNav = null;
         this._scheduleReconnect();
       };
       
       this._wsNav.onerror = () => {
-        console.error('[WS] Nav error');
       };
     } catch (e) {
-      console.error('[WS] Nav init error:', e);
     }
   }
   
@@ -114,7 +104,6 @@ class WebSocketService {
   _handleVideoFrame(data) {
     // Implementation depends on frame format
     // Could be base64 image data or streaming URL
-    console.log('[WS] Video frame received:', data);
   }
   
   /**
@@ -123,7 +112,6 @@ class WebSocketService {
   _handleNavMessage(data) {
     switch (data.type) {
       case 'error':
-        console.error('[WS] Nav error:', data.message);
         break;
       case 'status':
         this.state.updateNavigation(data.data);

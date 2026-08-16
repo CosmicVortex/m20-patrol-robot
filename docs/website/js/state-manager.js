@@ -121,12 +121,12 @@ class StateManager {
   _notify(path) {
     // Notify exact match
     this._listeners.get(path)?.forEach(cb => {
-      try { cb(this.get(path)); } catch (e) { console.error('State listener error:', e); }
+      try { cb(this.get(path)); } catch (e) {}
     });
-    
+
     // Notify wildcard
     this._listeners.get('*')?.forEach(cb => {
-      try { cb(this._state); } catch (e) { console.error('State listener error:', e); }
+      try { cb(this._state); } catch (e) {}
     });
   }
   

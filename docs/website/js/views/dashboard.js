@@ -79,7 +79,7 @@ class DashboardView {
         this._fetchGimbalState()
       ]);
     } catch (e) {
-      console.error('Initial data fetch error:', e);
+      // 静默处理初始数据获取错误
     }
   }
   
@@ -88,7 +88,7 @@ class DashboardView {
       await window._api.fetchStatus();
       this._updateDashboard();
     } catch (e) {
-      console.log('Status fetch error:', e);
+      // 静默处理状态获取错误
     }
   }
   
@@ -97,7 +97,7 @@ class DashboardView {
       await window._api.fetchVideo();
       this._updateVideoWall();
     } catch (e) {
-      console.log('Video fetch error:', e);
+      // 静默处理视频获取错误
     }
   }
   
@@ -106,7 +106,7 @@ class DashboardView {
       const data = await window._api.fetchNavStatus();
       this._updateEmergencyBtn(data);
     } catch (e) {
-      console.log('Nav status fetch error:', e);
+      // 静默处理导航状态获取错误
     }
   }
 
@@ -115,7 +115,7 @@ class DashboardView {
       await window._api.fetchWorkOrders();
       this._updateMetrics(window._state.get('robot') || {});
     } catch (e) {
-      console.log('Work order fetch error:', e);
+      // 静默处理工单获取错误
     }
   }
 
@@ -124,7 +124,7 @@ class DashboardView {
       const data = await window._api.fetchGimbalState();
       this._updateGimbalPanel(data);
     } catch (e) {
-      console.log('Gimbal state fetch error:', e);
+      // 静默处理云台状态获取错误
     }
   }
 
@@ -577,8 +577,7 @@ class DashboardView {
         type: 'point'
       }));
     } catch (e) {
-      console.log('Map points fetch error:', e);
-      this._mapPoints = [];
+this._mapPoints = [];
     }
   }
 
@@ -774,7 +773,8 @@ class DashboardView {
     if (document.fullscreenElement) {
       document.exitFullscreen();
     } else {
-      video.requestFullscreen().catch(e => console.error('Fullscreen error:', e));
+      video.requestFullscreen().catch(e =>
+);
     }
   }
 
@@ -825,8 +825,7 @@ class DashboardView {
       const config = sources[source];
       // 条件：有RTSP地址 且 状态不是online且不是connecting
       if (config && config.rtsp_url && config.state !== 'online' && config.state !== 'connecting') {
-        console.log(`[Dashboard] Auto-starting video for ${source}: ${config.rtsp_url}`);
-        this._startVideo(source);
+this._startVideo(source);
       }
     });
   }
