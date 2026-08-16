@@ -6,7 +6,6 @@ Navigation commands require explicit Web UI authorization before sending.
 from __future__ import annotations
 
 import logging
-import os
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 # Python 3.8 compatibility: UTC was added in Python 3.11
