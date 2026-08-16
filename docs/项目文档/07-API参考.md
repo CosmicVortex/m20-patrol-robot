@@ -2,7 +2,7 @@
 
 > 本文档详细列出所有HTTP API接口，基于 `router.py` 路由注册与 Handler 实现。
 > 
-> **基础地址**: `http://10.21.31.104:8080`（GOS主机部署后）
+> **基础地址**: `http://10.21.31.104:8080`（GOS部署后）
 > 
 > **认证**: 除 `/api/v1/health` 外，其余接口均需登录后访问（自动登录模式已启用）
 
@@ -18,9 +18,9 @@
 ```json
 {
   "service": "m20-patrol-web",
-  "runtime_mode": "realtime_readonly",
-  "read_only_mode": true,
-  "control_enabled": false,
+  "runtime_mode": "realtime",
+  "read_only_mode": false,
+  "control_enabled": true,
   "source": "REAL",
   "connected": true,
   "valid_frames": 1523
