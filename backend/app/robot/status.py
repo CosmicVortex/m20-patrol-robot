@@ -158,6 +158,7 @@ def _normalize_motion(items: dict[str, Any]) -> dict[str, Any]:
         "height": ms.get("Height"),
         "payload": ms.get("Payload"),
         "remain_mile": ms.get("RemainMile"),
+        "distance": ms.get("Distance"),  # 累计距离（如有）
     }
 
 
@@ -234,6 +235,8 @@ def _parse_navigation_status(message: PatrolMessage) -> StatusResult:
         "status": items.get("Status"),
         "error_code": error_code,
         "error_message": NAV_ERROR_CODES.get(error_code, "Unknown"),
+        "loop_count": items.get("LoopCnt", 0),
+        "remaining_count": items.get("RemainingCnt"),
     })
 
 

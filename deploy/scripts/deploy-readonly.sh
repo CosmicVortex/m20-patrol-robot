@@ -264,7 +264,7 @@ EnvironmentFile=${CONFIG_DIR}/passwords.env
 Environment=M20_RUNTIME_MODE=realtime_readonly
 Environment=M20_READ_ONLY_MODE=true
 Environment=M20_CONTROL_ENABLED=false
-Environment=M20_TELEMETRY_TX_ENABLED=false
+Environment=M20_TELEMETRY_TX_ENABLED=true
 Environment=M20_TARGET_HOST=${AOS_HOST}
 Environment=M20_TARGET_PORT=${AOS_TCP_PORT}
 Environment=M20_TELEMETRY_RX_ENABLED=true

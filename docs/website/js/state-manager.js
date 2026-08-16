@@ -20,7 +20,7 @@ class StateManager {
         battery_list: [],  // 电池列表 [{BatteryLevel, Voltage, serial}]
         battery_status: {},  // 电池状态 {BatteryLevelLeft, BatteryLevelRight...}
         motion_state: 0,
-        gait: 'flat',
+        gait: 0,
         speed: 0,
         nav_status: 0,
         loop_count: 0,
@@ -29,6 +29,8 @@ class StateManager {
         location: null,
         errors: [],
         coverage_rate: 0,
+        received_at: null,
+        raw_motion: null,
       },
       
       // Navigation
@@ -139,6 +141,8 @@ class StateManager {
 
     this.set('robot.connected', data.connected);
     this.set('robot.source', data.source);
+    // 存储最后接收时间
+    this.set('robot.received_at', data.received_at || null);
 
     // 电池数据 - 支持双电池显示
     const batteryPercent = data.battery_percent != null ? data.battery_percent : null;
@@ -162,7 +166,8 @@ class StateManager {
     }
 
     this.set('robot.motion_state', d.basic?.motion_state ?? 0);
-    this.set('robot.gait', d.basic?.gait ?? 'flat');
+    // gait: 后端返回整数值，默认值改为 0
+    this.set('robot.gait', d.basic?.gait != null ? d.basic.gait : 0);
     this.set('robot.nav_status', d.nav_status?.status ?? 0);
     this.set('robot.loop_count', d.nav_status?.loop_count ?? 0);
     this.set('robot.total_distance', d.nav_status?.total_distance ?? 0);
@@ -173,8 +178,15 @@ class StateManager {
 
     // Update motion speed
     const m = d.motion || {};
-    const speed = Math.sqrt((m.linear_x || 0) ** 2 + (m.linear_y || 0) ** 2);
+    // 空数据检查：当 motion 对象为空时返回 null，避免显示误导值
+    const speed = Object.keys(m).length > 0
+      ? Math.sqrt((m.linear_x || 0) ** 2 + (m.linear_y || 0) ** 2)
+      : null;
     this.set('robot.speed', speed);
+    // Store raw motion data for pose display
+    if (Object.keys(m).length > 0) {
+      this.set('robot.raw_motion', m);
+    }
 
     // Update alerts
     const errorCount = (d.errors || []).length;

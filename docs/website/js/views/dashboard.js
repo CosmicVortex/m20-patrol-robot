@@ -149,22 +149,26 @@ class DashboardView {
   _updateConnectionBadge(robot) {
     const badge = document.getElementById('conn-badge');
     if (!badge) return;
-    
+
     const source = robot.source || 'NO_DATA';
     const connected = robot.connected || false;
-    
+    const errorMsg = robot.error_message || '';
+
     if (source === 'REAL' && connected) {
       badge.className = 'status-badge ok';
       badge.textContent = robot.control_enabled ? 'REAL / CONTROL ON' : 'REAL / CONTROL OFF';
     } else if (source === 'REAL') {
       badge.className = 'status-badge warn';
       badge.textContent = 'REAL / RECONNECTING';
-    } else if (source === 'NO_DATA') {
-      badge.className = 'status-badge';
-      badge.textContent = 'NO DATA / WAITING';
+    } else if (source === 'ERROR') {
+      badge.className = 'status-badge blocked';
+      badge.textContent = errorMsg ? `ERROR: ${errorMsg.slice(0, 20)}` : 'ERROR / FAILED';
+    } else if (source === 'STALE') {
+      badge.className = 'status-badge warn';
+      badge.textContent = 'STALE / TIMEOUT';
     } else {
       badge.className = 'status-badge';
-      badge.textContent = 'UNAVAILABLE';
+      badge.textContent = 'NO DATA / WAITING';
     }
   }
 
@@ -198,8 +202,17 @@ class DashboardView {
     // 巡逻机器人运动状态
     const motionStateEl = document.getElementById('motion-state');
     if (motionStateEl) {
-      const motionMap = {0:'静止',1:'站立',2:'行走',3:'慢跑',4:'上下楼',5:'摔倒'};
-      motionStateEl.textContent = motionMap[robot.motion_state] || '—';
+      const state = robot.motion_state;
+      // V1.2.1 运动状态映射
+      const motionMap = {
+        0: '空闲',
+        1: '站立',
+        2: '软急停',
+        3: '开机阻尼',
+        4: '趴下',
+        17: 'RL控制'
+      };
+      motionStateEl.textContent = state != null ? (motionMap[state] || `未知(${state})`) : '—';
     }
 
     // 电量 - 双电池显示
@@ -277,10 +290,10 @@ class DashboardView {
       posEl.textContent = `位置: (${robot.position.pos_x?.toFixed(2) || '—'}, ${robot.position.pos_y?.toFixed(2) || '—'})`;
     }
     
-    // 速度
+    // 速度（使用state-manager已计算的速度值）
     const speedEl = document.getElementById('speed-state');
     if (speedEl) {
-      const speed = robot.motion?.linear_x ?? 0;
+      const speed = robot.speed ?? 0;
       speedEl.textContent = speed > 0.01 ? `${speed.toFixed(2)} m/s` : '—';
     }
     
@@ -291,23 +304,29 @@ class DashboardView {
       navEl.textContent = robot.nav_status != null ? (navStatusMap[robot.nav_status] || '未知') : '未连接';
     }
 
-    // 步态
+    // 步态（后端返回整数值，使用V1.2.1协议常量）
     const gaitEl = document.getElementById('gait-state');
     if (gaitEl) {
-      const gaitMap = {'flat': '平地', 'stairs': '楼梯', 'agile': '敏捷', 'steady': '平稳'};
-      gaitEl.textContent = robot.gait ? (gaitMap[robot.gait] || robot.gait) : '—';
+      const gaitMap = {
+        4097: '基础',     // 0x1001
+        4098: '高台',     // 0x1002
+        12290: '平地敏捷', // 0x3002
+        12291: '楼梯敏捷'  // 0x3003
+      };
+      gaitEl.textContent = robot.gait != null ? (gaitMap[robot.gait] || `0x${robot.gait.toString(16)}`) : '—';
     }
     
-    // 姿态
+    // 姿态（从原始motion数据获取）
     const poseEl = document.getElementById('pose-state');
-    if (poseEl && robot.motion) {
-      poseEl.textContent = `R:${(robot.motion.roll||0).toFixed(1)} P:${(robot.motion.pitch||0).toFixed(1)} Y:${(robot.motion.yaw||0).toFixed(1)}`;
+    if (poseEl && robot.raw_motion) {
+      const m = robot.raw_motion;
+      poseEl.textContent = `R:${(m.roll||0).toFixed(1)} P:${(m.pitch||0).toFixed(1)} Y:${(m.yaw||0).toFixed(1)}`;
     }
     
-    // 最后更新
+    // 最后更新时间（使用后端返回的received_at字段）
     const lastEl = document.getElementById('last-update');
-    if (lastEl && robot.last_update) {
-      const d = new Date(robot.last_update);
+    if (lastEl && robot.received_at) {
+      const d = new Date(robot.received_at);
       lastEl.textContent = d.toLocaleTimeString('zh-CN');
     }
   }
@@ -491,11 +510,13 @@ class DashboardView {
     // 距离统计
     const inspectedEl = document.getElementById('inspected-dist');
     const totalEl = document.getElementById('total-dist');
-    if (inspectedEl && robot.position?.distance) {
-      inspectedEl.textContent = robot.position.distance.toFixed(1);
+    // 优先使用 motion.distance（累计距离），备选 position 字段
+    const distance = robot.motion?.distance ?? robot.position?.distance ?? null;
+    if (inspectedEl) {
+      inspectedEl.textContent = distance != null ? distance.toFixed(1) : '—';
     }
     if (totalEl) {
-      totalEl.textContent = (robot.position?.distance || 0).toFixed(1);
+      totalEl.textContent = distance != null ? distance.toFixed(1) : '—';
     }
     
     // 异常数
