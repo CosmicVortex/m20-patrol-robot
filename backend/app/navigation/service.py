@@ -52,8 +52,19 @@ class NavigationService:
     def __init__(self, client: BasicServerClient, safety: NavigationSafetySnapshot) -> None:
         self._client = client
         self._safety = safety
-        # 研发阶段：自动授权导航（无需Web UI手动授权）
-        self._auth = NavigationAuthorization(authorized=True, authorized_by="dev", authorized_at=datetime.now(UTC).isoformat())
+        # 研发阶段：自动授权导航（可通过M20_DEV_MODE环境变量控制）
+        import os
+        dev_mode = os.environ.get("M20_DEV_MODE", "1") == "1"
+        from datetime import datetime, timezone
+        try:
+            from datetime import UTC
+        except ImportError:
+            UTC = timezone.utc
+        self._auth = NavigationAuthorization(
+            authorized=dev_mode,
+            authorized_by="dev" if dev_mode else "",
+            authorized_at=datetime.now(UTC).isoformat() if dev_mode else ""
+        )
         self._audit_log: list[NavigationAuditLog] = []
         self._current_task_id: int = 0
 

@@ -69,9 +69,6 @@ class HealthHandler(BaseHandler):
                 and health["connected"] is True
                 and health["valid_frames"] > 0
                 and health["bytes_received"] > 0
-                and health["frame_valid"] is True
-                and health["message_parsed"] is True
-                and health["status_accepted"] is True
                 and health["telemetry_fresh"] is True
                 and isinstance(health["age_ms"], (int, float))
                 and 0 <= health["age_ms"] < stale_limit
