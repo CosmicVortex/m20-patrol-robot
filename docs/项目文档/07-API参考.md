@@ -1,6 +1,6 @@
 # API 参考文档
 
-> 本文档详细列出所有HTTP API接口，基于 `router.py` 路由注册与 Handler 实现。
+本文档详细列出所有HTTP API接口，基于 `router.py` 路由注册与 Handler 实现。
 > 
 > **基础地址**: `http://10.21.31.104:8080`（GOS部署后）
 > 
