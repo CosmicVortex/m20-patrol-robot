@@ -107,46 +107,46 @@ class ReportsView {
       <div class="monitor-grid">
         <div class="card">
           <h3>告警趋势（近7天）</h3>
-          <div id="alert-chart" style="height:300px;display:flex;align-items:flex-end;justify-content:space-around;padding:var(--space-4);gap:var(--space-2)">
+          <div id="alert-chart" class="chart-container">
             ${alertChartData}
           </div>
         </div>
-        
+
         <div class="card">
           <h3>任务完成情况</h3>
-          <div style="padding:var(--space-4)">
-            <div style="margin-bottom:var(--space-4)">
-              <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2)">
-                <span style="font-size:var(--fs-sm);color:var(--color-text-secondary)">告警解决率</span>
-                <span style="font-size:var(--fs-sm);font-weight:600">${resolveRate}%</span>
+          <div class="p-4">
+            <div class="progress-row">
+              <div class="progress-row-label">
+                <span>告警解决率</span>
+                <span>${resolveRate}%</span>
               </div>
-              <div style="height:8px;background:var(--color-bg-secondary);border-radius:var(--r-full);overflow:hidden">
-                <div style="height:100%;width:${resolveRate}%;background:var(--color-success);border-radius:var(--r-full)"></div>
-              </div>
-            </div>
-            <div style="margin-bottom:var(--space-4)">
-              <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2)">
-                <span style="font-size:var(--fs-sm);color:var(--color-text-secondary)">待处理工单</span>
-                <span style="font-size:var(--fs-sm);font-weight:600">${pendingOrders}</span>
-              </div>
-              <div style="height:8px;background:var(--color-bg-secondary);border-radius:var(--r-full);overflow:hidden">
-                <div style="height:100%;width:${Math.min(100, pendingOrders * 10)}%;background:var(--color-warning);border-radius:var(--r-full)"></div>
+              <div class="progress-bar">
+                <div class="progress-bar-fill success" style="width:${resolveRate}%"></div>
               </div>
             </div>
-            <div>
-              <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2)">
-                <span style="font-size:var(--fs-sm);color:var(--color-text-secondary)">设备在线率</span>
-                <span style="font-size:var(--fs-sm);font-weight:600">${deviceOnlineRate}% (${deviceStatusText})</span>
+            <div class="progress-row">
+              <div class="progress-row-label">
+                <span>待处理工单</span>
+                <span>${pendingOrders}</span>
               </div>
-              <div style="height:8px;background:var(--color-bg-secondary);border-radius:var(--r-full);overflow:hidden">
-                <div style="height:100%;width:${deviceOnlineRate}%;background:linear-gradient(90deg,var(--color-brand-blue),var(--color-brand-blue-dark));border-radius:var(--r-full)"></div>
+              <div class="progress-bar">
+                <div class="progress-bar-fill warning" style="width:${Math.min(100, pendingOrders * 10)}%"></div>
+              </div>
+            </div>
+            <div class="progress-row">
+              <div class="progress-row-label">
+                <span>设备在线率</span>
+                <span>${deviceOnlineRate}% (${deviceStatusText})</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-bar-fill brand" style="width:${deviceOnlineRate}%"></div>
               </div>
             </div>
           </div>
         </div>
       </div>
       
-      <div class="card" style="margin-top:var(--space-4)">
+      <div class="card mt-4">
         <h3>最近告警记录</h3>
         <div class="table-wrap">
           <table>
@@ -163,7 +163,7 @@ class ReportsView {
     `;
     
     if (orders.length === 0) {
-      html += '<tr><td colspan="5" style="text-align:center;color:var(--color-text-muted);padding:var(--space-8)">暂无告警记录</td></tr>';
+      html += '<tr><td colspan="5" class="empty-center">暂无告警记录</td></tr>';
     } else {
       orders.slice(-10).reverse().forEach(order => {
         const statusClass = order.status === 'completed' ? 'ok' : order.status === 'in_progress' ? 'warn' : '';
@@ -192,8 +192,8 @@ class ReportsView {
   }
 
   _generateAlertChartData(orders) {
-    if (!orders || orders.length === 0) {
-      return '<div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--color-text-muted)">暂无数据</div>';
+    if (orders.length === 0) {
+      return '<div class="empty-center">暂无数据</div>';
     }
 
     // 基于工单创建时间统计最近7天数据
@@ -215,9 +215,9 @@ class ReportsView {
     const maxVal = Math.max(...values.map(v => v.count), 1);
 
     return values.map(v => `
-      <div style="display:flex;flex-direction:column;align-items:center;flex:1">
-        <div style="width:100%;background:linear-gradient(180deg,var(--color-warning),var(--color-error));height:${(v.count / maxVal) * 200}px;border-radius:4px 4px 0 0;min-height:4px" title="${v.count} 条"></div>
-        <span style="font-size:var(--fs-xs);color:var(--color-text-muted);margin-top:var(--space-2)">${v.day}</span>
+      <div class="chart-bar-wrapper">
+        <div class="chart-bar warning" style="height:${(v.count / maxVal) * 200}px" title="${v.count} 条"></div>
+        <span class="chart-bar-label">${v.day}</span>
       </div>
     `).join('');
   }

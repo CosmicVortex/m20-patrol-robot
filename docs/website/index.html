@@ -38,9 +38,11 @@
 </div>
 
 <!-- 主应用 -->
-<div class="app" id="main-app" style="display:none">
+<div class="app" id="main-app" style="display:none" role="main">
+  <!-- 状态更新区域（无障碍） -->
+  <div id="live-region" aria-live="polite" aria-atomic="true" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)"></div>
   <!-- 侧边栏 -->
-  <aside class="sidebar" id="sidebar">
+  <aside class="sidebar" id="sidebar" role="navigation" aria-label="主导航">
     <div class="brand">
       <svg class="brand-star" viewBox="0 0 100 100" aria-label="Mercedes-Benz" role="img">
         <circle cx="50" cy="50" r="45"/>

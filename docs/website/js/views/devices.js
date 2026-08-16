@@ -53,7 +53,7 @@ class DevicesView {
     `;
     
     if (devices.length === 0) {
-      html += '<tr><td colspan="7" style="text-align:center;color:var(--color-text-muted);padding:var(--space-8)">暂无设备数据，请添加设备</td></tr>';
+      html += '<tr><td colspan="7" class="empty-state">暂无设备数据，请添加设备</td></tr>';
     } else {
       devices.forEach(device => {
         const statusClass = device.status === 'online' ? 'ok' : device.status === 'offline' ? 'blocked' : 'warn';
@@ -81,7 +81,7 @@ class DevicesView {
           </table>
         </div>
       </div>
-      <div class="card" style="margin-top:var(--space-4)">
+      <div class="card mt-4">
         <h3>添加设备</h3>
         <form id="add-device-form">
           <div class="form-row">

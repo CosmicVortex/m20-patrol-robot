@@ -111,7 +111,7 @@ class PatrolView {
           <button type="submit" class="btn btn-primary">发送任务</button>
         </form>
       </div>
-      <div class="card" style="margin-top:var(--space-4)">
+      <div class="card mt-4">
         <h3>任务列表</h3>
         <div class="table-wrap">
           <table>
@@ -129,7 +129,7 @@ class PatrolView {
     `;
     
     if (tasks.length === 0) {
-      html += '<tr><td colspan="6" style="text-align:center;color:var(--color-text-muted)">暂无任务</td></tr>';
+      html += '<tr><td colspan="6" class="empty-state">暂无任务</td></tr>';
     } else {
       tasks.forEach(task => {
         html += `
@@ -210,7 +210,7 @@ class PatrolView {
           <button type="submit" class="btn btn-primary">创建工单</button>
         </form>
       </div>
-      <div class="card" style="margin-top:var(--space-4)">
+      <div class="card mt-4">
         <h3>工单列表</h3>
         <div class="table-wrap">
           <table>
@@ -228,7 +228,7 @@ class PatrolView {
     `;
     
     if (orders.length === 0) {
-      html += '<tr><td colspan="6" style="text-align:center;color:var(--color-text-muted)">暂无工单</td></tr>';
+      html += '<tr><td colspan="6" class="empty-state">暂无工单</td></tr>';
     } else {
       orders.forEach(order => {
         html += `
@@ -237,7 +237,7 @@ class PatrolView {
             <td>${esc(order.title)}</td>
             <td>${esc(order.location || '未配置')}</td>
             <td>
-              <select class="input" data-order-status="${esc(order.id)}" style="width:auto;padding:var(--space-1) var(--space-2)">
+              <select class="input form-select-sm" data-order-status="${esc(order.id)}" style="width:auto;padding:var(--space-1) var(--space-2)">
                 <option value="pending" ${order.status==='pending'?'selected':''}>待处理</option>
                 <option value="in_progress" ${order.status==='in_progress'?'selected':''}>处理中</option>
                 <option value="completed" ${order.status==='completed'?'selected':''}>已完成</option>
@@ -322,20 +322,20 @@ class PatrolView {
           <button type="submit" class="btn btn-primary">添加巡检点</button>
         </form>
       </div>
-      <div class="card" style="margin-top:var(--space-4)">
+      <div class="card mt-4">
         <h3>巡检点列表</h3>
-        <ul style="list-style:none;padding:0;margin:0">
+        <ul class="list-reset">
     `;
     
     if (points.length === 0) {
-      html += '<li style="padding:var(--space-4);color:var(--color-text-muted);text-align:center">暂无巡检点配置</li>';
+      html += '<li class="empty-state p-4">暂无巡检点配置</li>';
     } else {
       points.forEach(point => {
         html += `
-          <li style="padding:var(--space-3);border-bottom:1px solid var(--color-border);display:flex;justify-content:space-between;align-items:center">
+          <li class="timeline-item">
             <div>
               <strong>${esc(point.name || point.id)}</strong>
-              <span style="color:var(--color-text-muted);margin-left:var(--space-2)">${esc(point.area || '未配置区域')}</span>
+              <span class="ml-2-muted">${esc(point.area || '未配置区域')}</span>
             </div>
             <button class="btn btn-danger" data-delete-point="${esc(point.id)}">删除</button>
           </li>

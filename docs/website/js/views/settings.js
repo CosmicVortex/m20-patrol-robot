@@ -39,10 +39,12 @@ class SettingsView {
       // 显示友好的错误信息，而不是告警
       const errorMsg = error?.message || '未知错误';
       this._content.innerHTML = `
-        <div class="card" style="padding:var(--space-8);text-align:center;">
-          <div style="font-size:48px;margin-bottom:var(--space-4)">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-warning)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              </div>
+        <div class="card p-4 text-center">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-warning)" stroke-width="2" class="mb-4">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
           <h3>配置加载失败</h3>
           <p style="color:var(--color-text-muted);margin-bottom:var(--space-4)">${this._escapeHtml(errorMsg)}</p>
           <button class="btn btn-primary" onclick="window._router.refresh()">重新加载</button>
@@ -71,36 +73,36 @@ class SettingsView {
       <div class="monitor-grid">
         <div class="card">
           <h3>运行状态</h3>
-          <dl style="display:grid;grid-template-columns:repeat(2,1fr);gap:var(--space-3)">
-            <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">部署站点</dt>
-            <dd style="font-weight:500">中升之星奔驰</dd>
-            
-            <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">服务</dt>
+          <dl class="dl-grid">
+            <dt>部署站点</dt>
+            <dd>中升之星奔驰</dd>
+
+            <dt>服务</dt>
             <dd>${esc(info.service)}</dd>
-            
-            <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">运行模式</dt>
+
+            <dt>运行模式</dt>
             <dd>${esc(info.mode)}</dd>
-            
-            <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">控制状态</dt>
+
+            <dt>控制状态</dt>
             <dd>${info.control_enabled ? '<span class="status-badge ok">已启用</span>' : '<span class="status-badge warn">只读</span>'}</dd>
-            
-            <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">AOS</dt>
+
+            <dt>AOS</dt>
             <dd>${esc(hosts.aos_host)}:${esc(hosts.aos_port)}</dd>
-            
-            <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">NOS</dt>
+
+            <dt>NOS</dt>
             <dd>${esc(hosts.nos_host)}</dd>
-            
-            <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">GOS</dt>
+
+            <dt>GOS</dt>
             <dd>${esc(hosts.gos_host)}</dd>
-            
-            <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">云台</dt>
+
+            <dt>云台</dt>
             <dd>${data.gimbal?.connected ? '<span class="status-badge ok">已连接</span>' : '<span class="status-badge blocked">未连接（云端无法现场连接）</span>'}</dd>
           </dl>
         </div>
-        
+
         <div class="card">
           <h3>视频源配置</h3>
-          <p style="font-size:var(--fs-xs);color:var(--color-text-muted);margin-bottom:var(--space-4)">仅保存现场RTSP配置；浏览器播放需要后端playback_url。</p>
+        <p class="fs-xs-text-muted-mb4">仅保存现场RTSP配置；浏览器播放需要后端playback_url。</p>
           <form id="settings-video-form">
             ${sourceInput('front')}
             ${sourceInput('rear')}
@@ -108,13 +110,13 @@ class SettingsView {
             ${sourceInput('body_front')}
             <button type="submit" class="btn btn-primary">保存视频配置</button>
           </form>
-          <div id="settings-message" style="margin-top:var(--space-3);font-size:var(--fs-sm)"></div>
+          <div id="settings-message" class="mt-3-fs-sm"></div>
         </div>
       </div>
-      
-      <div class="card" style="margin-top:var(--space-4)">
+
+      <div class="card mt-4">
         <h3>管理员密码</h3>
-        <p style="font-size:var(--fs-xs);color:var(--color-text-muted);margin-bottom:var(--space-4)">测试阶段默认管理员执行全部操作。</p>
+        <p class="fs-xs-text-muted-mb4">测试阶段默认管理员执行全部操作。</p>
         <form id="settings-password-form">
           <div class="form-row">
             <div class="form-group">
@@ -128,25 +130,25 @@ class SettingsView {
           </div>
           <button type="submit" class="btn btn-primary">修改密码</button>
         </form>
-        <div id="password-message" style="margin-top:var(--space-3);font-size:var(--fs-sm)"></div>
+        <div id="password-message" class="mt-3-fs-sm"></div>
       </div>
-      
-      <div class="card" style="margin-top:var(--space-4)">
+
+      <div class="card mt-4">
         <h3>系统信息</h3>
-        <dl style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3)">
-          <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">Python版本</dt>
+        <dl class="dl-grid grid-3col">
+          <dt>Python版本</dt>
           <dd id="setting-python-version">待配置</dd>
 
-          <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">固件版本</dt>
+          <dt>固件版本</dt>
           <dd id="setting-firmware-version">待配置</dd>
 
-          <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">协议版本</dt>
+          <dt>协议版本</dt>
           <dd id="setting-protocol-version">待配置</dd>
 
-          <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">云台型号</dt>
+          <dt>云台型号</dt>
           <dd>SR-UPA810T609</dd>
 
-          <dt style="color:var(--color-text-muted);font-size:var(--fs-xs);text-transform:uppercase">部署时间</dt>
+          <dt>部署时间</dt>
           <dd>${new Date().toLocaleDateString('zh-CN')}</dd>
         </dl>
       </div>
