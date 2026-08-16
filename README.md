@@ -44,7 +44,7 @@ curl http://127.0.0.1:8080/api/v1/status/latest
 
 ### 生产模式
 
-当前配置文件 `deploy/readonly-manifest.json` 设置为只读模式：
+当前配置文件 `deploy/readonly-manifest.json` 设置为实时控制模式：
 
 | 配置项 | 值 | 说明 |
 |--------|-----|------|
@@ -56,18 +56,17 @@ curl http://127.0.0.1:8080/api/v1/status/latest
 | auth_enabled | false | 禁用认证（开发测试模式） |
 | allow_anonymous | true | 允许匿名访问 |
 
-### 本地测试模式
+### 切换为只读模式
 
-如需启用控制功能进行测试，修改配置文件：
+如需切换到只读模式（禁止控制命令），修改配置文件：
 
 ```bash
 # 编辑manifest
 vim deploy/readonly-manifest.json
 
-# 修改为测试模式
-sed -i 's/"read_only_mode": true/"read_only_mode": false/' deploy/readonly-manifest.json
-sed -i 's/"control_enabled": false/"control_enabled": true/' deploy/readonly-manifest.json
-# 注：telemetry_tx_enabled和allow_real_io当前已为true，无需修改
+# 修改为只读模式
+sed -i 's/"read_only_mode": false/"read_only_mode": true/' deploy/readonly-manifest.json
+sed -i 's/"control_enabled": true/"control_enabled": false/' deploy/readonly-manifest.json
 ```
 
 ---
