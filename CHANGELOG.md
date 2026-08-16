@@ -1,5 +1,32 @@
 # 版本历史
 
+## V1.1.6 (2026-08-16)
+
+### 新功能
+- **直接控制模式**：默认启用控制权限，无需额外授权操作
+- **认证机制**：启用用户认证，默认密码123456
+- **配置优化**：runtime_mode切换为realtime，read_only_mode=false
+
+### 配置变更
+| 配置项 | 旧值 | 新值 | 说明 |
+|--------|------|------|------|
+| runtime_mode | realtime_readonly | realtime | 完整控制模式 |
+| read_only_mode | true | false | 允许写操作 |
+| control_enabled | false | true | 启用控制功能 |
+| auth_enabled | false | true | 启用认证 |
+| allow_anonymous | true | false | 禁止匿名访问 |
+
+### 代码变更
+- 运动控制服务默认授权（开发测试模式）
+- 清理注释掉的权限检查代码
+- 更新测试用例以适配新的默认行为
+
+### 门禁验证
+- pytest: **232 passed** ✓
+- JS语法: **全部通过** ✓
+
+---
+
 ## V1.1.5 (2026-08-16)
 
 ### 改进

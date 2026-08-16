@@ -60,8 +60,10 @@ class TestMotionControlService:
     def test_motion_state_switch_not_authorized(self):
         """未授权状态切换拒绝测试。"""
         service = self._create_service()
+        service.deauthorize()  # 显式撤销默认授权
         result = service.motion_state_switch(MOTION_STATE_IDLE)
         assert result["status"] == "error"
+        assert "not authorized" in result["message"].lower()
 
     def test_gait_switch_success(self):
         """步态切换成功测试。"""

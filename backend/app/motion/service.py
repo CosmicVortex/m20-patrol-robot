@@ -80,8 +80,9 @@ class MotionControlService:
     def __init__(self, client, safety: MotionSafetySnapshot) -> None:
         self._client = client
         self._safety = safety
-        self._authorized: bool = False
-        self._authorized_by: str = ""
+        # 默认授权（开发测试模式）
+        self._authorized: bool = True
+        self._authorized_by: str = "system"
         self._audit_log: list[dict[str, Any]] = []
     
     @property

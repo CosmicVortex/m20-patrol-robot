@@ -33,10 +33,6 @@ class MotionStateHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        # 研发阶段：允许所有已认证用户执行控制操作
-        # if auth.role != "admin":
-        #     self.send_error_response(403, "需要管理员权限")
-        #     return
 
         try:
             data = self._parse_json_body()
@@ -69,10 +65,6 @@ class GaitSwitchHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        # 研发阶段：允许所有已认证用户执行控制操作
-        # if auth.role != "admin":
-        #     self.send_error_response(403, "需要管理员权限")
-        #     return
 
         try:
             data = self._parse_json_body()
@@ -105,10 +97,6 @@ class AxisControlHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        # 研发阶段：允许所有已认证用户执行控制操作
-        # if auth.role != "admin":
-        #     self.send_error_response(403, "需要管理员权限")
-        #     return
 
         try:
             data = self._parse_json_body()
@@ -140,10 +128,6 @@ class LightControlHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        # 研发阶段：允许所有已认证用户执行控制操作
-        # if auth.role != "admin":
-        #     self.send_error_response(403, "需要管理员权限")
-        #     return
 
         try:
             data = self._parse_json_body()
@@ -174,10 +158,6 @@ class ModeSwitchHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        # 研发阶段：允许所有已认证用户执行控制操作
-        # if auth.role != "admin":
-        #     self.send_error_response(403, "需要管理员权限")
-        #     return
 
         try:
             data = self._parse_json_body()
@@ -210,10 +190,6 @@ class ChargeControlHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        # 研发阶段：允许所有已认证用户执行控制操作
-        # if auth.role != "admin":
-        #     self.send_error_response(403, "需要管理员权限")
-        #     return
 
         try:
             data = self._parse_json_body()
@@ -246,10 +222,6 @@ class SleepModeHandler(BaseHandler):
         auth = self._authenticate()
         if auth is None:
             return
-        # 研发阶段：允许所有已认证用户执行控制操作
-        # if auth.role != "admin":
-        #     self.send_error_response(403, "需要管理员权限")
-        #     return
 
         try:
             data = self._parse_json_body()
@@ -334,10 +306,6 @@ class MotionDeauthorizeHandler(BaseHandler):
         if auth is None:
             return
 
-        # 研发阶段：允许所有已认证用户执行控制操作
-        # if auth.role != "admin":
-        #     self.send_error_response(403, "需要管理员权限")
-        #     return
 
         service: Optional[MotionControlService] = getattr(self.server_instance, "motion_service", None)
         if service is None:
