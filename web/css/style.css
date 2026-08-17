@@ -1012,26 +1012,25 @@ button[title]:not(:enabled):hover::before {
   display: grid;
   grid-template-columns: 1fr 380px;
   gap: var(--space-4);
-  align-items: start;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
 }
 
-/* 左侧视频区域 */
+/* 左侧视频区域 - 填充网格空间 */
 .video-section {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  min-height: 0;
 }
 
-/* 右侧面板 - 固定宽度，粘性定位 */
+/* 右侧面板 - 粘性定位，自适应高度 */
 .right-panel {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  position: sticky;
-  top: calc(var(--topbar-height) + var(--space-4));
-  max-height: calc(100vh - var(--topbar-height) - var(--space-8));
-  overflow-y: auto;
-  padding-right: var(--space-2);
+  min-height: 0;
 }
 
 /* ========== 视频墙 ========== */
