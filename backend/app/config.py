@@ -117,6 +117,6 @@ class ConfigLoader:
                 "gimbal_password", targets.get("gimbal_password", "")
             ),
             manifest_path=manifest_path,
-            static_root=data.get("static_root", str(release_root / "docs" / "website")),
+            static_root=data.get("static_root", str(release_root / "web")),
             auth_db_path=data.get("auth_db_path", str(release_root / "var" / "m20_auth.db")),
         )

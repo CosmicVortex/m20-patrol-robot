@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).parents[2]
-WEB = ROOT / "docs" / "website"
+WEB = ROOT / "web"
 
 
 def run_node(script: str) -> subprocess.CompletedProcess[str]:
@@ -30,7 +30,7 @@ def test_index_has_one_executable_application_entrypoint():
 
 def test_api_service_unwraps_success_and_uses_canonical_work_order_route():
     script = r"""
-const { ApiService } = require('./docs/website/js/api-service.js');
+const { ApiService } = require('./web/js/api-service.js');
 const state = { get: () => null, set: () => {}, updateWorkOrders: value => global.updated = value };
 const api = new ApiService(state);
 let calls = [];
@@ -57,7 +57,7 @@ global.fetch = async (url, options = {}) => {
 
 def test_state_manager_reads_wrapped_login_response_and_real_position_fields():
     script = r"""
-const { StateManager } = require('./docs/website/js/state-manager.js');
+const { StateManager } = require('./web/js/state-manager.js');
 const state = new StateManager();
 global.fetch = async (url) => {
   if (url.endsWith('/auth/login')) {

@@ -228,11 +228,11 @@ install() {
   fi
 
   for asset in \
-    "$TARGET_ROOT/docs/website/index.html" \
-    "$TARGET_ROOT/docs/website/js/app.js" \
-    "$TARGET_ROOT/docs/website/js/views/dashboard.js" \
-    "$TARGET_ROOT/docs/website/robot-dog.png" \
-    "$TARGET_ROOT/docs/website/robot-dog.jpg"; do
+    "$TARGET_ROOT/web/index.html" \
+    "$TARGET_ROOT/web/js/app.js" \
+    "$TARGET_ROOT/web/js/views/dashboard.js" \
+    "$TARGET_ROOT/web/robot-dog.png" \
+    "$TARGET_ROOT/web/robot-dog.jpg"; do
     if [ ! -f "$asset" ]; then
       echo "错误: Web 资源缺失: $asset"
       exit 1

@@ -41,7 +41,7 @@ def runtime_server(tmp_path: Path):
         read_only_mode=True,
         control_enabled=False,
         allow_real_io=False,
-        static_root=str(Path(__file__).parents[2] / "docs" / "website"),
+        static_root=str(Path(__file__).parents[2] / "web"),
         auth_db_path=str(tmp_path / "auth.db"),
     )
     app = M20WebServer(config)

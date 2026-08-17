@@ -9,7 +9,7 @@
   "web_realtime_enabled": true,
   "allow_real_io": true,
   "web_bind_host": "0.0.0.0",
-  "static_root": "docs/website",
+  "static_root": "web",
   "stale_after_seconds": 3,
   "auth_enabled": false,
   "allow_anonymous": true,
