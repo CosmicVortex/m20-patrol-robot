@@ -26,7 +26,7 @@
   window._router.register('settings', new SettingsView());
 
   // ── 自动登录 ────────────────────────────────────────────────────────────────
-  // 无需手动登录，直接进入系统
+  // 默认登录admin账户，无需手动登录
   window._state.set('user', { username: 'admin', role: 'admin' });
   window._state.set('isAuthenticated', true);
 

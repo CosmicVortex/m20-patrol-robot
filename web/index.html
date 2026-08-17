@@ -9,36 +9,8 @@
 <script src="js/components/toast.js"></script>
 </head>
 <body>
-<!-- 登录覆盖层 -->
-<div class="login-overlay" id="login-overlay">
-  <div class="login-box">
-    <div class="login-brand">
-      <svg class="brand-star" viewBox="0 0 100 100" aria-label="Mercedes-Benz 三叉星徽" role="img">
-        <circle cx="50" cy="50" r="45"/>
-        <path d="M50 50 L50 8 M50 50 L14 71 M50 50 L86 71"/>
-      </svg>
-      <div class="login-brand-text">
-        <strong>中升之星奔驰</strong>
-        <small>M20 Pro 巡检巡逻机器人管理平台</small>
-      </div>
-    </div>
-    <div class="login-error" id="login-error"></div>
-    <form id="login-form" autocomplete="off">
-      <label for="login-username">用户名</label>
-      <input type="text" id="login-username" placeholder="请输入用户名" required autocomplete="username">
-      <label for="login-password">密码</label>
-      <input type="password" id="login-password" placeholder="请输入密码" required autocomplete="current-password">
-      <button type="submit">登录系统</button>
-    </form>
-    <div class="login-footer">
-      管理员账号: admin<br>
-      测试密码: 123456
-    </div>
-  </div>
-</div>
-
 <!-- 主应用 -->
-<div class="app" id="main-app" style="display:none" role="main">
+<div class="app" id="main-app" role="main">
   <!-- 状态更新区域（无障碍） -->
   <div id="live-region" aria-live="polite" aria-atomic="true" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)"></div>
   <!-- 侧边栏 -->
