@@ -1010,7 +1010,7 @@ button[title]:not(:enabled):hover::before {
 /* ========== 监控网格 ========== */
 .monitor-grid {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr 360px;
   gap: var(--space-4);
   align-items: stretch;
   flex: 1;
@@ -1025,11 +1025,11 @@ button[title]:not(:enabled):hover::before {
   min-height: 0;
 }
 
-/* 右侧面板 - 粘性定位，自适应高度 */
+/* 右侧面板 - 自适应高度 */
 .right-panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
   min-height: 0;
 }
 
@@ -1374,11 +1374,14 @@ button[title]:not(:enabled):hover::before {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: var(--r-xl);
-  padding: var(--space-5);
-  margin-top: var(--space-4);
+  padding: var(--space-4);
   box-shadow: var(--shadow-card);
   position: relative;
   overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .control-panel::before {
@@ -1393,7 +1396,7 @@ button[title]:not(:enabled):hover::before {
 }
 
 .control-panel h4 {
-  margin: 0 0 var(--space-4);
+  margin: 0 0 var(--space-3);
   font-size: var(--fs-sm);
   color: var(--color-text-secondary);
   font-weight: 500;
@@ -1402,6 +1405,7 @@ button[title]:not(:enabled):hover::before {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  flex-shrink: 0;
 }
 
 /* 控制面板授权状态增强 */
@@ -1468,11 +1472,12 @@ button[title]:not(:enabled):hover::before {
   justify-content: center;
   align-items: center;
   gap: var(--space-4);
-  margin-bottom: var(--space-4);
-  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
   background: var(--color-bg-input);
   border-radius: var(--r-lg);
   position: relative;
+  flex-shrink: 0;
 }
 
 .joystick-center {
@@ -1547,7 +1552,8 @@ button[title]:not(:enabled):hover::before {
 .function-buttons {
   display: flex;
   gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
+  flex-shrink: 0;
 }
 
 .func-btn {
@@ -1604,8 +1610,10 @@ button[title]:not(:enabled):hover::before {
 /* 授权区域 */
 .auth-section {
   border-top: 1px solid var(--color-border);
-  padding-top: var(--space-4);
+  padding-top: var(--space-3);
   text-align: center;
+  margin-top: auto;
+  flex-shrink: 0;
 }
 
 .auth-btn {
@@ -1666,8 +1674,8 @@ button[title]:not(:enabled):hover::before {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: var(--r-lg);
-  padding: var(--space-4);
-  margin-top: var(--space-4);
+  padding: var(--space-3);
+  flex-shrink: 0;
 }
 
 .timeline h3 {
@@ -1744,7 +1752,8 @@ button[title]:not(:enabled):hover::before {
   display: flex;
   flex-direction: column;
   transition: all var(--transition-base);
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .map-card:hover {
@@ -1774,9 +1783,7 @@ button[title]:not(:enabled):hover::before {
 
 .map-canvas {
   flex: 1;
-  height: 300px;
-  min-height: 300px;
-  max-height: 300px;
+  min-height: 200px;
   position: relative;
   overflow: hidden;
   background: linear-gradient(145deg, var(--color-bg-secondary), var(--color-bg-deep));
