@@ -235,7 +235,7 @@
 
 创建工单。
 
-### PUT /api/v1/work-orders
+### PUT /api/v1/work-orders/{id}
 
 更新工单。
 
@@ -271,7 +271,7 @@
 
 创建设备。
 
-### DELETE /api/v1/devices
+### DELETE /api/v1/devices/
 
 删除设备。
 
