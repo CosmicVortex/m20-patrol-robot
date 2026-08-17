@@ -140,8 +140,12 @@ class ApiService {
   }
   
   async axisControl(x, y, yaw) { return this.post('/motion/axis', { x, y, yaw }); }
+  // 别名：兼容 dashboard.js 调用
+  async motionAxis(x, y, yaw) { return this.axisControl(x, y, yaw); }
   async lightControl(front, back = front) { return this.post('/motion/light', { front, back }); }
   async modeSwitch(mode) { return this.post('/motion/mode', { mode }); }
+  // 别名：兼容 dashboard.js 调用
+  async switchMode(mode) { return this.modeSwitch(mode); }
   async sleepMode(sleep, auto = false, time = 10) { return this.post('/motion/sleep', { sleep, auto, time }); }
   
   async chargeControl(action) {
