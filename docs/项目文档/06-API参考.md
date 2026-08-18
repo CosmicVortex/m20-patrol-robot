@@ -15,7 +15,7 @@
 ```json
 {
   "service": "m20-patrol-web",
-  "runtime_mode": "realtime",
+  "runtime_mode": "realtime_readonly",
   "read_only_mode": false,
   "control_enabled": true,
   "source": "REAL",
