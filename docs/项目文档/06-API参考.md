@@ -1,5 +1,8 @@
 # API 参考文档
 
+**版本**: V1.2  
+**更新**: 2026-08-18  
+
 **基础地址**: `http://10.21.31.104:8080`（GOS部署后）  
 **认证**: 除 `/api/v1/health` 外，其余接口均需登录后访问（自动登录模式已启用）
 
@@ -113,7 +116,19 @@
 
 撤销授权。
 
-### POST /api/v1/emergency/stop
+### GET /api/v1/motion/status
+
+获取当前运动状态（姿态、速度、里程等）。
+
+**响应字段**:
+- `motion_state`: 运动状态（0=空闲,1=站立,2=软急停,4=趴下,17=RL控制）
+- `gait`: 当前步态
+- `roll`, `pitch`, `yaw`: 姿态角
+- `linear_x`, `linear_y`, `omega_z`: 线速度和角速度
+- `height`: 当前高度
+- `distance`: 累计里程
+
+---
 
 紧急停止。
 
@@ -195,6 +210,14 @@
 
 查询已配置云台地址。
 
+### GET /api/v1/gimbal/device/info
+
+获取云台设备信息。
+
+### GET /api/v1/gimbal/video
+
+获取云台视频流地址。
+
 ---
 
 ## 7. 视频管理接口
@@ -237,7 +260,9 @@
 
 ### PUT /api/v1/work-orders/
 
-更新工单（请求体传id字段）
+更新工单（路径末尾斜杠后跟ID，请求体传id字段）
+
+**示例**: `PUT /api/v1/work-orders/VO-2026-001`
 
 ### GET /api/v1/inspection-points
 
@@ -271,9 +296,11 @@
 
 创建设备。
 
-### DELETE /api/v1/devices/{device_id}
+### DELETE /api/v1/devices/
 
-删除设备（路径末尾为设备ID，如 `/api/v1/devices/DEV-2026-001`）
+删除设备（路径末尾斜杠后跟ID）
+
+**示例**: `DELETE /api/v1/devices/DEV-2026-001`
 
 ---
 
