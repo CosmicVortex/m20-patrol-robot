@@ -264,9 +264,13 @@
 
 ### PUT /api/v1/work-orders/
 
-更新工单（路径末尾斜杠后跟ID，请求体传id字段）
+更新工单（路径末尾斜杠后跟ID）。
 
 **示例**: `PUT /api/v1/work-orders/VO-2026-001`
+
+> **注**: 以下路径也可用于相同操作：
+> - `POST /api/v1/work-orders/create` — 创建工单
+> - `PUT /api/v1/work-orders/update` — 更新工单
 
 ### GET /api/v1/inspection-points
 
