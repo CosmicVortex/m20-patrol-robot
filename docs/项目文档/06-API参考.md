@@ -235,9 +235,9 @@
 
 创建工单。
 
-### PUT /api/v1/work-orders/{id}
+### PUT /api/v1/work-orders/
 
-更新工单。
+更新工单（请求体传id字段）
 
 ### GET /api/v1/inspection-points
 
@@ -271,9 +271,9 @@
 
 创建设备。
 
-### DELETE /api/v1/devices/
+### DELETE /api/v1/devices/{device_id}
 
-删除设备。
+删除设备（路径末尾为设备ID，如 `/api/v1/devices/DEV-2026-001`）
 
 ---
 
