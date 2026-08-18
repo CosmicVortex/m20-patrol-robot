@@ -130,7 +130,11 @@
 
 ---
 
-紧急停止。
+## 4.5 紧急停止
+
+### POST /api/v1/emergency/stop
+
+立即停止机器人所有运动。
 
 ---
 
@@ -175,9 +179,9 @@
 
 连接云台设备。
 
-**请求体**:
+**请求体**（可选字段 `port` 默认 80）:
 ```json
-{"host": "10.21.31.108", "password": "<your_password>"}
+{"host": "10.21.31.108", "username": "admin", "password": "<your_password>"}
 ```
 
 ### GET /api/v1/gimbal/state
