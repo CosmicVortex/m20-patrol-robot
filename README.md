@@ -93,7 +93,7 @@ bash deploy/scripts/rollback-gos.sh
 
 ```json
 {
-  "runtime_mode": "realtime",        // 运行时模式
+  "runtime_mode": "simulated",      // 运行时模式 (simulated|realtime|realtime_readonly)
   "read_only_mode": false,            // 只读模式（true=禁止控制）
   "control_enabled": true,            // 控制权限开关
   "telemetry_tx_enabled": true,       // 心跳发送（必须为true）
